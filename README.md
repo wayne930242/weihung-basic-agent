@@ -33,6 +33,48 @@ The installer never overwrites a file you own silently, and it is idempotent: re
 
 `bash scripts/install.sh --overlay PATH` layers a second checkout over this one: its `skills/` link beside ours, its `pi/AGENTS.append.md` is appended to the generated `AGENTS.md`, and its `overlay.json` can declare optional plugins. That keeps personal or company material in a private repository while this one stays public.
 
+### Make your own overlay
+
+1. Create a private repository, for example `~/projects/my-agent-root`, laid out like this (every part is optional):
+
+   ```text
+   my-agent-root/
+   ├── skills/
+   │   └── my-skill/SKILL.md      # linked into ~/.agents/skills/my-skill
+   ├── pi/AGENTS.append.md        # appended to ~/.pi/agent/AGENTS.md
+   └── overlay.json               # optional pi package plugins
+   ```
+
+2. Put personal instructions in `pi/AGENTS.append.md` as ordinary Markdown sections:
+
+   ```markdown
+   ## Language
+
+   Communicate with the user in Traditional Chinese.
+   ```
+
+3. Declare plugins, if any, in `overlay.json`. `path` is relative to the overlay, and the environment variable named in `variable` overrides it. A plugin whose checkout is missing is skipped with a message.
+
+   ```json
+   {"plugins": {"my_plugin": {"name": "my-plugin", "variable": "PI_MY_PLUGIN_ROOT", "path": "../my-plugin"}}}
+   ```
+
+4. Install with the overlay once:
+
+   ```bash
+   bash ~/projects/weihung-basic-agent/scripts/install.sh --overlay ~/projects/my-agent-root
+   ```
+
+   The install records the overlay, so later runs without `--overlay`, including the daily auto-update, keep it. `--no-overlay` drops it, and `uninstall.sh` removes its links and plugins too.
+
+5. Optionally give the overlay its own `scripts/install.sh` that calls this repository's installer with `--overlay "$OVERLAY_ROOT" "$@"`, so one command installs both.
+
+The installer does not pull this repository: run `git pull` here before re-installing to pick up upstream changes.
+
+### What an overlay cannot change
+
+An overlay adds; it does not replace. A skill name that exists in both repositories stops the install. Rules (`rules/`), role overrides (`agents/`), model routing (`pi/herdr-agents-models.json`), extensions (`pi/extensions/`), and the base text of `pi/AGENTS.md.in` come only from this repository. To change those, fork it and point your overlay's installer at the fork.
+
 ## Tests
 
 ```bash
