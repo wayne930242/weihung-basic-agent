@@ -2,7 +2,7 @@
 
 BRIDGE_SOURCE = "git:github.com/wayne930242/pi-claude-bridge@cf8c6e1035681bc12c2499c0a6c2edd273a444eb"
 QUOTAS_SOURCE = "npm:@latentminds/pi-quotas@0.5.0"
-CLAUDE_RULES_SOURCE = "npm:pi-code@1.5.2"
+CLAUDE_RULES_SOURCE = "npm:pi-code@1.6.1"
 # Fork pin of giuseppecrj/pi-herdr-agents: upstream v3.3.1 plus PRs #84, #95, and #99, the solutionSpace change of
 # closed PR #87, the macOS process-identity fixes, and the fork-only exit hold that pi/extensions/quota-resume.ts and
 # monitor-hold.ts use (branch weihung/v3-integration).
@@ -44,29 +44,29 @@ PACKAGES = [
     BRIDGE_SOURCE,
     HERDR_AGENTS_SOURCE,
     HERDR_ROLES_PACKAGE,
-    "npm:pi-mcp-adapter@5.3.2",
-    "npm:pi-intercom@0.17.1",
-    "npm:@juicesharp/rpiv-ask-user-question@2.13.9",
-    "npm:@juicesharp/rpiv-todo@2.13.9",
+    "npm:pi-mcp-adapter@7.0.0",
+    "npm:pi-intercom@0.18.1",
+    "npm:@juicesharp/rpiv-ask-user-question@2.15.0",
+    "npm:@juicesharp/rpiv-todo@2.15.0",
     THEME_PACKAGE,
-    "npm:pi-open-tui@0.3.11",
-    "npm:pi-lens@4.4.3",
+    "npm:pi-open-tui@0.3.12",
+    "npm:pi-lens@4.4.5",
     QUOTAS_SOURCE,
     "npm:pi-jev-compaction@1.0.0",
     # prose_watch: an AI-tone check (Jev) on the prose files a writing task arms.
     "npm:pi-prose-watch@0.1.2",
-    "npm:cc-safety-net@2.6.13",
+    "npm:cc-safety-net@2.6.19",
     "npm:pi-codex-image-gen@0.2.0",
     "npm:pi-robot-hand@0.3.2",
     "npm:pi-auto-tab-name@0.2.0",
     "npm:pi-herdr-doc-review@0.7.0",
     # Straw Boss coordination in Herdr: opt-in main agents per tab, an on-demand tower per workspace, scoped broadcast.
-    "npm:pi-straw-boss@0.42.7",
+    "npm:pi-straw-boss@0.43.2",
     "npm:@pify/memory@0.14.0",
     "npm:pi-loop-monitor@0.2.8",
-    "npm:@narumitw/pi-goal@0.54.12",
+    "npm:@narumitw/pi-goal@0.54.13",
     # Antigravity (agy) Google login: /login antigravity, plus the google_search and generate_image tools.
-    "npm:pi-antigravity@0.10.0",
+    "npm:pi-antigravity@0.11.0",
     # Desktop app control through Accessibility (UIA on Windows), kept headless by configs.COMPUTER_USE_SETTINGS.
     "npm:@injaneity/pi-computer-use@0.5.1",
     CLAUDE_RULES_PACKAGE,
@@ -80,7 +80,7 @@ HERDR_PLUGINS = (
     ("wayne930242.straw-boss-reaper", "wayne930242/pi-straw-boss/herdr-reaper", "v0.39.0", "reaper_plugin_preinstalled"),
 )
 # The Playwriter CLI drives the user's own Chrome through its extension; playwriter-relay.ts starts its relay.
-PLAYWRITER = "playwriter@0.8.0"
+PLAYWRITER = "playwriter@0.9.0"
 # thesis-toolkit launches the research-hub MCP server (literature search, open-access download, bibliography saves).
 THESIS_TOOLKIT = "thesis-toolkit@0.1.3"
 # anchorloop, the workflow skills and extensions; PI_ANCHORLOOP_ROOT swaps in a checkout for testing.
