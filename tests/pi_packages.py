@@ -260,6 +260,33 @@ class PackageTests(unittest.TestCase):
             self.assertNotIn(old, json.loads(settings.read_text())["packages"])
             self.assertNotIn(old, removals)
 
+    def test_external_install_takes_retired_packages_off_disk(self):
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            agent = home / ".pi/agent"
+            (agent / "npm").mkdir(parents=True)
+            (agent / "npm/package.json").write_text(json.dumps({"dependencies": {"pi-phoenix-otel": "^0.2.0", "pi-lens": "^4.4.3"}}))
+            quotas = agent / "git/github.com/wayne930242/pi-quotas"
+            quotas.mkdir(parents=True)
+            settings = agent / "settings.json"
+            settings.write_text(json.dumps({"packages": []}))
+            uninstalled = []
+
+            def fake_run(args, _home):
+                if args[:2] == ["npm", "uninstall"]:
+                    uninstalled.append(args[2:])
+                elif args[0] == "npm":
+                    fake_npm_install(args)
+                if args[:2] == ["pi", "install"]:
+                    current = json.loads(settings.read_text())
+                    current.setdefault("packages", []).append(args[2])
+                    settings.write_text(json.dumps(current))
+
+            with mock.patch.object(external, "run", fake_run):
+                steps.install(home, skip_external=False, force=False)
+            self.assertEqual(uninstalled, [["pi-phoenix-otel", "--prefix", str(agent / "npm"), "--legacy-peer-deps"]])
+            self.assertFalse(quotas.exists())
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,6 +1,7 @@
 """Pi packages: identity, the packages this repository owns, and the install step that also brings the tools they need."""
 
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -58,6 +59,21 @@ def obsolete_pin(value: Package) -> bool:
     source = package_source(value)
     return (any(source.startswith(prefixes) and source != current for current, prefixes in PINNED_GIT.items())
             or source.startswith(RETIRED_SOURCES))
+
+
+def remove_retired_installs(agent_dir: Path, home: Path) -> None:
+    """Take retired packages out of pi's npm and git roots: retiring one drops it from settings, after which `pi remove` no longer finds it."""
+    npm_root = agent_dir / "npm"
+    installed = read_json(npm_root / "package.json").get("dependencies", {})
+    for source in RETIRED_SOURCES:
+        if source.startswith("npm:"):
+            spec = source.removeprefix("npm:")
+            name = spec[:spec.find("@", 1)] if spec.find("@", 1) > 0 else spec
+            if name in installed:
+                # pi uninstalls with --legacy-peer-deps too; without it a stale peer range elsewhere fails the uninstall.
+                external.run(["npm", "uninstall", name, "--prefix", str(npm_root), "--legacy-peer-deps"], home)
+        elif (checkout := agent_dir / "git" / source.removeprefix("git:").split("@")[0]).is_dir():
+            shutil.rmtree(checkout)
 
 
 def anchorloop_source() -> str:
@@ -215,6 +231,7 @@ def apply(ctx: Context) -> None:
         for package in read_json(settings_path).get("packages", []):
             if package_id(package, agent_dir) in retired_ids:
                 external.run(["pi", "remove", package_source(package)], home)
+        remove_retired_installs(agent_dir, home)
         external.run(["pi", "install", state["anchorloop"]], home)
         resources.install_ported_resources(home, state, ctx.force)
         ctx.save()
