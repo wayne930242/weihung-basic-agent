@@ -105,7 +105,7 @@ with tempfile.TemporaryDirectory() as directory:
     assert "npm:@juicesharp/rpiv-todo@2.13.9" in sources and "npm:cc-safety-net@2.6.13" in sources, sources
     assert "npm:pi-codex-image-gen@0.2.0" in sources and not any("pi-web-access" in source for source in sources), sources
     assert "npm:pi-robot-hand@0.3.2" in sources and not any("pi-secret-drop" in source for source in sources), sources
-    assert "npm:pi-phoenix-otel@0.2.0" in sources, sources
+    assert not any("pi-phoenix-otel" in source for source in sources), sources
     assert "npm:@pify/memory@0.14.0" in sources, sources
     assert "npm:pi-loop-monitor@0.2.8" in sources, sources
     assert "npm:@narumitw/pi-goal@0.54.12" in sources, sources

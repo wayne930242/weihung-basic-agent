@@ -34,7 +34,9 @@ RETIRED_SOURCES = ("npm:@victor-software-house/pi-curated-themes", "npm:pi-secre
                    # aaaav before 1.0 was installed from git; a machine whose state never recorded that install still sheds it.
                    "git:github.com/wayne930242/aaaav",
                    # pi-aaaav was renamed pi-anchorloop at 2.0.0.
-                   "npm:pi-aaaav")
+                   "npm:pi-aaaav",
+                   # Phoenix traces saw little use; the package and its local Phoenix server were retired.
+                   "npm:pi-phoenix-otel")
 # pi-code loads only claude-rules.ts, which reads each project's .claude/rules as Claude Code does;
 # its other extensions duplicate the todo, MCP, subagent, and web packages below.
 CLAUDE_RULES_PACKAGE = {"source": CLAUDE_RULES_SOURCE, "extensions": ["extensions/claude-rules.ts"]}
@@ -63,7 +65,6 @@ PACKAGES = [
     "npm:@pify/memory@0.14.0",
     "npm:pi-loop-monitor@0.2.8",
     "npm:@narumitw/pi-goal@0.54.12",
-    "npm:pi-phoenix-otel@0.2.0",
     # Antigravity (agy) Google login: /login antigravity, plus the google_search and generate_image tools.
     "npm:pi-antigravity@0.10.0",
     # Desktop app control through Accessibility (UIA on Windows), kept headless by configs.COMPUTER_USE_SETTINGS.
