@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Pairs each failure or correction lesson in pi memory with the stream rule that enforces it,
-// and lists the lessons that still live only as prose. Rules load through aaaav's own TTSR
+// and lists the lessons that still live only as prose. Rules load through anchorloop's own TTSR
 // parser, so this sees them exactly as the running extension does.
 //
 // Usage: node scripts/lesson-audit.mjs [--memory <dir>] [--rules <dir>]
@@ -18,12 +18,12 @@ function agentDir() {
   return value ? value.replace(/^~(?=$|\/)/, homedir()) : join(homedir(), ".pi", "agent");
 }
 
-/** aaaav's ttsr.ts: the checkout PI_AAAAV_ROOT names, as the installer uses, else the installed package. */
+/** anchorloop's ttsr.ts: the checkout PI_ANCHORLOOP_ROOT names, as the installer uses, else the installed package. */
 export function ttsrPath() {
-  const override = process.env.PI_AAAAV_ROOT;
-  const root = override ? resolve(override.replace(/^~(?=$|\/)/, homedir())) : join(agentDir(), "git/github.com/wayne930242/aaaav");
+  const override = process.env.PI_ANCHORLOOP_ROOT;
+  const root = override ? resolve(override.replace(/^~(?=$|\/)/, homedir())) : join(agentDir(), "npm/node_modules/pi-anchorloop");
   const path = join(root, "pi/ttsr.ts");
-  if (!existsSync(path)) throw new Error(`aaaav ttsr.ts not found at ${path}; install aaaav or set PI_AAAAV_ROOT to a checkout`);
+  if (!existsSync(path)) throw new Error(`anchorloop ttsr.ts not found at ${path}; install anchorloop or set PI_ANCHORLOOP_ROOT to a checkout`);
   return path;
 }
 

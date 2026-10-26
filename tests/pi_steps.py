@@ -40,7 +40,7 @@ class StepTests(unittest.TestCase):
             for rule in (ROOT / "rules").glob("*.md"):
                 text = rule.read_text()
                 if text.startswith("---"):
-                    # Stream rules are enforced by aaaav's TTSR extension, not read from the index.
+                    # Stream rules are enforced by anchorloop's TTSR extension, not read from the index.
                     self.assertIn("\ncondition:", text.split("\n---", 1)[0], rule.name)
                     continue
                 self.assertIn(f"`{rule.name}`", instructions)

@@ -95,7 +95,7 @@ with tempfile.TemporaryDirectory() as directory:
     assert "## Memory" in text, text
     assert "In a large project, search code through the `codebase-memory-mcp` server" in text, text
     settings = json.loads((home / ".pi/agent/settings.json").read_text())
-    assert len(settings["packages"]) == len(PACKAGES) + 2, settings  # the pinned packages, aaaav, and this package
+    assert len(settings["packages"]) == len(PACKAGES) + 2, settings  # the pinned packages, anchorloop, and this package
     assert settings["packages"][0] == BRIDGE_SOURCE, settings
     assert settings["packages"][1:3] == [HERDR_AGENTS_SOURCE, HERDR_ROLES_PACKAGE], settings
     sources = [package["source"] if isinstance(package, dict) else package for package in settings["packages"]]

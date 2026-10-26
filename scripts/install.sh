@@ -27,7 +27,7 @@ Installs this repository's pi setup:
   - ~/.pi/agent/agents         link to agents/
   - ~/.local/bin/codebase-memory-mcp when missing
   - everything scripts/pi-target.py install manages: pi itself, its Herdr
-    integration, pi packages, aaaav, this repository's pi package, the
+    integration, pi packages, anchorloop, this repository's pi package, the
     generated ~/.pi/agent/AGENTS.md, model routing, UI settings,
     the overlay's optional plugins (when their checkouts exist), and team-toon-tack
 

@@ -79,7 +79,7 @@ def load_target():
 def collect_pins() -> list[Pin]:
     target = load_target()
     pins = []
-    for value in [*target.PACKAGES, target.AAAAV_PACKAGE]:
+    for value in [*target.PACKAGES, target.ANCHORLOOP_PACKAGE]:
         source = value["source"] if isinstance(value, dict) else value
         if match := NPM_PIN.match(source):
             pins.append(Pin("npm", match[1], match[2]))

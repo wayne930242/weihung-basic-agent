@@ -9,14 +9,14 @@ from . import external, resources
 from .context import Context, State
 from .jsonfile import read_json, write_json
 from .paths import (
-    AAAAV_ROOT_VARIABLE,
+    ANCHORLOOP_ROOT_VARIABLE,
     HERDR_AGENTS_ROOT_VARIABLE,
     LOCAL_PACKAGE,
     optional_plugins,
     overlay_root,
 )
 from .pins import (
-    AAAAV_PACKAGE,
+    ANCHORLOOP_PACKAGE,
     HERDR_AGENTS_SOURCE,
     HERDR_PLUGINS,
     PACKAGES,
@@ -60,14 +60,14 @@ def obsolete_pin(value: Package) -> bool:
             or source.startswith(RETIRED_SOURCES))
 
 
-def aaaav_source() -> str:
-    """The pinned aaaav release, or the checkout PI_AAAAV_ROOT names for testing."""
-    value = os.environ.get(AAAAV_ROOT_VARIABLE)
+def anchorloop_source() -> str:
+    """The pinned anchorloop release, or the checkout PI_ANCHORLOOP_ROOT names for testing."""
+    value = os.environ.get(ANCHORLOOP_ROOT_VARIABLE)
     if not value:
-        return AAAAV_PACKAGE
+        return ANCHORLOOP_PACKAGE
     root = Path(value).expanduser().resolve()
     if not (root / "package.json").is_file():
-        raise ValueError(f"{AAAAV_ROOT_VARIABLE}={value} has no package.json; point it at a checkout or unset it to use {AAAAV_PACKAGE}")
+        raise ValueError(f"{ANCHORLOOP_ROOT_VARIABLE}={value} has no package.json; point it at a checkout or unset it to use {ANCHORLOOP_PACKAGE}")
     return str(root)
 
 
@@ -108,17 +108,17 @@ def plugin_keys(state: State) -> list[str]:
 
 
 def local_packages(state: State) -> list[Package]:
-    return [state.get("aaaav", AAAAV_PACKAGE), LOCAL_PACKAGE, *(state[key] for key in plugin_keys(state) if state.get(key))]
+    return [state.get("anchorloop", ANCHORLOOP_PACKAGE), LOCAL_PACKAGE, *(state[key] for key in plugin_keys(state) if state.get(key))]
 
 
 def plan(ctx: Context) -> None:
     """Record which package sources this run uses and what settings held before the first install."""
     state = ctx.state
     herdr_root = ctx.herdr_root
-    # A source that changed form (checkout to npm or back, or the git install aaaav had before 1.0) leaves settings like a displaced pi-herdr-agents root;
+    # A source that changed form (checkout to npm or back, or the git install aaaav had before 1.0, or pi-aaaav before its rename) leaves settings like a displaced pi-herdr-agents root;
     # so does a straw-boss checkout from before Straw Boss moved to the pi-straw-boss npm package.
-    sources = {"aaaav": aaaav_source()}
-    state["latest_displaced"] = [old for old in dict.fromkeys([*state.get("latest_displaced", []), state.pop("straw_boss", None),
+    sources = {"anchorloop": anchorloop_source()}
+    state["latest_displaced"] = [old for old in dict.fromkeys([*state.get("latest_displaced", []), state.pop("straw_boss", None), state.pop("aaaav", None),
                                  *(state.get(key) for key in sources)]) if old and old not in sources.values()]
     state.update(sources)
     # pi identifies an npm package by name but a local one by path, so whichever form the other mode used must leave settings.
@@ -215,7 +215,7 @@ def apply(ctx: Context) -> None:
         for package in read_json(settings_path).get("packages", []):
             if package_id(package, agent_dir) in retired_ids:
                 external.run(["pi", "remove", package_source(package)], home)
-        external.run(["pi", "install", state["aaaav"]], home)
+        external.run(["pi", "install", state["anchorloop"]], home)
         resources.install_ported_resources(home, state, ctx.force)
         ctx.save()
         external.run(["pi", "install", LOCAL_PACKAGE], home)

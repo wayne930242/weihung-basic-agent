@@ -32,7 +32,9 @@ RETIRED_SOURCES = ("npm:@victor-software-house/pi-curated-themes", "npm:pi-secre
                    # It kept a full gzip copy of the session on every checkpoint with no retention: 192 GB in a month.
                    "npm:@moyai/pi-session-hoarder",
                    # aaaav before 1.0 was installed from git; a machine whose state never recorded that install still sheds it.
-                   "git:github.com/wayne930242/aaaav")
+                   "git:github.com/wayne930242/aaaav",
+                   # pi-aaaav was renamed pi-anchorloop at 2.0.0.
+                   "npm:pi-aaaav")
 # pi-code loads only claude-rules.ts, which reads each project's .claude/rules as Claude Code does;
 # its other extensions duplicate the todo, MCP, subagent, and web packages below.
 CLAUDE_RULES_PACKAGE = {"source": CLAUDE_RULES_SOURCE, "extensions": ["extensions/claude-rules.ts"]}
@@ -80,5 +82,5 @@ HERDR_PLUGINS = (
 PLAYWRITER = "playwriter@0.8.0"
 # thesis-toolkit launches the research-hub MCP server (literature search, open-access download, bibliography saves).
 THESIS_TOOLKIT = "thesis-toolkit@0.1.3"
-# aaaav, the workflow skills and extensions; PI_AAAAV_ROOT swaps in a checkout for testing.
-AAAAV_PACKAGE = "npm:pi-aaaav@1.3.4"
+# anchorloop, the workflow skills and extensions; PI_ANCHORLOOP_ROOT swaps in a checkout for testing.
+ANCHORLOOP_PACKAGE = "npm:pi-anchorloop@2.0.0"

@@ -1,4 +1,4 @@
-"""A fresh machine has neither an aaaav checkout nor the optional plugins an overlay declares."""
+"""A fresh machine has neither an anchorloop checkout nor the optional plugins an overlay declares."""
 
 import json
 import os
@@ -8,7 +8,7 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-AAAAV_PACKAGE = "npm:pi-aaaav@1.3.4"
+ANCHORLOOP_PACKAGE = "npm:pi-anchorloop@2.0.0"
 PINS = (ROOT / "scripts/pi_root/pins.py").read_text()
 
 
@@ -102,8 +102,8 @@ esac
     assert "alpha" in result.stderr and "skipped" in result.stderr, result.stderr
     assert not (agent / "alpha.json").exists()
     assert "beta not found" in result.stderr, result.stderr
-    assert f"install {AAAAV_PACKAGE}" in calls.read_text().splitlines()
-    assert AAAAV_PACKAGE in json.loads((agent / "settings.json").read_text())["packages"]
+    assert f"install {ANCHORLOOP_PACKAGE}" in calls.read_text().splitlines()
+    assert ANCHORLOOP_PACKAGE in json.loads((agent / "settings.json").read_text())["packages"]
     assert f"install {STRAW_BOSS}" in calls.read_text().splitlines()
     assert STRAW_BOSS in json.loads((agent / "settings.json").read_text())["packages"]
     assert "install -g playwriter@0.8.0" in npm_calls.read_text().splitlines()
@@ -134,7 +134,7 @@ esac
     result = run("uninstall.sh", home, env)
     assert f"could not run pi remove for {plugin.resolve()}" in result.stderr, result.stderr
     assert "uninstall -g playwriter" in npm_calls.read_text().splitlines()
-    assert f"remove {AAAAV_PACKAGE}" in calls.read_text().splitlines()
+    assert f"remove {ANCHORLOOP_PACKAGE}" in calls.read_text().splitlines()
     assert f"remove {STRAW_BOSS}" in calls.read_text().splitlines()
 
     # herdr web ui is retired: an earlier install that added the plugin removes it once, one the user had stays.

@@ -12,13 +12,13 @@ The user is gone until morning: finish the last round on your own, then put the 
    `cli=~/.pi/agent/npm/node_modules/pi-intercom/cli.mjs; node $cli list --json | jq -r --arg me "$PI_SESSION_ID" '.sessions[] | select(.id != $me) | .id' | while read -r id; do node $cli send --to "$id" --text "<message>"; done`
    Ask them to reach a safe stopping point and keep user decisions for the morning.
 3. **Set a safety deadline** with a one-shot `LoopCreate` (about two hours) that pushes what is verified and sleeps the Mac, so a stuck worker cannot keep it awake all night.
-4. **Finish the round without the user** through the `aaaav` autonomous-run playbook, with no `ask_user_question`, `robot_hand`, or `secret_drop`. Work that still cannot be verified stays on its local branch and goes into the daily log. Push only what the mandate covers; work the deadline cuts short ends through the `pause` playbook.
+4. **Finish the round without the user** through the `anchorloop` autonomous-run playbook, with no `ask_user_question`, `robot_hand`, or `secret_drop`. Work that still cannot be verified stays on its local branch and goes into the daily log. Push only what the mandate covers; work the deadline cuts short ends through the `pause` playbook.
 5. **Sleep**: broadcast that the Mac is going to sleep, wait up to five minutes for a session that must stop something first, delete the deadline loop, stop any `caffeinate` you started, then run `pmset sleepnow`.
 
 **Complete when:** the mandate is done or logged as left over, and the Mac is asleep, unless the user said not to sleep it.
 
 ## Waking up
 
-1. **Wake the other sessions** with the same broadcast: the user is back, so resume interrupted work through the `aaaav` pickup playbook, recheck monitors and services the sleep paused, and bring held decisions to the user.
+1. **Wake the other sessions** with the same broadcast: the user is back, so resume interrupted work through the `anchorloop` pickup playbook, recheck monitors and services the sleep paused, and bring held decisions to the user.
 2. **Present the morning list** from the daily log: what landed, what is left over, and what needs the user.
 3. **Hand over cleanup** the tools refused (worktrees, panes, processes) as one command through `robot_hand`, after confirming each target is pushed or no longer needed.

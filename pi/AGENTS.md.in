@@ -6,7 +6,7 @@ Communicate with the user in the user's language. Write prompts and agent instru
 
 ## Work
 
-Before significant work, choose one owner: the exact specialized or project skill for its task, otherwise the aaaav entry skill whose description matches it, which names its playbook.
+Before significant work, choose one owner: the exact specialized or project skill for its task, otherwise the anchorloop entry skill whose description matches it, which names its playbook.
 
 Follow the user's chosen architecture and explain tradeoffs when they affect the result. Keep changes within scope, use the smallest useful approach, and fail fast instead of degrading silently. Clean up only changes made by this work. Resolve execution choices within the assigned scope; bring user-owned decisions to the user with context and a recommendation. Ask the user every question through `ask_user_question`, never as plain chat text, and gather related pending questions into one round.
 

@@ -30,11 +30,25 @@ class PackageTests(unittest.TestCase):
             agent.mkdir(parents=True)
             (agent / "settings.json").write_text(json.dumps({"packages": [earlier]}))
             (agent / ".weihung-agent-root.json").write_text(json.dumps({"aaaav": earlier}))
-            unset = {key: value for key, value in os.environ.items() if key != "PI_AAAAV_ROOT"}
+            unset = {key: value for key, value in os.environ.items() if key != "PI_ANCHORLOOP_ROOT"}
             with mock.patch.dict("os.environ", unset, clear=True):
                 run_script("install.sh", home, "--skip-external")
             installed = json.loads((agent / "settings.json").read_text())["packages"]
-            self.assertEqual([item for item in installed if "aaaav" in item], ["npm:pi-aaaav@1.3.4"])
+            self.assertEqual([item for item in installed if "aaaav" in item or "anchorloop" in item], ["npm:pi-anchorloop@2.0.0"])
+
+    def test_the_pi_aaaav_package_gives_way_to_pi_anchorloop(self):
+        earlier = "npm:pi-aaaav@1.3.4"
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            agent = home / ".pi/agent"
+            agent.mkdir(parents=True)
+            (agent / "settings.json").write_text(json.dumps({"packages": [earlier]}))
+            (agent / ".weihung-agent-root.json").write_text(json.dumps({"aaaav": earlier}))
+            unset = {key: value for key, value in os.environ.items() if key != "PI_ANCHORLOOP_ROOT"}
+            with mock.patch.dict("os.environ", unset, clear=True):
+                run_script("install.sh", home, "--skip-external")
+            installed = json.loads((agent / "settings.json").read_text())["packages"]
+            self.assertEqual([item for item in installed if "aaaav" in item or "anchorloop" in item], ["npm:pi-anchorloop@2.0.0"])
 
     def test_an_aaaav_git_install_the_state_never_recorded_is_removed_too(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -43,11 +57,11 @@ class PackageTests(unittest.TestCase):
             agent.mkdir(parents=True)
             (agent / "settings.json").write_text(json.dumps({"packages": ["git:github.com/wayne930242/aaaav"]}))
             (agent / ".weihung-agent-root.json").write_text(json.dumps({"retired_packages": []}))
-            unset = {key: value for key, value in os.environ.items() if key != "PI_AAAAV_ROOT"}
+            unset = {key: value for key, value in os.environ.items() if key != "PI_ANCHORLOOP_ROOT"}
             with mock.patch.dict("os.environ", unset, clear=True):
                 run_script("install.sh", home, "--skip-external")
             installed = json.loads((agent / "settings.json").read_text())["packages"]
-            self.assertEqual([item for item in installed if "aaaav" in item], ["npm:pi-aaaav@1.3.4"])
+            self.assertEqual([item for item in installed if "aaaav" in item or "anchorloop" in item], ["npm:pi-anchorloop@2.0.0"])
 
     def test_session_hoarder_leaves_a_machine_that_already_installed_it(self):
         hoarder = "npm:@moyai/pi-session-hoarder@0.2.0"
@@ -78,33 +92,33 @@ class PackageTests(unittest.TestCase):
     def test_a_root_variable_swaps_the_latest_commit_for_a_checkout(self):
         with tempfile.TemporaryDirectory() as directory:
             checkout = Path(directory)
-            with mock.patch.dict("os.environ", {"PI_AAAAV_ROOT": str(checkout)}):
+            with mock.patch.dict("os.environ", {"PI_ANCHORLOOP_ROOT": str(checkout)}):
                 with self.assertRaisesRegex(ValueError, "has no package.json"):
-                    packages.aaaav_source()
+                    packages.anchorloop_source()
                 (checkout / "package.json").write_text("{}")
-                self.assertEqual(packages.aaaav_source(), str(checkout.resolve()))
-        unset = {key: value for key, value in os.environ.items() if key != "PI_AAAAV_ROOT"}
+                self.assertEqual(packages.anchorloop_source(), str(checkout.resolve()))
+        unset = {key: value for key, value in os.environ.items() if key != "PI_ANCHORLOOP_ROOT"}
         with mock.patch.dict("os.environ", unset, clear=True):
-            self.assertEqual(packages.aaaav_source(), "npm:pi-aaaav@1.3.4")
+            self.assertEqual(packages.anchorloop_source(), "npm:pi-anchorloop@2.0.0")
 
     def test_leaving_a_checkout_override_removes_the_checkout(self):
         with tempfile.TemporaryDirectory() as directory:
             home = Path(directory) / "home"
-            checkout = Path(directory) / "aaaav"
+            checkout = Path(directory) / "anchorloop"
             checkout.mkdir()
             (checkout / "package.json").write_text("{}")
             agent = home / ".pi/agent"
             agent.mkdir(parents=True)
             (agent / "settings.json").write_text("{}")
-            run_script("install.sh", home, "--skip-external", env={"PI_AAAAV_ROOT": str(checkout)})
+            run_script("install.sh", home, "--skip-external", env={"PI_ANCHORLOOP_ROOT": str(checkout)})
             first = json.loads((agent / "settings.json").read_text())["packages"]
-            self.assertNotIn("npm:pi-aaaav@1.3.4", first)
-            self.assertTrue(any("aaaav" in item for item in first), first)
-            unset = {key: value for key, value in os.environ.items() if key != "PI_AAAAV_ROOT"}
+            self.assertNotIn("npm:pi-anchorloop@2.0.0", first)
+            self.assertTrue(any("anchorloop" in item for item in first), first)
+            unset = {key: value for key, value in os.environ.items() if key != "PI_ANCHORLOOP_ROOT"}
             with mock.patch.dict("os.environ", unset, clear=True):
                 run_script("install.sh", home, "--skip-external")
             second = json.loads((agent / "settings.json").read_text())["packages"]
-            self.assertEqual([item for item in second if "aaaav" in item], ["npm:pi-aaaav@1.3.4"])
+            self.assertEqual([item for item in second if "anchorloop" in item], ["npm:pi-anchorloop@2.0.0"])
 
     def test_retired_theme_package_is_replaced_and_restored(self):
         old = {"source": "npm:@victor-software-house/pi-curated-themes@0.2.1", "themes": ["themes/catppuccin-mocha.json"], "skills": []}
