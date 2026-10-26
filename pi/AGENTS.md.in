@@ -42,8 +42,6 @@ Use LSP navigation (`read_symbol`, `read_enclosing`) for symbols and `lens_diagn
 
 In a large project, search code through the `codebase-memory-mcp` server behind `mcp` before grepping: index the repository once, then use its graph search and call-path tools to find symbols, callers, and routes.
 
-Find MCP tools with `mcp({ search, searchMode: "semantic" })`, which ranks them by meaning; lexical search matches only words in tool names and descriptions.
-
 ## Memory
 
 Save cross-project facts to `global` memory and only conventions the repository ships to `project`. Rules for every project go through `reflecting-to-root`, not memory.
