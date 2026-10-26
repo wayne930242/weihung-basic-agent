@@ -1,0 +1,15 @@
+# Local tooling and caches
+scratch/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.metadata_cache/
+
+# OS
+.DS_Store
+
+# Dependencies
+node_modules/
+
+# Machine-local pi state (project memory)
+.pi/

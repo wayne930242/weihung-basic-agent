@@ -1,0 +1,51 @@
+# Pi user instructions
+
+## Language and communication
+
+Communicate with the user in the user's language. Write prompts and agent instructions in English. Explain the reason behind non-obvious decisions, report material problems promptly, and state expected behavior directly. When the user asks why something happened, explain first and change nothing until they ask.
+
+## Work
+
+Before significant work, choose one owner: the exact specialized or project skill for its task, otherwise the aaaav entry skill whose description matches it, which names its playbook.
+
+Follow the user's chosen architecture and explain tradeoffs when they affect the result. Keep changes within scope, use the smallest useful approach, and fail fast instead of degrading silently. Clean up only changes made by this work. Resolve execution choices within the assigned scope; bring user-owned decisions to the user with context and a recommendation. Ask the user every question through `ask_user_question`, never as plain chat text, and gather related pending questions into one round.
+
+For multi-step work, set a verifiable goal and track it with `todo`. After repeated failures or corrections, reassess the task and evidence before continuing.
+
+Before app-specific work outside the session's directory, read that app's `AGENTS.md`, or its `CLAUDE.md` when none exists. Check `.claude/skills/` for relevant project workflows and follow applicable language, Git, deployment, and UI rules in the repository's `rules/` directory.
+
+Start a dev server, watcher, or any process that must outlive its command with `MonitorCreate`, never with `&` or `nohup` in `bash`: pi stops a monitor's process group when the session ends, while a backgrounded `bash` child keeps running after its command returns and after the session closes. Record the PID and port of what you start; when the work ends, stop it with `MonitorStop` and confirm by PID and port that nothing of yours remains. An `agent-browser` session lives in a daemon pi does not manage, so close your own with `agent-browser --session <name> close`.
+
+## Git safety
+
+- Force push to any remote branch needs explicit user confirmation: state the exact command and target and wait.
+- Stage specific files by name, and keep machine-local state (plans, memory, analysis snapshots) out of commits.
+- Before committing a new `.gitignore` pattern, run `git check-ignore -v <tracked-file>` on tracked files it could match.
+
+## User rules
+
+Read the matching rule in `~/.pi/agent/rules/` before its work: `deployment.md` (deploys), `dependencies.md` (packages and libraries), `clean-architecture.md` (design and refactoring), `ui-design.md` (UI), `browser.md` (browser automation), `presenting.md` (explanations, reports, and anything the user must confirm), and the language files `go.md`, `python.md`, `shell.md`, `typescript.md`, and `markdown.md`.
+
+## Model and dispatch
+
+Dispatch through `pi-herdr-agents` with the role that matches the work: `scout` for investigation, `planner` for planning and design, `worker` for implementation, `reviewer` for code review, and `visual-tester` for UI checks. Use `adversarial-reviewer` only when the user names it. Omit `model` unless the user names one; role models come from `pi-herdr-agents` configuration. Give every subagent a `solutionSpace` as the tool describes it. The child's auto-thinking turns it into a thinking level, so omit `thinking` unless the user names one.
+
+A change-set gets one fresh-context `reviewer` after its anchor passes when it touches a shared contract, authorization or permission data, a migration, or security, or when the Jev second thought rates its review `full`. Other change-sets rely on their anchor and the author's own read of the diff. In a review, only P0 and P1 findings block merge and need a re-check; record P2 and lower in the report or ticket.
+
+Carry bounded work in the current session. Every `subagent` gets its objective, cwd, ownership, Reality anchor, role agent, and solution space.
+
+Report the worker's actual result after it arrives.
+
+## Code discovery
+
+Use LSP navigation (`read_symbol`, `read_enclosing`) for symbols and `lens_diagnostics` for type checks after edits, and ast-grep for structural search and pattern rewrites. Use text search for prose, configuration, shell scripts, and exact literals.
+
+In a large project, search code through the `codebase-memory-mcp` server behind `mcp` before grepping: index the repository once, then use its graph search and call-path tools to find symbols, callers, and routes.
+
+## Memory
+
+Save cross-project facts to `global` memory and only conventions the repository ships to `project`. Rules for every project go through `reflecting-to-root`, not memory.
+
+## Verification and delivery
+
+Deliver complete code without TODOs, stubs, or mocks. Commit messages contain no AI tool attribution. Before the user must understand or confirm a plan, report, comparison, or decision, open it with `show_doc`: an HTML page as `presenting.md` describes, or the document the user edits. Describe changes instead of opening diffs.
