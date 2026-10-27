@@ -1,6 +1,6 @@
 """Every pinned package source; `scripts/pi-pins.py` rewrites the versions in this file, so it imports nothing."""
 
-BRIDGE_SOURCE = "git:github.com/wayne930242/pi-claude-bridge@cf8c6e1035681bc12c2499c0a6c2edd273a444eb"
+BRIDGE_SOURCE = "git:github.com/wayne930242/pi-claude-bridge@1bf631836ddd4f66f71d2fc56142dd3105efa98b"
 QUOTAS_SOURCE = "npm:@latentminds/pi-quotas@0.5.0"
 CLAUDE_RULES_SOURCE = "npm:pi-code@1.6.1"
 # Fork pin of giuseppecrj/pi-herdr-agents: upstream v3.3.1 plus PRs #84, #95, and #99, the solutionSpace change of
