@@ -4,6 +4,7 @@ The user does not read code diffs; describe a change instead.
 
 When an answer has several parts, compares options, or needs the user's confirmation, write one Markdown page at `/tmp/<task>-<topic>.md` and open it with `show_doc` and `view: "page"`; the chat then gives the conclusion in a line or two.
 The page renders in the user's default browser with a built-in style, so write plain Markdown and no CSS or scripts. Use what `show_doc`'s description lists: GitHub alerts for callouts, `mermaid` blocks for diagrams, `diff` blocks for code changes, and `cards`, `options`, and `form` blocks of YAML. Draw a diagram instead of describing a flow in prose.
+The views the `answering` skill names (trees, pseudocode, interaction lines, tables) go on that page, and an options-by-criteria table becomes an `options` block.
 Put the conclusion first.
 
 Decisions the user must make go on a comparison page: one section per decision, its options side by side in an `options` block with what each costs and changes (`pros`, `cons`), the recommended one marked, and the evidence that tells them apart (screenshots, contact sheets, numbers), copied next to the page, since the page loads nothing from above its directory or from other sites.
