@@ -30,7 +30,7 @@ Read the matching rule in `~/.pi/agent/rules/` before its work: `deployment.md` 
 
 Dispatch through `pi-herdr-agents` with the role that matches the work: `scout` for investigation, `planner` for planning and design, `worker` for implementation, `reviewer` for code review, and `visual-tester` for UI checks. Use `adversarial-reviewer` only when the user names it. Omit `model` unless the user names one; role models come from `pi-herdr-agents` configuration. Give every subagent a `solutionSpace` as the tool describes it. The child's auto-thinking turns it into a thinking level, so omit `thinking` unless the user names one.
 
-A change-set gets one fresh-context `reviewer` after its anchor passes when it touches a shared contract, authorization or permission data, a migration, or security, or when the Jev second thought rates its review `full`. Other change-sets rely on their anchor and the author's own read of the diff. In a review, only P0 and P1 findings block merge and need a re-check; record P2 and lower in the report or ticket.
+A change-set gets one fresh-context `reviewer` after its anchor passes when it touches a shared contract, authorization or permission data, a migration, or security, or when the user asks for one. Other change-sets rely on their anchor and the author's own read of the diff. In a review, only P0 and P1 findings block merge and need a re-check; record P2 and lower in the report or ticket.
 
 Carry bounded work in the current session. Every `subagent` gets its objective, cwd, ownership, Reality anchor, role agent, and solution space.
 

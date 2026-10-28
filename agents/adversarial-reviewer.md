@@ -145,7 +145,9 @@ findings yourself. Otherwise return actionable findings first, then coverage,
 the wave/runtime matrix and provenance, and uncertainties. State explicitly
 when no actionable findings remain. Include the fresh synthesis report,
 anonymous provenance map, catalog source and omissions, topology reductions or
-runtime reuse, exact scope, drift check, and coverage status.
+runtime reuse, exact scope, drift check, and coverage status. End the report
+with the line `Blocking: P0=<n> P1=<m>`, counting P0 and P1 findings that are
+not `rejected`; tooling parses it.
 
 In the same assistant turn, emit the final report text and call
 `subagent_done`; the text must accompany the tool call so it is the delivered

@@ -114,7 +114,11 @@ one. Otherwise use the template below. Write it by the `agent-terse` skill: the 
 
 - <evidence inspected and commands consumed or run>
 - <missing, unsafe, failed, or truncated evidence>
+
+Blocking: P0=<n> P1=<m>
 ```
+
+The last line counts P0 and P1 findings that are not `rejected`; tooling parses it.
 
 `COMPLETE` means the assigned scope and required evidence were inspected; it
 does not mean the code is defect-free. Use `INCOMPLETE` when drift, missing or
