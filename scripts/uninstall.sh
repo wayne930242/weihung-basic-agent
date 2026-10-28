@@ -4,6 +4,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+# shellcheck source=scripts/python.sh
+source "$SCRIPT_DIR/python.sh"
 SKILLS_DIR="$REPO_ROOT/skills"
 
 TARGET_HOME="${HOME}"
@@ -121,14 +123,14 @@ done
 
 OVERLAY_ROOT="${OVERLAY_ROOT:-${WEIHUNG_OVERLAY:-}}"
 # No overlay given: remove the one the install recorded, even if its checkout is gone.
-OVERLAY_ROOT="${OVERLAY_ROOT:-$(python3 "$REPO_ROOT/scripts/pi-target.py" saved-overlay --home "$TARGET_HOME")}"
+OVERLAY_ROOT="${OVERLAY_ROOT:-$("$PYTHON" "$REPO_ROOT/scripts/pi-target.py" saved-overlay --home "$TARGET_HOME")}"
 if [[ -n "$OVERLAY_ROOT" ]]; then
   if [[ -d "$OVERLAY_ROOT" ]]; then OVERLAY_ROOT="$(cd -- "$OVERLAY_ROOT" && pwd -P)"; fi
   export WEIHUNG_OVERLAY="$OVERLAY_ROOT"
 fi
 
 # State and links from the repository's former name move first; the steps below use the new name.
-python3 "$REPO_ROOT/scripts/pi-target.py" migrate --home "$TARGET_HOME"
+"$PYTHON" "$REPO_ROOT/scripts/pi-target.py" migrate --home "$TARGET_HOME"
 
 while IFS= read -r skill_dir; do
   restore_or_remove "$TARGET_HOME/.agents/skills/$(basename "$skill_dir")"
@@ -148,7 +150,7 @@ fi
 
 pi_args=(uninstall --home "$TARGET_HOME")
 if [[ "$SKIP_EXTERNAL" -eq 1 ]]; then pi_args+=(--skip-external); fi
-python3 "$REPO_ROOT/scripts/pi-target.py" "${pi_args[@]}"
+"$PYTHON" "$REPO_ROOT/scripts/pi-target.py" "${pi_args[@]}"
 
 rmdir "$TARGET_HOME/.agents/skills" "$TARGET_HOME/.agents" 2>/dev/null || true
 

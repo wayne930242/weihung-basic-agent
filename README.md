@@ -4,7 +4,7 @@ A user-root setup for [pi](https://www.npmjs.com/package/@earendil-works/pi-codi
 
 ## Install
 
-Prerequisites: Node.js with npm, Python 3, Git, [Herdr](https://herdr.dev), and Claude Code logged in (Claude models reach pi through `pi-claude-bridge`, which uses its login).
+Prerequisites: Node.js with npm, Python 3.10 or newer (the installers find `python3.14` down to `python3.10` when `python3` is older, as macOS's own is; `WEIHUNG_PYTHON` names one), Git, [Herdr](https://herdr.dev), and Claude Code logged in (Claude models reach pi through `pi-claude-bridge`, which uses its login).
 
 ```bash
 git clone https://github.com/wayne930242/weihung-basic-agent ~/projects/weihung-basic-agent
@@ -80,7 +80,7 @@ An overlay adds; it does not replace. A skill name that exists in both repositor
 ```bash
 bash tests/install.sh
 bash tests/uninstall.sh
-for test in tests/pi_*.py; do python3 "$test"; done   # tests/pi_fresh_machine.py is slow
+for test in tests/pi_*.py; do python3.14 "$test"; done   # tests/pi_fresh_machine.py is slow
 for test in tests/*.mjs; do node --experimental-strip-types --test "$test"; done
 ```
 

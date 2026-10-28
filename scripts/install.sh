@@ -4,6 +4,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+# shellcheck source=scripts/python.sh
+source "$SCRIPT_DIR/python.sh"
 SKILLS_DIR="$REPO_ROOT/skills"
 RULES_DIR="$REPO_ROOT/rules"
 AGENTS_DIR="$REPO_ROOT/agents"
@@ -217,7 +219,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-SAVED_OVERLAY="$(python3 "$REPO_ROOT/scripts/pi-target.py" saved-overlay --home "$TARGET_HOME")"
+SAVED_OVERLAY="$("$PYTHON" "$REPO_ROOT/scripts/pi-target.py" saved-overlay --home "$TARGET_HOME")"
 if [[ "$NO_OVERLAY" -eq 1 ]]; then
   [[ -z "$OVERLAY_ROOT" ]] || fail "--overlay and --no-overlay cannot be combined"
   unset WEIHUNG_OVERLAY
@@ -233,7 +235,7 @@ if [[ -n "$OVERLAY_ROOT" ]]; then
 fi
 
 # State and links from the repository's former name move first; the steps below use the new name.
-python3 "$REPO_ROOT/scripts/pi-target.py" migrate --home "$TARGET_HOME"
+"$PYTHON" "$REPO_ROOT/scripts/pi-target.py" migrate --home "$TARGET_HOME"
 
 mkdir -p "$TARGET_HOME/.agents/skills"
 
@@ -267,6 +269,6 @@ pi_args=(install --home "$TARGET_HOME")
 if [[ "$NO_OVERLAY" -eq 1 ]]; then pi_args+=(--no-overlay); fi
 if [[ "$SKIP_EXTERNAL" -eq 1 ]]; then pi_args+=(--skip-external); fi
 if [[ "$FORCE" -eq 1 ]]; then pi_args+=(--force); fi
-python3 "$REPO_ROOT/scripts/pi-target.py" "${pi_args[@]}"
+"$PYTHON" "$REPO_ROOT/scripts/pi-target.py" "${pi_args[@]}"
 
 log "Install complete."

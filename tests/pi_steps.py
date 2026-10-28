@@ -81,7 +81,7 @@ class StepTests(unittest.TestCase):
             for name in ("npm", "herdr", "pi"):
                 script = bin_dir / name
                 script.write_text("#!/bin/sh\n[ -e \"$HOME/fail-once\" ] && { rm \"$HOME/fail-once\"; exit 4; }\n"
-                                  + (f"exec python3 {FAKE_NPM} \"$@\"\n" if name == "npm" else "exit 0\n"))
+                                  + (f"exec {sys.executable} {FAKE_NPM} \"$@\"\n" if name == "npm" else "exit 0\n"))
                 script.chmod(0o755)
             (home / "fail-once").write_text("")
             pi_skills = home / "pi-skills-fixture"
@@ -91,7 +91,7 @@ class StepTests(unittest.TestCase):
             subprocess.run(["git", "-C", str(pi_skills), "add", "."], check=True)
             subprocess.run(["git", "-C", str(pi_skills), "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "fixture"], check=True)
             env = {"PATH": str(bin_dir) + os.pathsep + os.environ["PATH"], "PI_SKILLS_GIT": str(pi_skills)}
-            command = ["python3", str(PI_TARGET), "install", "--home", str(home)]
+            command = [sys.executable, str(PI_TARGET), "install", "--home", str(home)]
             failed = subprocess.run(command, env={**os.environ, "HOME": str(home), **env},
                                     text=True, capture_output=True, check=False)
             self.assertNotEqual(failed.returncode, 0)
