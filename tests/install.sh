@@ -128,7 +128,7 @@ with tempfile.TemporaryDirectory() as directory:
     lens = json.loads((home / ".pi-lens/config.json").read_text())
     assert lens == {"tools": {name: {"enabled": False} for name in ("project_report", "symbol_search", "module_report")}}, lens
     open_tui = json.loads((home / ".pi/agent/open-tui.json").read_text())
-    assert open_tui == {"footerSegments": {"runtime": False, "cost": False, "extensionStatuses": False}}, open_tui
+    assert open_tui == {"footerSegments": {"runtime": False, "cost": False}}, open_tui
     config = json.loads((home / ".pi/agent/herdr-agents/config.json").read_text())
     repo_models = json.loads((Path(install).resolve().parents[1] / "pi/herdr-agents-models.json").read_text())
     assert config == {"status": {"enabled": True}, "panes": {"mode": "split", "direction": "right"}, "models": repo_models}, config
@@ -255,7 +255,7 @@ with tempfile.TemporaryDirectory() as directory:
     assert installed_mcp["settings"]["namespaceProxyTools"] is False, installed_mcp
     assert json.loads(lens_path.read_text())["tools"]["symbol_search"] == {"enabled": False}
     installed_open_tui = json.loads(open_tui_path.read_text())
-    assert installed_open_tui == {"cursorStyle": "bar", "footerSegments": {"cwd": True, "cost": False, "runtime": False, "extensionStatuses": False}}, installed_open_tui
+    assert installed_open_tui == {"cursorStyle": "bar", "footerSegments": {"cwd": True, "cost": False, "runtime": False}}, installed_open_tui
     repo_models = json.loads((Path(install).resolve().parents[1] / "pi/herdr-agents-models.json").read_text())
     assert json.loads(config.read_text())["models"] == repo_models, "--force replaces the user's herdr-agents models"
     assert json.loads((agent / "settings.json").read_text())["enabledModels"] == ["user/model"], "pi's model settings are the user's"

@@ -37,7 +37,7 @@ LENS_DISABLED_TOOLS = ("project_report", "symbol_search", "module_report")
 # file, `status` is required, so a fresh machine gets the example's value (the other example sections have defaults).
 HERDR_STATUS = {"enabled": True}
 # pi-open-tui footer segments kept off to keep the footer to what gets read; `/open-tui` still owns every other setting.
-OPEN_TUI_HIDDEN_SEGMENTS = ("runtime", "cost", "extensionStatuses")
+OPEN_TUI_HIDDEN_SEGMENTS = ("runtime", "cost")
 # pi-computer-use stays in the background: no raw input, focus change, or cursor takeover, so it never fights the user
 # for the machine; `/computer-use` shows the active config, and a project .pi/computer-use.json can still override it.
 COMPUTER_USE_SETTINGS = {"headless": True}
