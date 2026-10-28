@@ -102,7 +102,7 @@ with tempfile.TemporaryDirectory() as directory:
     registry = [source.removeprefix("npm:") for source in sources if source.startswith("npm:")]
     assert registry and all("@" in name[1:] for name in registry), registry
     assert {"source": "npm:@sherif-fanous/pi-catppuccin@0.3.0", "themes": ["themes/catppuccin-mocha.json"]} in settings["packages"], settings
-    assert "npm:@juicesharp/rpiv-todo@2.15.0" in sources and "npm:cc-safety-net@2.6.19" in sources, sources
+    assert "npm:@juicesharp/rpiv-todo@2.15.0" in sources and "npm:cc-safety-net@2.7.0" in sources, sources
     assert "npm:pi-codex-image-gen@0.2.0" in sources and not any("pi-web-access" in source for source in sources), sources
     assert "npm:pi-robot-hand@0.3.2" in sources and not any("pi-secret-drop" in source for source in sources), sources
     assert not any("pi-phoenix-otel" in source for source in sources), sources
@@ -248,7 +248,7 @@ with tempfile.TemporaryDirectory() as directory:
     installed_packages = json.loads((agent / "settings.json").read_text())["packages"]
     assert "git:github.com/wayne930242/pi-claude-bridge@old-commit" not in installed_packages, "an earlier revision of a git pin is retired"
     assert BRIDGE_SOURCE in installed_packages, installed_packages
-    assert [package for package in installed_packages if "pi-lens" in str(package)] == ["npm:pi-lens@4.4.5"], installed_packages
+    assert [package for package in installed_packages if "pi-lens" in str(package)] == ["npm:pi-lens@4.4.6"], installed_packages
     assert json.loads((agent / "mcp.json").read_text()) == pi_mcp, "pi's mcp.json stays untouched"
     installed_mcp = json.loads((agent / "mcp-adapter.json").read_text())
     assert installed_mcp["mcpServers"]["codebase-memory-mcp"] == {"command": str(home.resolve() / ".local/bin/codebase-memory-mcp")}, installed_mcp
