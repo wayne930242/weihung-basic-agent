@@ -44,6 +44,37 @@ class OverlayTests(unittest.TestCase):
             self.assertFalse((home / ".pi/agent/AGENTS.md").exists())
             self.assertFalse((home / ".agents/skills/going-to-sleep").exists())
 
+    def test_overlay_model_providers_merge_into_models_json_and_restore(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            home = base / "home"
+            overlay = make_overlay(base)
+            mine = {"baseUrl": "https://example.test/v1", "api": "openai-completions", "models": [{"id": "m"}]}
+            (overlay / "pi/models.json").write_text(json.dumps({"providers": {"mine": mine}}))
+            models = home / ".pi/agent/models.json"
+            models.parent.mkdir(parents=True)
+            user = {"baseUrl": "http://localhost:11434/v1", "api": "openai-completions", "models": [{"id": "x"}]}
+            models.write_text(json.dumps({"providers": {"ollama": user}}))
+            env = {"WEIHUNG_OVERLAY": ""}
+            run_script("install.sh", home, "--skip-external", "--overlay", str(overlay), env=env)
+            self.assertEqual(json.loads(models.read_text())["providers"], {"ollama": user, "mine": mine})
+            run_script("install.sh", home, "--skip-external", "--overlay", str(overlay), env=env)
+            # A hand edit of a managed provider stops the next install.
+            edited = json.loads(models.read_text())
+            edited["providers"]["mine"]["baseUrl"] = "https://elsewhere.test/v1"
+            models.write_text(json.dumps(edited))
+            with self.assertRaises(Exception):
+                run_script("install.sh", home, "--skip-external", "--overlay", str(overlay), env=env)
+            models.write_text(json.dumps({"providers": {"ollama": user, "mine": mine}}))
+            # Dropping the provider from the overlay removes it; the user's provider stays.
+            (overlay / "pi/models.json").write_text(json.dumps({"providers": {}}))
+            run_script("install.sh", home, "--skip-external", "--overlay", str(overlay), env=env)
+            self.assertEqual(json.loads(models.read_text())["providers"], {"ollama": user})
+            (overlay / "pi/models.json").write_text(json.dumps({"providers": {"mine": mine}}))
+            run_script("install.sh", home, "--skip-external", "--overlay", str(overlay), env=env)
+            run_script("uninstall.sh", home, "--skip-external", "--overlay", str(overlay), env=env)
+            self.assertEqual(json.loads(models.read_text())["providers"], {"ollama": user})
+
     def test_a_later_run_without_an_overlay_keeps_the_recorded_one(self):
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory)

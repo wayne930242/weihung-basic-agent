@@ -7,7 +7,7 @@ from pathlib import Path
 from .context import Context, State
 from .jsonfile import read_json, write_json
 from .managed import record_keys, remember_keys, restore_keys, restore_nested, restore_value
-from .paths import COMPUTER_USE_CONFIG, HERDR_MODELS, LENS_CONFIG, OPEN_TUI_CONFIG, RETIRED_ROLES_DIR
+from .paths import COMPUTER_USE_CONFIG, HERDR_MODELS, LENS_CONFIG, OPEN_TUI_CONFIG, RETIRED_ROLES_DIR, overlay_root
 from .pins import THESIS_TOOLKIT
 
 # pi's native compaction fires at contextWindow - reserveTokens: 500K for the 1M Opus and Sonnet, a
@@ -132,6 +132,55 @@ def restore_herdr_models(ctx: Context) -> None:
     config = read_json(ctx.herdr_config_path)
     restore_value(config, "models", state.get("installed_herdr_models"), state.get("previous_herdr_models"))
     write_or_remove(ctx.herdr_config_path, config)
+
+
+def overlay_model_providers() -> dict:
+    """The providers the overlay's pi/models.json declares, or none without an overlay or that file."""
+    root = overlay_root()
+    return read_json(root / "pi/models.json").get("providers", {}) if root else {}
+
+
+def apply_overlay_models(ctx: Context) -> None:
+    """Merge the overlay's model providers into ~/.pi/agent/models.json; a provider edited by hand stops the run."""
+    state = ctx.state
+    path = ctx.agent_dir / "models.json"
+    config = read_json(path)
+    providers = config.get("providers", {})
+    installed = state.get("installed_model_providers", {})
+    previous = state.setdefault("previous_model_providers", {})
+    desired = overlay_model_providers()
+    for name, value in desired.items():
+        current = providers.get(name)
+        if current not in (None, value, installed.get(name)) and not ctx.force:
+            raise ValueError(f"{path} provider `{name}` differs from the overlay's pi/models.json; move the change into "
+                             "the overlay, or rerun with --force to replace it")
+        if name not in installed:
+            previous.setdefault(name, deepcopy(current))
+        providers[name] = deepcopy(value)
+    # A provider the overlay dropped goes back to what it replaced, while it still holds what install wrote.
+    for name in set(installed) - set(desired):
+        restore_value(providers, name, installed[name], previous.pop(name, None))
+    if providers:
+        config["providers"] = providers
+    else:
+        config.pop("providers", None)
+    write_or_remove(path, config)
+    state["installed_model_providers"] = deepcopy(desired)
+
+
+def restore_overlay_models(ctx: Context) -> None:
+    state = ctx.state
+    path = ctx.agent_dir / "models.json"
+    config = read_json(path)
+    providers = config.get("providers", {})
+    previous = state.get("previous_model_providers", {})
+    for name, value in state.get("installed_model_providers", {}).items():
+        restore_value(providers, name, value, previous.get(name))
+    if providers:
+        config["providers"] = providers
+    else:
+        config.pop("providers", None)
+    write_or_remove(path, config)
 
 
 def disable_builtin_mcp(settings: dict, state: State) -> None:

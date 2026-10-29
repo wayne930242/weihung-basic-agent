@@ -26,6 +26,7 @@ STEPS = (
     Step("computer-use", configs.apply_computer_use, configs.restore_computer_use),
     Step("ui", configs.apply_ui, configs.restore_ui),
     Step("herdr-models", configs.apply_herdr_models, configs.restore_herdr_models),
+    Step("overlay-models", configs.apply_overlay_models, configs.restore_overlay_models),
     Step("compaction", configs.apply_compaction, configs.restore_compaction),
     # Last to apply and first to restore: pi packages, the tools they need, and the resources ported beside them.
     Step("packages", packages.apply, packages.restore),

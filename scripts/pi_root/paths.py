@@ -24,7 +24,8 @@ TTT_PREFIX = Path(".local/share/weihung-agent-root/team-toon-tack")
 PI_SKILLS_GIT = os.environ.get("PI_SKILLS_GIT", "https://github.com/badlogic/pi-skills.git")
 PI_SKILLS_CLONE = Path(".local/share/weihung-agent-root/pi-skills")
 # An overlay is a second checkout layered over this one: its skills/ directory is linked beside ours, its pi/AGENTS.append.md
-# is appended to the generated AGENTS.md, and its overlay.json may declare optional plugins. install.sh --overlay sets the variable.
+# is appended to the generated AGENTS.md, its pi/models.json providers are merged into ~/.pi/agent/models.json, and its
+# overlay.json may declare optional plugins. install.sh --overlay sets the variable.
 OVERLAY_VARIABLE = "WEIHUNG_OVERLAY"
 
 
