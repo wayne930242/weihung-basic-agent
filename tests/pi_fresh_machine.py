@@ -8,7 +8,7 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-ANCHORLOOP_PACKAGE = "npm:pi-anchorloop@2.2.2"
+ANCHORLOOP_PACKAGE = "npm:pi-anchorloop@2.2.3"
 PINS = (ROOT / "scripts/pi_root/pins.py").read_text()
 
 
