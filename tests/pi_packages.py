@@ -17,7 +17,7 @@ from support.pi import fake_npm_install, run_script
 class PackageTests(unittest.TestCase):
     def test_package_identity_ignores_the_npm_version(self):
         agent = Path("/unused")
-        self.assertEqual(packages.package_id("npm:pi-lens@4.4.6", agent), "npm:pi-lens")
+        self.assertEqual(packages.package_id("npm:pi-lens@4.4.7", agent), "npm:pi-lens")
         self.assertEqual(packages.package_id("npm:@scope/name@1.0.0", agent), "npm:@scope/name")
         self.assertEqual(packages.package_id("npm:@scope/name", agent), "npm:@scope/name")
         self.assertEqual(packages.package_id({"source": "npm:pi-lens", "skills": []}, agent), "npm:pi-lens")
@@ -184,7 +184,7 @@ class PackageTests(unittest.TestCase):
             run_script("install.sh", home, "--skip-external")
             upgraded = json.loads(settings.read_text())
             sources = [item["source"] if isinstance(item, dict) else item for item in upgraded["packages"]]
-            self.assertEqual([item for item in sources if "pi-lens" in item], ["npm:pi-lens@4.4.6"])
+            self.assertEqual([item for item in sources if "pi-lens" in item], ["npm:pi-lens@4.4.7"])
             self.assertEqual([item for item in sources if "pi-web-access" in item], [], "a retired package is removed")
             self.assertIs(upgraded["enableInstallTelemetry"], False)
             run_script("uninstall.sh", home, "--skip-external")

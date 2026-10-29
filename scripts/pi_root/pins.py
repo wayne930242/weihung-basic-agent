@@ -49,8 +49,8 @@ PACKAGES = [
     "npm:@juicesharp/rpiv-ask-user-question@2.15.0",
     "npm:@juicesharp/rpiv-todo@2.15.0",
     THEME_PACKAGE,
-    "npm:pi-open-tui@0.3.12",
-    "npm:pi-lens@4.4.6",
+    "npm:pi-open-tui@0.3.13",
+    "npm:pi-lens@4.4.7",
     QUOTAS_SOURCE,
     "npm:pi-jev-compaction@1.0.0",
     # prose_watch: an AI-tone check (Jev) on the prose files a writing task arms.
