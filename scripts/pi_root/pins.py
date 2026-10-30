@@ -14,10 +14,10 @@ HERDR_AGENTS_SOURCE = "git:github.com/wayne930242/pi-herdr-agents@19ba73e7f96c73
 HERDR_ROLES_SOURCE = "npm:pi-herdr-roles@0.1.0"
 HERDR_ROLES_PACKAGE = {"source": HERDR_ROLES_SOURCE, "skills": ["!orchestrate"]}
 # Fork pin of apmantza/pi-lens: upstream master 58c0c95 plus the `dispatch.disabledRunners` config key (branch
-# feat/dispatch-disabled-runners, upstream PR pending), which configs.LENS_DISABLED_RUNNERS needs to keep dotnet-build off.
+# feat/dispatch-disabled-runners, apmantza/pi-lens#5011), which configs.LENS_DISABLED_RUNNERS needs to keep dotnet-build off.
 # Once upstream releases it, return to npm:pi-lens@<version>, drop the PINNED_GIT and FORK_BRANCHES entries, and take
 # "npm:pi-lens" out of RETIRED_SOURCES.
-LENS_SOURCE = "git:github.com/wayne930242/pi-lens@2aa72ed6cb8b06a3bb9604c5af6dbd49efb8a070"
+LENS_SOURCE = "git:github.com/wayne930242/pi-lens@ed543b6a3a8adaafd7bada6933817dbb94567d2a"
 # Every other revision of a pinned git package, including an unpinned spec, is retired for the current pin.
 PINNED_GIT = {
     BRIDGE_SOURCE: ("git:github.com/wayne930242/pi-claude-bridge@",),
