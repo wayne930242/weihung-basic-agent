@@ -34,6 +34,7 @@ MANUAL_PINS = {"pi-herdr-agents", "pi-herdr-roles"}
 FORK_BRANCHES = {
     "github.com/wayne930242/pi-claude-bridge": "weihung-integration",
     "github.com/wayne930242/pi-herdr-agents": "weihung/v3-integration",
+    "github.com/wayne930242/pi-lens": "feat/dispatch-disabled-runners",
 }
 STATE_DIR = Path.home() / ".local/state/weihung-agent-root"
 STATE_FILE = STATE_DIR / "pi-autoupdate.json"

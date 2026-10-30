@@ -184,7 +184,7 @@ class PackageTests(unittest.TestCase):
             run_script("install.sh", home, "--skip-external")
             upgraded = json.loads(settings.read_text())
             sources = [item["source"] if isinstance(item, dict) else item for item in upgraded["packages"]]
-            self.assertEqual([item for item in sources if "pi-lens" in item], ["npm:pi-lens@4.4.7"])
+            self.assertEqual([item for item in sources if "pi-lens" in item], ["git:github.com/wayne930242/pi-lens@2aa72ed6cb8b06a3bb9604c5af6dbd49efb8a070"])
             self.assertEqual([item for item in sources if "pi-web-access" in item], [], "a retired package is removed")
             self.assertIs(upgraded["enableInstallTelemetry"], False)
             run_script("uninstall.sh", home, "--skip-external")
@@ -265,7 +265,7 @@ class PackageTests(unittest.TestCase):
             home = Path(directory)
             agent = home / ".pi/agent"
             (agent / "npm").mkdir(parents=True)
-            (agent / "npm/package.json").write_text(json.dumps({"dependencies": {"pi-phoenix-otel": "^0.2.0", "pi-lens": "^4.4.3"}}))
+            (agent / "npm/package.json").write_text(json.dumps({"dependencies": {"pi-phoenix-otel": "^0.2.0", "pi-intercom": "^0.18.0"}}))
             quotas = agent / "git/github.com/wayne930242/pi-quotas"
             quotas.mkdir(parents=True)
             settings = agent / "settings.json"

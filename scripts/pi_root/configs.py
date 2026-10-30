@@ -33,6 +33,9 @@ RESEARCH_HUB_SERVER = {
 BUILTIN_MCP_OFF = "-builtin:mcp"
 # These pi-lens tools stay off to keep every prompt small; `read_symbol`, `read_enclosing`, and `lens_diagnostics` cover navigation.
 LENS_DISABLED_TOOLS = ("project_report", "symbol_search", "module_report")
+# pi-lens dispatch runners kept off: dotnet-build ran a full `dotnet build` after a .cs edit whenever csharp-ls did not
+# answer; the C# language server still checks each edit. The key comes from the fork pin (apmantza/pi-lens PR).
+LENS_DISABLED_RUNNERS = ("dotnet-build",)
 # pi-herdr-agents falls back to its config.json.example only while config.json is missing; once this install creates the
 # file, `status` is required, so a fresh machine gets the example's value (the other example sections have defaults).
 HERDR_STATUS = {"enabled": True}
@@ -257,22 +260,28 @@ def apply_lens(ctx: Context) -> None:
     state.setdefault("previous_lens_tools", {name: deepcopy(tools[name]) for name in LENS_DISABLED_TOOLS if name in tools})
     for name in LENS_DISABLED_TOOLS:
         tools[name] = {**tools.get(name, {}), "enabled": False}
+    dispatch = config.setdefault("dispatch", {})
+    state.setdefault("previous_lens_dispatch", {key: deepcopy(dispatch[key]) for key in ("disabledRunners",) if key in dispatch})
+    runners = list(dispatch.get("disabledRunners") or [])
+    dispatch["disabledRunners"] = runners + [runner for runner in LENS_DISABLED_RUNNERS if runner not in runners]
     write_json(path, config)
     state["installed_lens_tools"] = {name: deepcopy(tools[name]) for name in LENS_DISABLED_TOOLS}
+    state["installed_lens_dispatch"] = {"disabledRunners": deepcopy(dispatch["disabledRunners"])}
 
 
 def restore_lens(ctx: Context) -> None:
     state = ctx.state
     path = ctx.home / LENS_CONFIG
     config = read_json(path)
+    if "installed_lens_dispatch" in state:
+        restore_nested(config, "dispatch", state["installed_lens_dispatch"], state.get("previous_lens_dispatch"), ("disabledRunners",))
     tools = config.get("tools")
-    if not isinstance(tools, dict) or "installed_lens_tools" not in state:
-        return
-    previous = state.get("previous_lens_tools", {})
-    for name, installed in state["installed_lens_tools"].items():
-        restore_nested(tools, name, installed, previous.get(name), ("enabled",))
-    if not tools:
-        config.pop("tools")
+    if isinstance(tools, dict) and "installed_lens_tools" in state:
+        previous = state.get("previous_lens_tools", {})
+        for name, installed in state["installed_lens_tools"].items():
+            restore_nested(tools, name, installed, previous.get(name), ("enabled",))
+        if not tools:
+            config.pop("tools")
     write_or_remove(path, config)
 
 

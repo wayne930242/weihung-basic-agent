@@ -13,10 +13,16 @@ HERDR_AGENTS_SOURCE = "git:github.com/wayne930242/pi-herdr-agents@19ba73e7f96c73
 # skills/orchestrate owns our trimmed version. Pinned by hand (MANUAL_PINS) since a 0.x bump can change the planner.
 HERDR_ROLES_SOURCE = "npm:pi-herdr-roles@0.1.0"
 HERDR_ROLES_PACKAGE = {"source": HERDR_ROLES_SOURCE, "skills": ["!orchestrate"]}
+# Fork pin of apmantza/pi-lens: upstream master 58c0c95 plus the `dispatch.disabledRunners` config key (branch
+# feat/dispatch-disabled-runners, upstream PR pending), which configs.LENS_DISABLED_RUNNERS needs to keep dotnet-build off.
+# Once upstream releases it, return to npm:pi-lens@<version>, drop the PINNED_GIT and FORK_BRANCHES entries, and take
+# "npm:pi-lens" out of RETIRED_SOURCES.
+LENS_SOURCE = "git:github.com/wayne930242/pi-lens@2aa72ed6cb8b06a3bb9604c5af6dbd49efb8a070"
 # Every other revision of a pinned git package, including an unpinned spec, is retired for the current pin.
 PINNED_GIT = {
     BRIDGE_SOURCE: ("git:github.com/wayne930242/pi-claude-bridge@",),
     HERDR_AGENTS_SOURCE: ("git:github.com/wayne930242/pi-herdr-agents",),
+    LENS_SOURCE: ("git:github.com/wayne930242/pi-lens",),
 }
 # Versioned specs keep every machine on the same release; `pi update` skips them, so bump them here.
 # Catppuccin Mocha with only official palette colors, matching Herdr, Ghostty, and SketchyBar; the filter loads Mocha alone.
@@ -36,7 +42,9 @@ RETIRED_SOURCES = ("npm:@victor-software-house/pi-curated-themes", "npm:pi-secre
                    # pi-aaaav was renamed pi-anchorloop at 2.0.0.
                    "npm:pi-aaaav",
                    # Phoenix traces saw little use; the package and its local Phoenix server were retired.
-                   "npm:pi-phoenix-otel")
+                   "npm:pi-phoenix-otel",
+                   # The npm pi-lens release is replaced by the fork pin LENS_SOURCE; pi must never load both.
+                   "npm:pi-lens")
 # pi-code loads only claude-rules.ts, which reads each project's .claude/rules as Claude Code does;
 # its other extensions duplicate the todo, MCP, subagent, and web packages below.
 CLAUDE_RULES_PACKAGE = {"source": CLAUDE_RULES_SOURCE, "extensions": ["extensions/claude-rules.ts"]}
@@ -50,7 +58,7 @@ PACKAGES = [
     "npm:@juicesharp/rpiv-todo@2.15.0",
     THEME_PACKAGE,
     "npm:pi-open-tui@0.3.13",
-    "npm:pi-lens@4.4.7",
+    LENS_SOURCE,
     QUOTAS_SOURCE,
     "npm:pi-jev-compaction@1.0.0",
     # prose_watch: an AI-tone check (Jev) on the prose files a writing task arms.
