@@ -248,7 +248,7 @@ with tempfile.TemporaryDirectory() as directory:
     installed_packages = json.loads((agent / "settings.json").read_text())["packages"]
     assert "git:github.com/wayne930242/pi-claude-bridge@old-commit" not in installed_packages, "an earlier revision of a git pin is retired"
     assert BRIDGE_SOURCE in installed_packages, installed_packages
-    assert [package for package in installed_packages if "pi-lens" in str(package)] == ["git:github.com/wayne930242/pi-lens@ed543b6a3a8adaafd7bada6933817dbb94567d2a"], installed_packages
+    assert [package for package in installed_packages if "pi-lens" in str(package)] == ["git:github.com/wayne930242/pi-lens@1cdd03eccd09088b399ae384fed82d40e7d6a5ba"], installed_packages
     assert json.loads((agent / "mcp.json").read_text()) == pi_mcp, "pi's mcp.json stays untouched"
     installed_mcp = json.loads((agent / "mcp-adapter.json").read_text())
     assert installed_mcp["mcpServers"]["codebase-memory-mcp"] == {"command": str(home.resolve() / ".local/bin/codebase-memory-mcp")}, installed_mcp
