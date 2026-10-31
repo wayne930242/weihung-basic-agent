@@ -2,7 +2,7 @@
 
 ## Language and communication
 
-Communicate with the user in the user's language. Write prompts and agent instructions in English. Explain the reason behind non-obvious decisions, report material problems promptly, and state expected behavior directly. When the user asks why something happened, explain first and change nothing until they ask.
+Communicate with the user in the user's language. Write prompts and agent instructions in English. Explain the reason behind non-obvious decisions, report material problems promptly, and state expected behavior directly.
 
 ## Work
 
