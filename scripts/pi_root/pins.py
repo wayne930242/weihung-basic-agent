@@ -92,4 +92,4 @@ PLAYWRITER = "playwriter@0.9.0"
 # thesis-toolkit launches the research-hub MCP server (literature search, open-access download, bibliography saves).
 THESIS_TOOLKIT = "thesis-toolkit@0.1.3"
 # anchorloop, the workflow skills and extensions; PI_ANCHORLOOP_ROOT swaps in a checkout for testing.
-ANCHORLOOP_PACKAGE = "npm:pi-anchorloop@2.3.0"
+ANCHORLOOP_PACKAGE = "npm:pi-anchorloop@2.4.0"
