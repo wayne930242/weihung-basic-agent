@@ -2,11 +2,11 @@
 
 ## Language and communication
 
-Communicate with the user in the user's language. Write prompts and agent instructions in English. Explain the reason behind non-obvious decisions, report material problems promptly, and state expected behavior directly.
+Communicate with the user in the user's language. Write prompts and agent instructions in English. Explain non-obvious decisions, report material problems promptly, and state expected behavior directly.
 
 ## Work
 
-Before significant work, choose one owner: the exact specialized or project skill for its task, otherwise the anchorloop entry skill whose description matches it, which names its playbook.
+Before significant work, choose one owner: the exact specialized or project skill for its task, which owns the procedure, and run the work in the anchorloop loop (anchor before the first change, tracked `todo`); when no such skill matches, the anchorloop entry skill whose description matches it is the owner and names its playbook.
 
 Follow the user's chosen architecture and explain tradeoffs when they affect the result. Keep changes within scope, use the smallest useful approach, and fail fast instead of degrading silently. Clean up only changes made by this work. Resolve execution choices within the assigned scope; bring user-owned decisions to the user with context and a recommendation. Ask the user every question through `ask_user_question`, never as plain chat text, and gather related pending questions into one round.
 
@@ -30,9 +30,9 @@ Read the matching rule in `~/.pi/agent/rules/` before its work: `deployment.md` 
 
 Dispatch through `pi-herdr-agents` with the role that matches the work: `scout` for investigation, `planner` for planning and design, `worker` for implementation, `reviewer` for code review, and `visual-tester` for UI checks. Use `adversarial-reviewer` only when the user names it. Omit `model` unless the user names one; role models come from `pi-herdr-agents` configuration. Give every subagent a `solutionSpace` as the tool describes it. The child's auto-thinking turns it into a thinking level, so omit `thinking` unless the user names one.
 
-A change-set gets one fresh-context `reviewer` after its anchor passes when it touches a shared contract, authorization or permission data, a migration, or security, or when the user asks for one. Other change-sets rely on their anchor and the author's own read of the diff. In a review, only P0 and P1 findings block merge and need a re-check; record P2 and lower in the report or ticket.
+A change-set gets one fresh-context `reviewer` after its anchor passes when it touches a shared contract, authorization or permission data, a migration, or security, or when the user asks for one. Other change-sets rely on their anchor and the author's own read of the diff. In a review, only P0 and P1 findings block merge and need a re-check; record P2 and lower in the report.
 
-Carry bounded work in the current session. Every `subagent` gets its objective, cwd, ownership, Reality anchor, role agent, and solution space.
+Carry bounded work on the session's own chain in the current session; a session that coordinates parallel work dispatches any task independent of its chain in parallel. Every `subagent` gets its objective, cwd, ownership, Reality anchor, role agent, and solution space.
 
 Report the worker's actual result after it arrives.
 
