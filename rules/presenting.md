@@ -7,6 +7,8 @@ The page renders in the user's default browser with a built-in style, so write p
 The views the `answering` skill names (trees, pseudocode, interaction lines, tables) go on that page, and an options-by-criteria table becomes an `options` block.
 Put the conclusion first.
 
+A report of finished work lists what is left in two kinds only, each with its reason: not done yet (pending work) and chosen not to do. Something you checked and found correct as it is goes in neither; leave it out, or say in one line that it is correct behavior, so the user never reads it as missed work.
+
 Decisions the user must make go on a comparison page: one section per decision, its options side by side in an `options` block with what each costs and changes (`pros`, `cons`), the recommended one marked, and the evidence that tells them apart (screenshots, contact sheets, numbers), copied next to the page, since the page loads nothing from above its directory or from other sites.
 End the page with one `form` block holding a question per decision, the recommended choice marked; the user's answers reach you as a message when they send it, and comments they leave in the page's feedback panel arrive the same way. A single short question with no page behind it goes through `ask_user_question` instead.
 
