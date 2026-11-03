@@ -34,7 +34,7 @@ BUILTIN_MCP_OFF = "-builtin:mcp"
 # These pi-lens tools stay off to keep every prompt small; `read_symbol`, `read_enclosing`, and `lens_diagnostics` cover navigation.
 LENS_DISABLED_TOOLS = ("project_report", "symbol_search", "module_report")
 # pi-lens dispatch runners kept off: dotnet-build ran a full `dotnet build` after a .cs edit whenever csharp-ls did not
-# answer; the C# language server still checks each edit. The key comes from the fork pin (apmantza/pi-lens PR).
+# answer; the C# language server still checks each edit. The key needs pi-lens 4.4.8 or later.
 LENS_DISABLED_RUNNERS = ("dotnet-build",)
 # pi-herdr-agents falls back to its config.json.example only while config.json is missing; once this install creates the
 # file, `status` is required, so a fresh machine gets the example's value (the other example sections have defaults).
