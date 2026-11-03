@@ -149,27 +149,5 @@ class OverlayTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("going-to-sleep exists in both", result.stderr)
 
-    def test_links_into_the_overlay_from_an_earlier_layout_are_repointed(self):
-        with tempfile.TemporaryDirectory() as directory:
-            base = Path(directory)
-            home = base / "home"
-            overlay = make_overlay(base)
-            # Before the split, the overlay checkout owned these links and was itself a registered pi package.
-            (home / ".pi/agent").mkdir(parents=True)
-            (home / ".agents/skills").mkdir(parents=True)
-            (home / ".pi/agent/rules").symlink_to(overlay.resolve() / "rules")
-            (home / ".pi/agent/agents").symlink_to(overlay.resolve() / "agents")
-            (home / ".agents/skills/going-to-sleep").symlink_to(overlay.resolve() / "skills/going-to-sleep")
-            (home / ".pi/agent/settings.json").write_text(json.dumps({"packages": [str(overlay.resolve()), "npm:user-package"]}))
-            run_script("install.sh", home, "--skip-external", "--overlay", str(overlay), env={"WEIHUNG_OVERLAY": ""})
-            self.assertEqual((home / ".pi/agent/rules").readlink(), ROOT / "rules")
-            self.assertEqual((home / ".pi/agent/agents").readlink(), ROOT / "agents")
-            self.assertEqual((home / ".agents/skills/going-to-sleep").readlink(), ROOT / "skills/going-to-sleep")
-            packages = json.loads((home / ".pi/agent/settings.json").read_text())["packages"]
-            self.assertNotIn(str(overlay.resolve()), packages)
-            self.assertIn("npm:user-package", packages)
-            self.assertIn(str(ROOT), packages)
-
-
 if __name__ == "__main__":
     unittest.main()

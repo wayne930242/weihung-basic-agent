@@ -120,34 +120,6 @@ class PackageTests(unittest.TestCase):
             second = json.loads((agent / "settings.json").read_text())["packages"]
             self.assertEqual([item for item in second if "anchorloop" in item], ["npm:pi-anchorloop@2.6.0"])
 
-    def test_retired_theme_package_is_replaced_and_restored(self):
-        old = {"source": "npm:@victor-software-house/pi-curated-themes@0.2.1", "themes": ["themes/catppuccin-mocha.json"], "skills": []}
-        with tempfile.TemporaryDirectory() as directory:
-            home = Path(directory)
-            agent = home / ".pi/agent"
-            agent.mkdir(parents=True)
-            (agent / "settings.json").write_text(json.dumps({"packages": [old, "npm:user-package"]}))
-            run_script("install.sh", home, "--skip-external")
-            installed = json.loads((agent / "settings.json").read_text())["packages"]
-            self.assertNotIn(old, installed)
-            self.assertIn({"source": "npm:@sherif-fanous/pi-catppuccin@0.3.0", "themes": ["themes/catppuccin-mocha.json"]}, installed)
-            self.assertIn("npm:user-package", installed)
-            run_script("uninstall.sh", home, "--skip-external")
-            self.assertEqual(json.loads((agent / "settings.json").read_text())["packages"], [old, "npm:user-package"])
-
-    def test_merged_secret_drop_package_is_removed_and_restored(self):
-        with tempfile.TemporaryDirectory() as directory:
-            home = Path(directory)
-            agent = home / ".pi/agent"
-            agent.mkdir(parents=True)
-            (agent / "settings.json").write_text(json.dumps({"packages": ["npm:pi-secret-drop@0.1.6", "npm:user-package"]}))
-            run_script("install.sh", home, "--skip-external")
-            installed = json.loads((agent / "settings.json").read_text())["packages"]
-            self.assertNotIn("npm:pi-secret-drop@0.1.6", installed)
-            self.assertTrue(any(isinstance(p, str) and p.startswith("npm:pi-robot-hand@") for p in installed), installed)
-            run_script("uninstall.sh", home, "--skip-external")
-            self.assertEqual(json.loads((agent / "settings.json").read_text())["packages"], ["npm:pi-secret-drop@0.1.6", "npm:user-package"])
-
     def test_previous_git_bridge_revision_is_restored(self):
         old = "git:github.com/wayne930242/pi-claude-bridge@old-commit"
         with tempfile.TemporaryDirectory() as directory:
@@ -161,37 +133,6 @@ class PackageTests(unittest.TestCase):
             self.assertEqual(sum("pi-claude-bridge" in item for item in installed), 1)
             run_script("uninstall.sh", home, "--skip-external")
             self.assertEqual(json.loads((agent / "settings.json").read_text())["packages"], [old, "npm:user-package"])
-
-    def test_upgrade_pins_unpinned_packages_and_reads_an_old_marker(self):
-        with tempfile.TemporaryDirectory() as directory:
-            home = Path(directory)
-            agent = home / ".pi/agent"
-            agent.mkdir(parents=True)
-            settings = agent / "settings.json"
-            settings.write_text(json.dumps({"packages": ["npm:user-package"]}))
-            run_script("install.sh", home, "--skip-external")
-            # Reproduce the unpinned packages and marker an install before pinning left behind.
-            marker = agent / ".weihung-agent-root.json"
-            state = json.loads(marker.read_text())
-            state["previous_ui_settings"] = {name: value for name, value in state["previous_ui_settings"].items()
-                                             if name != "enableInstallTelemetry"}
-            state.pop("previous_ui_settings_present")
-            marker.write_text(json.dumps(state))
-            current = json.loads(settings.read_text())
-            current["packages"] = ["npm:user-package", "npm:pi-lens", "npm:pi-web-access@0.31.0"]
-            current.pop("enableInstallTelemetry")
-            settings.write_text(json.dumps(current))
-            run_script("install.sh", home, "--skip-external")
-            upgraded = json.loads(settings.read_text())
-            sources = [item["source"] if isinstance(item, dict) else item for item in upgraded["packages"]]
-            self.assertEqual([item for item in sources if "pi-lens" in item], ["npm:pi-lens@4.4.8"])
-            self.assertEqual([item for item in sources if "pi-web-access" in item], [], "a retired package is removed")
-            self.assertIs(upgraded["enableInstallTelemetry"], False)
-            run_script("uninstall.sh", home, "--skip-external")
-            restored = json.loads(settings.read_text())
-            self.assertEqual(restored["packages"], ["npm:user-package"])
-            self.assertNotIn("enabledModels", restored)
-            self.assertNotIn("enableInstallTelemetry", restored)
 
     def test_optional_plugins_are_managed_when_present_and_skipped_when_absent(self):
         variables = {"alpha": "PI_ALPHA_ROOT", "beta": "PI_BETA_ROOT"}

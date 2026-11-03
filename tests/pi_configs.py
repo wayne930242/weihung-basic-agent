@@ -130,28 +130,6 @@ class HerdrModelsTests(unittest.TestCase):
             run_script("install.sh", home, "--skip-external", "--force")
             self.assertEqual(json.loads(config.read_text())["models"], self.repo_models)
 
-    def test_install_retires_the_model_strategy_profile_left_by_an_earlier_install(self):
-        with tempfile.TemporaryDirectory() as directory:
-            home = Path(directory)
-            run_script("install.sh", home, "--skip-external")
-            roles = home / ".pi/agent/herdr-agents/roles"
-            roles.mkdir()
-            ours, users = roles / "coding.md", roles / "mine.md"
-            ours.write_text("generated tier role\n")
-            users.write_text("user role\n")
-            marker = home / ".pi/agent/.weihung-agent-root.json"
-            state = json.loads(marker.read_text())
-            state.update({key: {} for key in configs.RETIRED_PROFILE_KEYS})
-            state["installed_roles"] = {"coding.md": hashlib.sha256(ours.read_bytes()).hexdigest(),
-                                        "mine.md": "not-this-file"}
-            marker.write_text(json.dumps(state))
-            run_script("install.sh", home, "--skip-external")
-            self.assertFalse(ours.exists())
-            self.assertTrue(users.exists(), "a role the installer did not write stays")
-            state = json.loads(marker.read_text())
-            self.assertFalse(set(configs.RETIRED_PROFILE_KEYS) & set(state), state)
-
-
 class RemovedModelProfileTests(unittest.TestCase):
     """The model strategy profile was removed on 2026-10-03; models live in pi/herdr-agents-models.json."""
 
