@@ -125,8 +125,8 @@ with tempfile.TemporaryDirectory() as directory:
     assert mcp["mcpServers"]["codebase-memory-mcp"] == {"command": str(home.resolve() / ".local/bin/codebase-memory-mcp")}, mcp
     assert mcp["mcpServers"]["research-hub"]["args"] == ["-y", "thesis-toolkit@0.1.3", "mcp", "research-hub"], mcp
     assert set(mcp["mcpServers"]) == {"codebase-memory-mcp", "research-hub"}, mcp
-    lens = json.loads((home / ".pi-lens/config.json").read_text())
-    assert lens == {"tools": {name: {"enabled": False} for name in ("project_report", "symbol_search", "module_report")}, "dispatch": {"disabledRunners": ["dotnet-build"]}}, lens
+    assert not (home / ".pi-lens/config.json").exists(), "pi-lens is retired"
+    assert not any("pi-lens" in str(package) for package in settings["packages"]), settings
     open_tui = json.loads((home / ".pi/agent/open-tui.json").read_text())
     assert open_tui == {"footerSegments": {"runtime": False, "cost": False}}, open_tui
     config = json.loads((home / ".pi/agent/herdr-agents/config.json").read_text())
@@ -248,13 +248,12 @@ with tempfile.TemporaryDirectory() as directory:
     installed_packages = json.loads((agent / "settings.json").read_text())["packages"]
     assert "git:github.com/wayne930242/pi-claude-bridge@old-commit" not in installed_packages, "an earlier revision of a git pin is retired"
     assert BRIDGE_SOURCE in installed_packages, installed_packages
-    assert [package for package in installed_packages if "pi-lens" in str(package)] == ["npm:pi-lens@4.4.8"], installed_packages
+    assert not any("pi-lens" in str(package) for package in installed_packages), installed_packages
     assert json.loads((agent / "mcp.json").read_text()) == pi_mcp, "pi's mcp.json stays untouched"
     installed_mcp = json.loads((agent / "mcp-adapter.json").read_text())
     assert installed_mcp["mcpServers"]["codebase-memory-mcp"] == {"command": str(home.resolve() / ".local/bin/codebase-memory-mcp")}, installed_mcp
     assert installed_mcp["settings"]["namespaceProxyTools"] is False, installed_mcp
-    assert json.loads(lens_path.read_text())["tools"]["symbol_search"] == {"enabled": False}
-    assert json.loads(lens_path.read_text())["dispatch"] == {"disabledRunners": ["javac", "dotnet-build"], "runnerTimeoutFloorMs": 5}
+    assert json.loads(lens_path.read_text()) == original_lens, "pi-lens is retired: its config is left as the user had it"
     installed_open_tui = json.loads(open_tui_path.read_text())
     assert installed_open_tui == {"cursorStyle": "bar", "footerSegments": {"cwd": True, "cost": False, "runtime": False}}, installed_open_tui
     repo_models = json.loads((Path(install).resolve().parents[1] / "pi/herdr-agents-models.json").read_text())

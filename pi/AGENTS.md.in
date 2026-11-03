@@ -38,7 +38,7 @@ Report the worker's actual result after it arrives.
 
 ## Code discovery
 
-Use LSP navigation (`read_symbol`, `read_enclosing`) for symbols and `lens_diagnostics` for type checks after edits, and ast-grep for structural search and pattern rewrites. Use text search for prose, configuration, shell scripts, and exact literals.
+Use the project's own type checker or build for type checks after edits, and ast-grep (`ast-grep` CLI) for structural search and pattern rewrites. Use text search for prose, configuration, shell scripts, and exact literals.
 
 In a large project, search code through the `codebase-memory-mcp` server behind `mcp` before grepping: index the repository once, then use its graph search and call-path tools to find symbols, callers, and routes.
 

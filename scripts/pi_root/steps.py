@@ -21,7 +21,7 @@ class Step(NamedTuple):
 STEPS = (
     Step("instructions", instructions.apply, instructions.restore),
     Step("mcp-adapter", configs.apply_mcp, configs.restore_mcp),
-    Step("pi-lens", configs.apply_lens, configs.restore_lens),
+    Step("pi-lens", configs.retire_lens, configs.restore_lens),
     Step("open-tui", configs.apply_open_tui, configs.restore_open_tui),
     Step("computer-use", configs.apply_computer_use, configs.restore_computer_use),
     Step("ui", configs.apply_ui, configs.restore_ui),

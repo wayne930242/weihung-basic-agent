@@ -1,4 +1,4 @@
-"""The small managed settings: UI, terminal, panes, herdr-agents models, built-in MCP, mcp-adapter, pi-lens, open-tui, computer use, compaction."""
+"""The small managed settings: UI, terminal, panes, herdr-agents models, built-in MCP, mcp-adapter, open-tui, computer use, compaction."""
 
 import hashlib
 from copy import deepcopy
@@ -31,11 +31,6 @@ RESEARCH_HUB_SERVER = {
 }
 # pi-mcp-adapter owns /mcp; pi's built-in MCP support would otherwise warn on every start that it stepped aside.
 BUILTIN_MCP_OFF = "-builtin:mcp"
-# These pi-lens tools stay off to keep every prompt small; `read_symbol`, `read_enclosing`, and `lens_diagnostics` cover navigation.
-LENS_DISABLED_TOOLS = ("project_report", "symbol_search", "module_report")
-# pi-lens dispatch runners kept off: dotnet-build ran a full `dotnet build` after a .cs edit whenever csharp-ls did not
-# answer; the C# language server still checks each edit. The key needs pi-lens 4.4.8 or later.
-LENS_DISABLED_RUNNERS = ("dotnet-build",)
 # pi-herdr-agents falls back to its config.json.example only while config.json is missing; once this install creates the
 # file, `status` is required, so a fresh machine gets the example's value (the other example sections have defaults).
 HERDR_STATUS = {"enabled": True}
@@ -252,21 +247,13 @@ def restore_mcp(ctx: Context) -> None:
     write_or_remove(path, mcp)
 
 
-def apply_lens(ctx: Context) -> None:
+def retire_lens(ctx: Context) -> None:
+    """pi-lens is retired: give back ~/.pi-lens/config.json as it was before an earlier install managed it."""
     state = ctx.state
-    path = ctx.home / LENS_CONFIG
-    config = read_json(path)
-    tools = config.setdefault("tools", {})
-    state.setdefault("previous_lens_tools", {name: deepcopy(tools[name]) for name in LENS_DISABLED_TOOLS if name in tools})
-    for name in LENS_DISABLED_TOOLS:
-        tools[name] = {**tools.get(name, {}), "enabled": False}
-    dispatch = config.setdefault("dispatch", {})
-    state.setdefault("previous_lens_dispatch", {key: deepcopy(dispatch[key]) for key in ("disabledRunners",) if key in dispatch})
-    runners = list(dispatch.get("disabledRunners") or [])
-    dispatch["disabledRunners"] = runners + [runner for runner in LENS_DISABLED_RUNNERS if runner not in runners]
-    write_json(path, config)
-    state["installed_lens_tools"] = {name: deepcopy(tools[name]) for name in LENS_DISABLED_TOOLS}
-    state["installed_lens_dispatch"] = {"disabledRunners": deepcopy(dispatch["disabledRunners"])}
+    if "installed_lens_tools" in state or "installed_lens_dispatch" in state:
+        restore_lens(ctx)
+    for key in ("previous_lens_tools", "installed_lens_tools", "previous_lens_dispatch", "installed_lens_dispatch"):
+        state.pop(key, None)
 
 
 def restore_lens(ctx: Context) -> None:

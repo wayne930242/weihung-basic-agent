@@ -13,9 +13,6 @@ HERDR_AGENTS_SOURCE = "git:github.com/wayne930242/pi-herdr-agents@ec9d0d05686ae2
 # skills/orchestrate owns our trimmed version. Pinned by hand (MANUAL_PINS) since a 0.x bump can change the planner.
 HERDR_ROLES_SOURCE = "npm:pi-herdr-roles@0.1.0"
 HERDR_ROLES_PACKAGE = {"source": HERDR_ROLES_SOURCE, "skills": ["!orchestrate"]}
-# 4.4.8 is the first release with the `dispatch.disabledRunners` config key (apmantza/pi-lens#5011), which
-# configs.LENS_DISABLED_RUNNERS needs to keep dotnet-build off.
-LENS_SOURCE = "npm:pi-lens@4.4.8"
 # Every other revision of a pinned git package, including an unpinned spec, is retired for the current pin.
 PINNED_GIT = {
     BRIDGE_SOURCE: ("git:github.com/wayne930242/pi-claude-bridge@",),
@@ -41,7 +38,9 @@ RETIRED_SOURCES = ("npm:@victor-software-house/pi-curated-themes", "npm:pi-secre
                    # Phoenix traces saw little use; the package and its local Phoenix server were retired.
                    "npm:pi-phoenix-otel",
                    # The pi-lens fork pin gave way to the npm release once upstream shipped its change.
-                   "git:github.com/wayne930242/pi-lens")
+                   "git:github.com/wayne930242/pi-lens",
+                   # pi-lens ran diagnostics and language servers after every edit and cost too much CPU and memory.
+                   "npm:pi-lens")
 # pi-code loads only claude-rules.ts, which reads each project's .claude/rules as Claude Code does;
 # its other extensions duplicate the todo, MCP, subagent, and web packages below.
 CLAUDE_RULES_PACKAGE = {"source": CLAUDE_RULES_SOURCE, "extensions": ["extensions/claude-rules.ts"]}
@@ -55,7 +54,6 @@ PACKAGES = [
     "npm:@juicesharp/rpiv-todo@2.15.0",
     THEME_PACKAGE,
     "npm:pi-open-tui@0.4.1",
-    LENS_SOURCE,
     QUOTAS_SOURCE,
     "npm:pi-jev-compaction@1.0.0",
     # prose_watch: an AI-tone check (Jev) on the prose files a writing task arms.
