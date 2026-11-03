@@ -1,14 +1,14 @@
 """Every pinned package source; `scripts/pi-pins.py` rewrites the versions in this file, so it imports nothing."""
 
-BRIDGE_SOURCE = "git:github.com/wayne930242/pi-claude-bridge@9822631a50f0400713d9f769faad670c90b2a33b"
+BRIDGE_SOURCE = "git:github.com/wayne930242/pi-claude-bridge@105dbed6871293d0988e4693a28972418b15aae1"
 QUOTAS_SOURCE = "npm:@latentminds/pi-quotas@0.5.0"
 CLAUDE_RULES_SOURCE = "npm:pi-code@1.6.2"
-# Fork pin of giuseppecrj/pi-herdr-agents: upstream v3.3.1 plus PRs #84, #95, and #99, the solutionSpace change of
-# closed PR #87, the macOS process-identity fixes, and the fork-only exit hold that pi/extensions/quota-resume.ts and
-# monitor-hold.ts use (branch weihung/v3-integration).
+# Fork pin of giuseppecrj/pi-herdr-agents: upstream main (v3.7.2+, which carries #84 and #99) rebased with the
+# solutionSpace change of closed PR #87, grouped-workspace placement, the macOS process-identity and cancel-settle
+# fixes, and the fork-only exit hold that pi/extensions/quota-resume.ts and monitor-hold.ts use (branch weihung/v3-integration).
 # Once upstream releases what this setup needs, return to the npm release: set this to npm:pi-herdr-agents@<version>, drop the PINNED_GIT
 # entry and the FORK_BRANCHES entry in scripts/pi-pins.py, and move "npm:pi-herdr-agents" out of RETIRED_SOURCES.
-HERDR_AGENTS_SOURCE = "git:github.com/wayne930242/pi-herdr-agents@19ba73e7f96c73a028d8657e6291cdc5a3bf830e"
+HERDR_AGENTS_SOURCE = "git:github.com/wayne930242/pi-herdr-agents@ec9d0d05686ae29b4b727631827979c8b211848e"
 # The pi-herdr-agents v3 role pack: planner, /plan, and /skill:plan. Its orchestrate skill is filtered out because
 # skills/orchestrate owns our trimmed version. Pinned by hand (MANUAL_PINS) since a 0.x bump can change the planner.
 HERDR_ROLES_SOURCE = "npm:pi-herdr-roles@0.1.0"
