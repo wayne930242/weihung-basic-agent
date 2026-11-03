@@ -23,6 +23,8 @@ def checkout(base, name="pi-herdr-agents", package="pi-herdr-agents"):
 def run_script(script, home, *args, override=None, check=True, bin_dir=None):
     env = {key: value for key, value in os.environ.items() if key != VARIABLE}
     env["HOME"] = str(home)
+    # macOS's /usr/bin/python3 caches bytecode under $HOME/Library, which would read as the install writing to home.
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
     if override is not None:
         env[VARIABLE] = str(override)
     if bin_dir:

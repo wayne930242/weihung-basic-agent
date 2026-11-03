@@ -5,8 +5,8 @@
 //
 // Usage: node scripts/lesson-audit.mjs [--memory <dir>] [--rules <dir>]
 
-import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { homedir } from "node:os";
+import { copyFileSync, existsSync, mkdtempSync, readdirSync, readFileSync } from "node:fs";
+import { homedir, tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -29,7 +29,11 @@ export function ttsrPath() {
 
 /** Every stream rule in `dir`, built by TTSR, with its `blocks` and `allows` fixtures. */
 export async function loadStreamRules(dir = join(ROOT, "rules")) {
-  const ttsr = await import(pathToFileURL(ttsrPath()).href);
+  // Node refuses to strip types under node_modules, where the installed package lives; ttsr.ts has only type imports,
+  // so a copy outside it loads the same code.
+  const copy = join(mkdtempSync(join(tmpdir(), "ttsr-")), "ttsr.ts");
+  copyFileSync(ttsrPath(), copy);
+  const ttsr = await import(pathToFileURL(copy).href);
   const rules = [];
   for (const file of readdirSync(dir).filter((name) => name.endsWith(".md")).sort()) {
     const path = join(dir, file);
