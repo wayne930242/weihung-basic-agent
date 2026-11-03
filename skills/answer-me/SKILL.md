@@ -1,6 +1,6 @@
 ---
 name: answer-me
-description: The user's question is a real question, not an instruction; answer it and change nothing.
+description: Use when the user invokes /skill:answer-me to ask a real question, not give an instruction; answer it and change nothing.
 disable-model-invocation: true
 ---
 
