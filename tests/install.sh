@@ -123,8 +123,7 @@ with tempfile.TemporaryDirectory() as directory:
     mcp = json.loads((home / ".pi/agent/mcp-adapter.json").read_text())
     assert mcp["settings"] == {"hostConfigDiscovery": "on", "namespaceProxyTools": False}, mcp
     assert mcp["mcpServers"]["codebase-memory-mcp"] == {"command": str(home.resolve() / ".local/bin/codebase-memory-mcp")}, mcp
-    assert mcp["mcpServers"]["research-hub"]["args"] == ["-y", "thesis-toolkit@0.1.3", "mcp", "research-hub"], mcp
-    assert set(mcp["mcpServers"]) == {"codebase-memory-mcp", "research-hub"}, mcp
+    assert set(mcp["mcpServers"]) == {"codebase-memory-mcp"}, mcp
     assert not (home / ".pi-lens/config.json").exists(), "pi-lens is retired"
     assert not any("pi-lens" in str(package) for package in settings["packages"]), settings
     open_tui = json.loads((home / ".pi/agent/open-tui.json").read_text())

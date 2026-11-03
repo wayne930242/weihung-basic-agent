@@ -8,7 +8,6 @@ from .context import Context, State
 from .jsonfile import read_json, write_json
 from .managed import record_keys, remember_keys, restore_keys, restore_nested, restore_value
 from .paths import COMPUTER_USE_CONFIG, HERDR_MODELS, LENS_CONFIG, OPEN_TUI_CONFIG, RETIRED_ROLES_DIR, overlay_root
-from .pins import THESIS_TOOLKIT
 
 # pi's native compaction fires at contextWindow - reserveTokens: 500K for the 1M Opus and Sonnet, a
 # ceiling for a long running turn; idle-compaction.ts compacts at 300K between turns.
@@ -21,14 +20,9 @@ UI_SETTINGS = {"theme": "catppuccin-mocha", "editorPaddingX": 1, "collapseChange
 CODEBASE_MEMORY = "codebase-memory-mcp"
 CODEBASE_MEMORY_BINARY = Path(".local/bin/codebase-memory-mcp")
 MCP_SETTINGS = {"namespaceProxyTools": False}
-# Global research-hub; a project .mcp.json entry of the same name (knowledge-base) takes precedence.
-# Downloads use research-hub's default ~/downloads/papers.
+# research-hub is no longer registered globally: the projects that use it register it in their own .mcp.json.
+# An earlier install's entry is retired on the next install.
 RESEARCH_HUB = "research-hub"
-RESEARCH_HUB_SERVER = {
-    "command": "npx",
-    "args": ["-y", THESIS_TOOLKIT, "mcp", "research-hub"],
-    "env": {"RSH_LIBRARY_API_URL": "https://bib-manager-api.vercel.app", "RUST_LOG": "warn"},
-}
 # pi-mcp-adapter owns /mcp; pi's built-in MCP support would otherwise warn on every start that it stepped aside.
 BUILTIN_MCP_OFF = "-builtin:mcp"
 # pi-herdr-agents falls back to its config.json.example only while config.json is missing; once this install creates the
@@ -219,11 +213,17 @@ def update_mcp(mcp: dict, state: State, home: Path) -> None:
     servers = mcp.setdefault("mcpServers", {})
     state.setdefault("previous_mcp_server", deepcopy(servers.get(CODEBASE_MEMORY)))
     servers[CODEBASE_MEMORY] = {"command": str(home / CODEBASE_MEMORY_BINARY)}
-    state.setdefault("previous_research_hub_server", deepcopy(servers.get(RESEARCH_HUB)))
-    servers[RESEARCH_HUB] = deepcopy(RESEARCH_HUB_SERVER)
     state["installed_mcp_settings"] = dict(MCP_SETTINGS)
     state["installed_mcp_server"] = deepcopy(servers[CODEBASE_MEMORY])
-    state["installed_research_hub_server"] = deepcopy(servers[RESEARCH_HUB])
+    retire_research_hub(servers, state)
+
+
+def retire_research_hub(servers: dict, state: State) -> None:
+    """Give back the research-hub entry an earlier install replaced, unless the user changed it since."""
+    if "installed_research_hub_server" in state:
+        restore_value(servers, RESEARCH_HUB, state["installed_research_hub_server"], state.get("previous_research_hub_server"))
+    for key in ("previous_research_hub_server", "installed_research_hub_server"):
+        state.pop(key, None)
 
 
 def restore_mcp(ctx: Context) -> None:
@@ -239,7 +239,9 @@ def restore_mcp(ctx: Context) -> None:
     restore_nested(mcp, "settings", state.get("installed_mcp_settings"), state.get("previous_mcp_settings"), tuple(MCP_SETTINGS))
     if "mcpServers" in mcp:
         restore_value(mcp["mcpServers"], CODEBASE_MEMORY, state.get("installed_mcp_server"), state.get("previous_mcp_server"))
-        restore_value(mcp["mcpServers"], RESEARCH_HUB, state.get("installed_research_hub_server"), state.get("previous_research_hub_server"))
+        # A marker from an install before the retirement still records the research-hub entry it wrote.
+        if "installed_research_hub_server" in state:
+            restore_value(mcp["mcpServers"], RESEARCH_HUB, state["installed_research_hub_server"], state.get("previous_research_hub_server"))
         if not mcp["mcpServers"]:
             mcp.pop("mcpServers")
     if mcp.get("settings") == {}:

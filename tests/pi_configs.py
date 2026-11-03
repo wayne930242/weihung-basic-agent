@@ -60,23 +60,44 @@ class ConfigTests(unittest.TestCase):
                 else:
                     self.assertEqual(json.loads(path.read_text()), before)
 
-    def test_research_hub_is_registered_and_a_user_entry_is_restored(self):
+    def test_research_hub_is_not_registered_and_an_earlier_install_entry_is_retired(self):
+        earlier = {"command": "npx", "args": ["-y", "thesis-toolkit@0.1.3", "mcp", "research-hub"]}
         user_entry = {"command": "my-research-hub"}
-        for before in (None, user_entry):
-            with self.subTest(before=before), tempfile.TemporaryDirectory() as directory:
+        edited = {"command": "edited-research-hub"}
+        # (entry the earlier install replaced, entry in the file now, entry expected after install and after uninstall)
+        cases = ((None, None, None), (None, earlier, None), (user_entry, earlier, user_entry), (None, edited, edited))
+        for previous, current, expected in cases:
+            with self.subTest(previous=previous, current=current), tempfile.TemporaryDirectory() as directory:
                 home = Path(directory)
                 agent = home / ".pi/agent"
                 agent.mkdir(parents=True)
                 path = agent / "mcp-adapter.json"
-                if before is not None:
-                    path.write_text(json.dumps({"mcpServers": {"research-hub": before}}))
+                if current is not None:
+                    path.write_text(json.dumps({"mcpServers": {configs.RESEARCH_HUB: current}}))
+                    (agent / ".weihung-agent-root.json").write_text(json.dumps(
+                        {"installed_research_hub_server": earlier, "previous_research_hub_server": previous}))
                 run_script("install.sh", home, "--skip-external", "--force")
-                server = json.loads(path.read_text())["mcpServers"]["research-hub"]
-                self.assertEqual(server, configs.RESEARCH_HUB_SERVER)
-                self.assertIn(configs.THESIS_TOOLKIT, server["args"])
+                self.assertEqual(json.loads(path.read_text())["mcpServers"].get(configs.RESEARCH_HUB), expected)
+                marker = json.loads((agent / ".weihung-agent-root.json").read_text())
+                self.assertFalse({"installed_research_hub_server", "previous_research_hub_server"} & set(marker), marker)
                 run_script("uninstall.sh", home, "--skip-external")
                 restored = json.loads(path.read_text()).get("mcpServers", {}) if path.exists() else {}
-                self.assertEqual(restored.get("research-hub"), before)
+                self.assertEqual(restored.get(configs.RESEARCH_HUB), expected)
+
+    def test_uninstall_after_an_install_that_registered_research_hub_restores_the_user_entry(self):
+        earlier = {"command": "npx", "args": ["-y", "thesis-toolkit@0.1.3", "mcp", "research-hub"]}
+        user_entry = {"command": "my-research-hub"}
+        for previous in (None, user_entry):
+            with self.subTest(previous=previous), tempfile.TemporaryDirectory() as directory:
+                home = Path(directory)
+                agent = home / ".pi/agent"
+                agent.mkdir(parents=True)
+                path = agent / "mcp-adapter.json"
+                path.write_text(json.dumps({"mcpServers": {configs.RESEARCH_HUB: earlier, "other": {"command": "x"}}}))
+                (agent / ".weihung-agent-root.json").write_text(json.dumps(
+                    {"installed_research_hub_server": earlier, "previous_research_hub_server": previous}))
+                run_script("uninstall.sh", home, "--skip-external")
+                self.assertEqual(json.loads(path.read_text())["mcpServers"].get(configs.RESEARCH_HUB), previous)
 
 
 
