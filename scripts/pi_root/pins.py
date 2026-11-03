@@ -2,7 +2,7 @@
 
 BRIDGE_SOURCE = "git:github.com/wayne930242/pi-claude-bridge@9822631a50f0400713d9f769faad670c90b2a33b"
 QUOTAS_SOURCE = "npm:@latentminds/pi-quotas@0.5.0"
-CLAUDE_RULES_SOURCE = "npm:pi-code@1.6.1"
+CLAUDE_RULES_SOURCE = "npm:pi-code@1.6.2"
 # Fork pin of giuseppecrj/pi-herdr-agents: upstream v3.3.1 plus PRs #84, #95, and #99, the solutionSpace change of
 # closed PR #87, the macOS process-identity fixes, and the fork-only exit hold that pi/extensions/quota-resume.ts and
 # monitor-hold.ts use (branch weihung/v3-integration).
@@ -57,22 +57,22 @@ PACKAGES = [
     "npm:@juicesharp/rpiv-ask-user-question@2.15.0",
     "npm:@juicesharp/rpiv-todo@2.15.0",
     THEME_PACKAGE,
-    "npm:pi-open-tui@0.3.14",
+    "npm:pi-open-tui@0.4.1",
     LENS_SOURCE,
     QUOTAS_SOURCE,
     "npm:pi-jev-compaction@1.0.0",
     # prose_watch: an AI-tone check (Jev) on the prose files a writing task arms.
     "npm:pi-prose-watch@0.1.2",
-    "npm:cc-safety-net@2.7.1",
+    "npm:cc-safety-net@2.7.2",
     "npm:pi-codex-image-gen@0.3.0",
     "npm:pi-robot-hand@0.4.0",
     "npm:pi-auto-tab-name@0.2.0",
     "npm:pi-herdr-doc-review@0.11.2",
     # Straw Boss coordination in Herdr: opt-in main agents per tab, an on-demand tower per workspace, scoped broadcast.
     "npm:pi-straw-boss@0.53.0",
-    "npm:@pify/memory@0.14.0",
+    "npm:@pify/memory@0.14.1",
     "npm:pi-loop-monitor@0.2.8",
-    "npm:@narumitw/pi-goal@0.54.13",
+    "npm:@narumitw/pi-goal@0.54.14",
     # Antigravity (agy) Google login: /login antigravity, plus the google_search and generate_image tools.
     "npm:pi-antigravity@0.11.0",
     # Desktop app control through Accessibility (UIA on Windows), kept headless by configs.COMPUTER_USE_SETTINGS.
