@@ -7,11 +7,12 @@ from pathlib import Path
 
 from .context import Context
 from .paths import ROOT, overlay_root
+from .unattended import instructions_template
 
 
-def instructions() -> str:
-    """The template, followed by the overlay's pi/AGENTS.append.md when an overlay is layered on."""
-    text = (ROOT / "pi/AGENTS.md.in").read_text().rstrip() + "\n"
+def instructions(profile: str | None = None) -> str:
+    """The profile's template, followed by the overlay's pi/AGENTS.append.md when an overlay is layered on."""
+    text = instructions_template(ROOT, profile).read_text().rstrip() + "\n"
     overlay = overlay_root()
     if overlay and (overlay / "pi/AGENTS.append.md").is_file():
         text += "\n" + (overlay / "pi/AGENTS.append.md").read_text().rstrip() + "\n"
@@ -30,7 +31,7 @@ def apply(ctx: Context) -> None:
     """Write the generated file, backing up a user-owned one only with --force."""
     state = ctx.state
     target = path(ctx.home)
-    content = instructions()
+    content = instructions(ctx.profile)
     current_hash = hashlib.sha256(target.read_bytes()).hexdigest() if target.exists() else None
     if current_hash and (ctx.first_install or current_hash != state.get("instructions_hash")):
         if not ctx.force:

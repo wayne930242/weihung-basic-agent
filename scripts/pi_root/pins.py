@@ -84,5 +84,19 @@ HERDR_PLUGINS = (
 )
 # The Playwriter CLI drives the user's own Chrome through its extension; playwriter-relay.ts starts its relay.
 PLAYWRITER = "playwriter@0.9.0"
+# The unattended install profile (scripts/pi_root/unattended.py) leaves these out: packages and skills that need a person at the
+# computer, a desktop, or an interactive login. Names carry no version, so a pin bump never touches them.
+UNATTENDED_DROPS = (
+    "npm:cc-safety-net",
+    "npm:@injaneity/pi-computer-use",
+    "npm:pi-codex-image-gen",
+    "npm:pi-robot-hand",
+    "npm:pi-antigravity",
+    "npm:pi-open-tui",
+    "npm:pi-herdr-doc-review",
+    "npm:pi-auto-tab-name",
+    "npm:pi-prose-watch",
+)
+UNATTENDED_DROPPED_SKILLS = ("going-to-sleep", "recording-with-obs")
 # anchorloop, the workflow skills and extensions; PI_ANCHORLOOP_ROOT swaps in a checkout for testing.
 ANCHORLOOP_PACKAGE = "npm:pi-anchorloop@2.7.0"

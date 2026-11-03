@@ -7,6 +7,7 @@ from pathlib import Path
 from .context import Context, State
 from .jsonfile import read_json, write_json
 from .managed import record_keys, remember_keys, restore_keys, restore_nested, restore_value
+from . import unattended
 from .paths import COMPUTER_USE_CONFIG, HERDR_MODELS, LENS_CONFIG, OPEN_TUI_CONFIG, RETIRED_ROLES_DIR, overlay_root
 
 # pi's native compaction fires at contextWindow - reserveTokens: 500K for the 1M Opus and Sonnet, a
@@ -301,6 +302,8 @@ def restore_open_tui(ctx: Context) -> None:
 
 
 def apply_computer_use(ctx: Context) -> None:
+    if unattended.is_unattended(ctx.profile):
+        return
     state = ctx.state
     path = ctx.home / COMPUTER_USE_CONFIG
     config = read_json(path)

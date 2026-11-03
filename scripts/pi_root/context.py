@@ -19,6 +19,8 @@ class Context:
     # The PI_HERDR_AGENTS_ROOT checkout replacing the pinned pi-herdr-agents release, if any.
     herdr_root: str | None = None
     first_install: bool = False
+    # The install profile (unattended.PROFILES); a run without --profile keeps the one the marker recorded.
+    profile: str = "default"
     # Optional plugin checkouts an earlier install recorded and this machine no longer has.
     gone_plugins: list[str] = field(default_factory=list)
 

@@ -355,6 +355,8 @@ def launchctl(*args: str, check: bool = True) -> None:
 
 
 def schedule() -> None:
+    if sys.platform != "darwin":
+        raise ValueError("schedule is macOS only (launchd): on this machine updates come from the provisioning playbook")
     STATE_DIR.mkdir(parents=True, exist_ok=True)
     LAUNCHD_PLIST.parent.mkdir(parents=True, exist_ok=True)
     LAUNCHD_PLIST.write_bytes(plistlib.dumps(launchd_plist()))

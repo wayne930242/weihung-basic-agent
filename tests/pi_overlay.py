@@ -149,5 +149,22 @@ class OverlayTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("going-to-sleep exists in both", result.stderr)
 
+    def test_the_profile_and_the_overlay_are_both_kept_by_a_bare_run(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            home = base / "home"
+            overlay = make_overlay(base)
+            run_script("install.sh", home, "--skip-external", "--overlay", str(overlay), "--profile", "unattended")
+            run_script("install.sh", home, "--skip-external")
+            marker = json.loads((home / ".pi/agent/.weihung-agent-root.json").read_text())
+            self.assertEqual(marker["profile"], "unattended")
+            self.assertEqual(marker["overlay"], str(overlay.resolve()))
+            text = (home / ".pi/agent/AGENTS.md").read_text()
+            self.assertIn("unattended", text.splitlines()[0])
+            self.assertIn("Overlay-only instruction.", text, "the overlay still appends to the unattended text")
+            run_script("uninstall.sh", home, "--skip-external")
+            self.assertFalse((home / ".pi/agent/.weihung-agent-root.json").exists())
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -39,6 +39,11 @@ def saved_overlay(home: Path) -> str | None:
     return read_json(home / MARKER).get("overlay")
 
 
+def saved_profile(home: Path) -> str | None:
+    """The install profile the last install recorded in the marker, or None before the profile existed."""
+    return read_json(home / MARKER).get("profile")
+
+
 def optional_plugins() -> dict[str, tuple[str, str, Path]]:
     """Key, display name, root variable, and default checkout of each optional plugin the overlay declares.
 

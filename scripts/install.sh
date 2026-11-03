@@ -14,6 +14,7 @@ CODEBASE_MEMORY_INSTALL_URL="https://raw.githubusercontent.com/DeusData/codebase
 OVERLAY_ROOT=""
 SAVED_OVERLAY=""
 NO_OVERLAY=0
+PROFILE=""
 TARGET_HOME="${HOME}"
 FORCE=0
 SKIP_EXTERNAL=0
@@ -21,13 +22,15 @@ BACKUP_ROOT=""
 
 usage() {
   cat <<'EOF'
-Usage: bash scripts/install.sh [--home PATH] [--force] [--skip-external] [--overlay PATH | --no-overlay]
+Usage: bash scripts/install.sh [--home PATH] [--force] [--skip-external] [--overlay PATH | --no-overlay] [--profile default|unattended]
 
 Installs this repository's pi setup:
   - ~/.agents/skills/*/        links to skills/ (and the overlay's skills/)
   - ~/.pi/agent/rules          link to rules/
   - ~/.pi/agent/agents         link to agents/
   - ~/.local/bin/codebase-memory-mcp when missing
+  - --profile unattended (saved; a bare run keeps it, --profile default restores) leaves out the desktop-only packages,
+    skills and tools and uses pi/AGENTS.unattended.md.in
   - everything scripts/pi-target.py install manages: pi itself, its Herdr
     integration, pi packages, anchorloop, this repository's pi package, the
     generated ~/.pi/agent/AGENTS.md, model routing, UI settings,
@@ -209,6 +212,11 @@ while [[ $# -gt 0 ]]; do
       NO_OVERLAY=1
       shift
       ;;
+    --profile)
+      [[ $# -ge 2 ]] || fail "--profile requires default or unattended"
+      PROFILE="$2"
+      shift 2
+      ;;
     -h|--help)
       usage
       exit 0
@@ -219,6 +227,9 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# An install profile (not a model profile): unattended leaves out the packages, skills and tools that need a person at the computer.
+# No profile given: keep the one the last install recorded.
+case "$PROFILE" in ""|default|unattended) ;; *) fail "unknown profile: $PROFILE (use default or unattended)" ;; esac
 SAVED_OVERLAY="$("$PYTHON" "$REPO_ROOT/scripts/pi-target.py" saved-overlay --home "$TARGET_HOME")"
 if [[ "$NO_OVERLAY" -eq 1 ]]; then
   [[ -z "$OVERLAY_ROOT" ]] || fail "--overlay and --no-overlay cannot be combined"
@@ -239,6 +250,11 @@ fi
 
 mkdir -p "$TARGET_HOME/.agents/skills"
 
+dropped_skills=()
+while IFS= read -r skill_name; do
+  [[ -z "$skill_name" ]] || dropped_skills+=("$skill_name")
+done < <("$PYTHON" "$REPO_ROOT/scripts/pi-target.py" dropped-skills --home "$TARGET_HOME" ${PROFILE:+--profile "$PROFILE"})
+
 root_skills=()
 skill_sources=()
 skill_roots=("$SKILLS_DIR")
@@ -246,6 +262,7 @@ if [[ -n "$OVERLAY_ROOT" && -d "$OVERLAY_ROOT/skills" ]]; then skill_roots+=("$O
 for skills_root in "${skill_roots[@]}"; do
   while IFS= read -r skill_dir; do
     skill_name="$(basename "$skill_dir")"
+    if is_in_list "$skill_name" ${dropped_skills[@]+"${dropped_skills[@]}"}; then continue; fi
     if is_in_list "$skill_name" ${root_skills[@]+"${root_skills[@]}"}; then
       fail "skill $skill_name exists in both $SKILLS_DIR and the overlay"
     fi
@@ -269,6 +286,7 @@ pi_args=(install --home "$TARGET_HOME")
 if [[ "$NO_OVERLAY" -eq 1 ]]; then pi_args+=(--no-overlay); fi
 if [[ "$SKIP_EXTERNAL" -eq 1 ]]; then pi_args+=(--skip-external); fi
 if [[ "$FORCE" -eq 1 ]]; then pi_args+=(--force); fi
+if [[ -n "$PROFILE" ]]; then pi_args+=(--profile "$PROFILE"); fi
 "$PYTHON" "$REPO_ROOT/scripts/pi-target.py" "${pi_args[@]}"
 
 log "Install complete."

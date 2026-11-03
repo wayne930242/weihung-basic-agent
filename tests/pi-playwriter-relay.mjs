@@ -1,5 +1,8 @@
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import assert from "node:assert/strict";
-import playwriterRelay, { ensureRelay, RELAY_URL } from "../pi/extensions/playwriter-relay.ts";
+import playwriterRelay, { ensureRelay, RELAY_URL, unattendedProfile } from "../pi/extensions/playwriter-relay.ts";
 
 const json = (body) => ({ ok: true, json: async () => body });
 const local = { extensions: [{ stableKey: "install:Chrome:abc" }] };
@@ -86,5 +89,13 @@ await new Promise((resolve) => setTimeout(resolve, 20));
 process.off("unhandledRejection", onSurfaced);
 assert.equal(surfaced.length, 1, "a non-stale notify error is not swallowed");
 assert.match(String(surfaced[0]), /notify broke/);
+
+// The unattended install profile records itself in the marker; the relay then stays off.
+const agentDir = mkdtempSync(join(tmpdir(), "relay-profile-"));
+assert.equal(unattendedProfile(agentDir), false, "no marker means the default profile");
+writeFileSync(join(agentDir, ".weihung-agent-root.json"), JSON.stringify({ profile: "default" }));
+assert.equal(unattendedProfile(agentDir), false);
+writeFileSync(join(agentDir, ".weihung-agent-root.json"), JSON.stringify({ profile: "unattended" }));
+assert.equal(unattendedProfile(agentDir), true);
 
 console.log("pi playwriter relay: pass");

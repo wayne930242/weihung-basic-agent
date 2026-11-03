@@ -1,6 +1,7 @@
 """Commands run outside this process: npm, pi, herdr, git."""
 
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -11,6 +12,12 @@ def environment(home: Path) -> dict[str, str]:
     env["HOME"] = str(home)
     env["PI_CODING_AGENT_DIR"] = str(home / ".pi/agent")
     return env
+
+
+def require(tool: str, hint: str) -> None:
+    """Stop with a clear message when a tool the install needs is not on PATH."""
+    if shutil.which(tool) is None:
+        raise ValueError(f"{tool} is not on PATH; {hint}")
 
 
 def run(args: list[str], home: Path) -> None:

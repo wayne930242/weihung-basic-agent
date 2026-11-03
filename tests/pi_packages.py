@@ -196,7 +196,7 @@ class PackageTests(unittest.TestCase):
                 if args[:2] == ["pi", "remove"]:
                     removals.append(args[2])
 
-            with mock.patch.object(external, "run", fake_run):
+            with mock.patch.object(external, "run", fake_run), mock.patch.object(external, "require"):
                 steps.install(home, skip_external=False, force=False)
             self.assertNotIn(old, json.loads(settings.read_text())["packages"])
             self.assertNotIn(old, removals)
@@ -223,10 +223,68 @@ class PackageTests(unittest.TestCase):
                     current.setdefault("packages", []).append(args[2])
                     settings.write_text(json.dumps(current))
 
-            with mock.patch.object(external, "run", fake_run):
+            with mock.patch.object(external, "run", fake_run), mock.patch.object(external, "require"):
                 steps.install(home, skip_external=False, force=False)
             self.assertEqual(uninstalled, [["pi-phoenix-otel", "--prefix", str(agent / "npm"), "--legacy-peer-deps"]])
             self.assertFalse(quotas.exists())
+
+    def test_the_unattended_profile_filters_owned_packages_by_name_not_version(self):
+        from pi_root.pins import PACKAGES, UNATTENDED_DROPS
+        default = packages.owned_packages({})
+        headless = packages.owned_packages({"profile": "unattended"})
+        self.assertEqual(default, PACKAGES)
+        self.assertEqual([p for p in PACKAGES if p not in headless], packages.profile_dropped({"profile": "unattended"}))
+        self.assertEqual(len(PACKAGES) - len(headless), len(UNATTENDED_DROPS), "every drop names a pinned package")
+        self.assertEqual(packages.profile_dropped({}), [])
+
+    def test_switching_to_unattended_removes_the_dropped_packages_and_the_ported_resources(self):
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            settings = home / ".pi/agent/settings.json"
+            removed = []
+
+            def fake_run(args, _home):
+                if args[0] == "npm":
+                    fake_npm_install(args)
+                if args[:2] == ["pi", "install"]:
+                    current = json.loads(settings.read_text()) if settings.exists() else {}
+                    current.setdefault("packages", []).append(args[2])
+                    settings.parent.mkdir(parents=True, exist_ok=True)
+                    settings.write_text(json.dumps(current))
+                if args[:2] == ["pi", "remove"]:
+                    removed.append(args[2])
+                    current = json.loads(settings.read_text())
+                    current["packages"] = [value for value in current["packages"] if value != args[2]]
+                    settings.write_text(json.dumps(current))
+
+            with mock.patch.object(external, "run", fake_run), mock.patch.object(external, "require"), \
+                    mock.patch.object(external, "capture", lambda *_: ""):
+                steps.install(home, skip_external=False, force=False)
+                self.assertTrue((home / ".local/bin/ttt").is_symlink())
+                steps.install(home, skip_external=False, force=False, profile="unattended")
+            self.assertIn("npm:cc-safety-net@2.7.2", removed)
+            self.assertNotIn("npm:pi-robot-hand@0.4.0", json.loads(settings.read_text())["packages"])
+            self.assertFalse((home / ".local/bin/ttt").exists(), "ported resources leave with the switch")
+            self.assertNotIn("ported_resources", json.loads((home / ".pi/agent/.weihung-agent-root.json").read_text()))
+
+    def test_an_external_install_without_herdr_on_path_fails_before_installing_anything(self):
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            calls = []
+            with mock.patch.object(external, "run", lambda args, _home: calls.append(args)), \
+                    mock.patch.dict(os.environ, {"PATH": str(home)}):
+                with self.assertRaisesRegex(ValueError, "herdr is not on PATH"):
+                    steps.install(home, skip_external=False, force=False)
+            self.assertEqual(calls, [])
+
+    def test_the_update_schedule_refuses_outside_macos(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("pi_pins", Path(__file__).resolve().parents[1] / "scripts/pi-pins.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        with mock.patch.object(module.sys, "platform", "linux"):
+            with self.assertRaisesRegex(ValueError, "provisioning playbook"):
+                module.schedule()
 
 
 if __name__ == "__main__":

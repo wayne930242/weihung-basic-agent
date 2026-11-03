@@ -129,6 +129,53 @@ class StepTests(unittest.TestCase):
             steps.uninstall(home, skip_external=True)
             self.assertEqual(instructions.read_text(), "user instructions\n")
 
+    def test_unattended_profile_drops_packages_keeps_rules_and_is_kept_by_a_bare_run(self):
+        from pi_root.pins import PACKAGES, UNATTENDED_DROPS
+        from pi_root import packages
+        dropped = set(UNATTENDED_DROPS)
+
+        def ids(home):
+            settings = json.loads((home / ".pi/agent/settings.json").read_text())
+            return {packages.package_id(value, home / ".pi/agent") for value in settings["packages"]}
+
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            run_script("install.sh", home, "--skip-external", "--no-overlay", "--profile", "unattended")
+            marker = home / ".pi/agent/.weihung-agent-root.json"
+            self.assertEqual(json.loads(marker.read_text())["profile"], "unattended")
+            self.assertFalse(dropped & ids(home), "the unattended profile installs none of the dropped packages")
+            self.assertIn("npm:pi-anchorloop", ids(home))
+            self.assertIn("npm:pi-straw-boss", ids(home))
+            self.assertEqual((home / ".pi/agent/rules").readlink(), ROOT / "rules", "the rules link stays under the profile")
+            self.assertFalse((home / ".agents/skills/going-to-sleep").exists())
+            self.assertFalse((home / ".agents/skills/recording-with-obs").exists())
+            self.assertTrue((home / ".agents/skills/orchestrate").is_symlink())
+            text = (home / ".pi/agent/AGENTS.md").read_text()
+            self.assertEqual(text, (ROOT / "pi/AGENTS.unattended.md.in").read_text().rstrip() + "\n")
+            self.assertIn("tower_send", text)
+            self.assertFalse((home / ".pi/agent/computer-use.json").exists(), "the computer-use config step is skipped")
+
+            run_script("install.sh", home, "--skip-external", "--no-overlay")
+            self.assertEqual(json.loads(marker.read_text())["profile"], "unattended", "a bare run keeps the profile")
+            self.assertFalse(dropped & ids(home))
+
+            run_script("install.sh", home, "--skip-external", "--no-overlay", "--profile", "default")
+            self.assertEqual(json.loads(marker.read_text())["profile"], "default")
+            self.assertTrue(dropped <= ids(home), "--profile default installs the dropped packages again")
+            self.assertEqual((home / ".pi/agent/AGENTS.md").read_text(), (ROOT / "pi/AGENTS.md.in").read_text().rstrip() + "\n")
+            self.assertTrue((home / ".agents/skills/going-to-sleep").is_symlink())
+
+    def test_unattended_uninstall_restores_a_dropped_package_the_user_had(self):
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            settings = home / ".pi/agent/settings.json"
+            settings.parent.mkdir(parents=True)
+            settings.write_text(json.dumps({"packages": ["npm:cc-safety-net@2.0.0"]}))
+            run_script("install.sh", home, "--skip-external", "--no-overlay", "--profile", "unattended")
+            self.assertNotIn("npm:cc-safety-net@2.0.0", json.loads(settings.read_text())["packages"])
+            run_script("uninstall.sh", home, "--skip-external")
+            self.assertEqual(json.loads(settings.read_text())["packages"], ["npm:cc-safety-net@2.0.0"])
+
 
 if __name__ == "__main__":
     unittest.main()

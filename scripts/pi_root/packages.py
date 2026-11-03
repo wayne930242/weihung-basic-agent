@@ -6,7 +6,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from . import external, resources
+from . import external, resources, unattended
 from .context import Context, State
 from .jsonfile import read_json, write_json
 from .paths import (
@@ -113,9 +113,15 @@ def herdr_agents_root() -> str | None:
 
 
 def owned_packages(state: State) -> list[Package]:
-    """PACKAGES, with the pinned pi-herdr-agents release swapped for the override checkout the install recorded."""
+    """PACKAGES minus the recorded profile's drops, with the pinned pi-herdr-agents release swapped for the override checkout the install recorded."""
+    dropped = unattended.dropped_ids(state.get("profile"))
     return [state["herdr_agents"] if package == HERDR_AGENTS_SOURCE and state.get("herdr_agents") else package
-            for package in PACKAGES]
+            for package in PACKAGES if package_id(package, Path()) not in dropped]
+
+
+def profile_dropped(state: State) -> list[Package]:
+    """The PACKAGES entries the recorded profile leaves out."""
+    return [package for package in PACKAGES if package_id(package, Path()) in unattended.dropped_ids(state.get("profile"))]
 
 
 def plugin_keys(state: State) -> list[str]:
@@ -204,14 +210,19 @@ def apply(ctx: Context) -> None:
     # An overlay checkout is not a pi package; a machine whose settings still list it from before the overlay split sheds it.
     if overlay := overlay_root():
         retired_ids.add(package_id(str(overlay), agent_dir))
+    # An install profile's drops leave settings like any retired package, for this run only: the default profile installs them again.
+    retired_ids |= {package_id(package, agent_dir) for package in profile_dropped(state)}
+    headless = unattended.is_unattended(ctx.profile)
     pinned = owned_packages(state)
     if not ctx.skip_external:
+        external.require("herdr", "install herdr first; the pi integration, the Straw Boss plugins and the agents all need it")
         external.run(["npm", "install", "-g", "@earendil-works/pi-coding-agent@latest"], home)
-        if "playwriter_preinstalled" not in state:
+        if not headless and "playwriter_preinstalled" not in state:
             listed = subprocess.run(["npm", "ls", "-g", "--depth=0", "playwriter"], capture_output=True, check=False)
             state["playwriter_preinstalled"] = listed.returncode == 0
             ctx.save()
-        external.run(["npm", "install", "-g", PLAYWRITER], home)
+        if not headless:
+            external.run(["npm", "install", "-g", PLAYWRITER], home)
         external.run(["herdr", "integration", "install", "pi"], home)
         state["integration_installed"] = True
         ctx.save()
@@ -233,7 +244,13 @@ def apply(ctx: Context) -> None:
                 external.run(["pi", "remove", package_source(package)], home)
         remove_retired_installs(agent_dir, home)
         external.run(["pi", "install", state["anchorloop"]], home)
-        resources.install_ported_resources(home, state, ctx.force)
+        if headless:
+            # Linear's ttt and the pi-skills clone are desktop-side tools; a switch from the default profile takes them back out.
+            resources.uninstall_ported_resources(home, state)
+            for key in ("ported_resources", "ttt_prefix", "pi_skills_clone"):
+                state.pop(key, None)
+        else:
+            resources.install_ported_resources(home, state, ctx.force)
         ctx.save()
         external.run(["pi", "install", LOCAL_PACKAGE], home)
         for key in plugin_keys(state):
@@ -297,6 +314,9 @@ def restore(ctx: Context) -> None:
     # The override replaced a release the user had declared before install; put that spec back like a retired package.
     displaced = [package for package in previous_packages if state.get("herdr_agents")
                  and package_id(package, agent_dir) == package_id(HERDR_AGENTS_SOURCE, agent_dir)]
+    # A package the user had before install and the profile shed comes back with the rest.
+    dropped_ids = {package_id(package, agent_dir) for package in profile_dropped(state)}
+    displaced += [package for package in previous_packages if package_id(package, agent_dir) in dropped_ids]
     for package in [*state.get("retired_packages", []), *displaced]:
         if package not in settings["packages"]:
             if not ctx.skip_external:

@@ -147,3 +147,7 @@ for test in tests/*.mjs; do node --experimental-strip-types --test "$test"; done
 ```
 
 The installer tests run against temporary homes with `--skip-external`; `tests/pi_fresh_machine.py` and `tests/pi_port_install.py` exercise the external install path with stub `npm`, `pi`, and `herdr` commands.
+
+## Unattended profile
+
+`scripts/install.sh --profile unattended` is an install profile for a computer nobody sits at (it is not a model profile; role models stay in `pi/herdr-agents-models.json`). It leaves out the packages in `UNATTENDED_DROPS` (`pins.py`), the Playwriter install and relay, the computer-use config, the ttt and pi-skills resources, and the `going-to-sleep` and `recording-with-obs` skills, and writes `pi/AGENTS.unattended.md.in` as `AGENTS.md`. The profile is saved in the marker, so a bare run keeps it; `--profile default` installs everything again. The `rules/` link and anchorloop stay.

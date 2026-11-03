@@ -27,7 +27,7 @@ find_python() {
       return 0
     fi
   done
-  echo "Python 3.10 or newer is required (python3 is $(python3 --version 2>&1 || echo missing)); install it, e.g. brew install python@3.14, or set WEIHUNG_PYTHON" >&2
+  echo "Python 3.10 or newer is required (python3 is $(python3 --version 2>&1 || echo missing)); install it, e.g. brew install python@3.14 (macOS) or apt install python3 (Ubuntu), or set WEIHUNG_PYTHON" >&2
   return 1
 }
 

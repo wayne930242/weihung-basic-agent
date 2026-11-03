@@ -1,5 +1,8 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { spawn } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
 
 export const RELAY_URL = "http://127.0.0.1:19988";
 
@@ -57,7 +60,17 @@ export async function ensureRelay(deps: RelayDeps = defaultDeps, attempts = 20, 
   return "Playwriter relay is running but the Chrome extension is not connected; open Chrome, or reload the Playwriter extension at chrome://extensions.";
 }
 
+/** The unattended install profile has no Chrome and does not install Playwriter, so the relay never starts there. */
+export function unattendedProfile(agentDir = process.env.PI_CODING_AGENT_DIR ?? join(homedir(), ".pi/agent")): boolean {
+  try {
+    return JSON.parse(readFileSync(join(agentDir, ".weihung-agent-root.json"), "utf8")).profile === "unattended";
+  } catch {
+    return false;
+  }
+}
+
 export default function playwriterRelay(pi: ExtensionAPI, deps: RelayDeps = defaultDeps): void {
+  if (unattendedProfile()) return;
   // A session that ends before the check settles leaves ctx stale, and pi throws on any access; nobody is left to warn.
   let ended = false;
   pi.on("session_shutdown", () => { ended = true; });

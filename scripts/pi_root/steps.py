@@ -4,7 +4,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import NamedTuple
 
-from . import configs, instructions, packages
+from . import configs, instructions, packages, unattended
 from .context import Context
 from .jsonfile import read_json
 from .paths import MARKER, overlay_root
@@ -33,9 +33,13 @@ STEPS = (
 )
 
 
-def install(home: Path, skip_external: bool, force: bool, herdr_root: str | None = None) -> None:
+def install(home: Path, skip_external: bool, force: bool, herdr_root: str | None = None, profile: str | None = None) -> None:
     marker = home / MARKER
-    ctx = Context(home, read_json(marker), skip_external, force, herdr_root, first_install=not marker.exists())
+    state = read_json(marker)
+    # A run without --profile keeps the recorded one, so the scheduled bare install never reverts an unattended box.
+    profile = profile or state.get("profile", unattended.DEFAULT)
+    ctx = Context(home, state, skip_external, force, herdr_root, first_install=not marker.exists(), profile=profile)
+    ctx.state["profile"] = profile
     # The overlay is recorded with the first step's marker save, so a later run without --overlay keeps it.
     if overlay := overlay_root():
         ctx.state["overlay"] = str(overlay)
@@ -52,7 +56,8 @@ def uninstall(home: Path, skip_external: bool) -> None:
     marker = home / MARKER
     if not marker.exists():
         return
-    ctx = Context(home, read_json(marker), skip_external)
+    state = read_json(marker)
+    ctx = Context(home, state, skip_external, profile=state.get("profile", unattended.DEFAULT))
     for step in reversed(STEPS):
         step.restore(ctx)
     marker.unlink()

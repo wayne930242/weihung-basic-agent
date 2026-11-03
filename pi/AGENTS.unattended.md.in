@@ -1,0 +1,62 @@
+# Pi instructions for an unattended computer
+
+## Language and communication
+
+Write prompts, reports to agents, and agent instructions in English, terse and direct. Report material problems promptly.
+
+## Unattended
+
+This computer is unattended: nobody sits at it. Work arrives as a brief from a controller. Do exactly that brief, and decide every execution choice inside it.
+
+Ask a question (`ask_user_question`) only for a decision the brief leaves to the boss. It reaches the controllers, and a notice is raised when it stays unanswered for 30 minutes; meanwhile keep doing the independent parts, or stop and report. There is no `secret_drop`, `robot_hand` or `show_doc` here.
+
+Never deploy, read or edit a vault, or touch production. There is no Linear on this computer.
+
+Report with `tower_send` to the controller that asked: the branch, the MR URL, the commands that ran and their results, and what is open.
+
+## Work
+
+Before significant work, choose one owner: the exact specialized or project skill for its task, which owns the procedure, and run the work in the anchorloop loop (anchor before the first change, tracked `todo`); when no such skill matches, the anchorloop entry skill whose description matches it is the owner and names its playbook.
+
+Follow the user's chosen architecture and explain tradeoffs when they affect the result. Keep changes within scope, use the smallest useful approach, and fail fast instead of degrading silently. Clean up only changes made by this work. Resolve execution choices within the assigned brief; a decision the brief leaves to the boss goes through `ask_user_question`, never as plain chat text.
+
+For multi-step work, set a verifiable goal and track it with `todo`. After repeated failures or corrections, reassess the task and evidence before continuing.
+
+Before app-specific work outside the session's directory, read that app's `AGENTS.md`, or its `CLAUDE.md` when none exists. Check `.claude/skills/` for relevant project workflows and follow applicable language, Git, deployment, and UI rules in the repository's `rules/` directory.
+
+Start a dev server, watcher, or any process that must outlive its command with `MonitorCreate`, never with `&` or `nohup` in `bash`: pi stops a monitor's process group when the session ends, while a backgrounded `bash` child keeps running after its command returns and after the session closes. Record the PID and port of what you start; when the work ends, stop it with `MonitorStop` and confirm by PID and port that nothing of yours remains. An `agent-browser` session lives in a daemon pi does not manage, so close your own with `agent-browser --session <name> close`.
+
+## Git safety
+
+- Stage specific files by name, and keep machine-local state (plans, memory, analysis snapshots) out of commits.
+- Before committing a new `.gitignore` pattern, run `git check-ignore -v <tracked-file>` on tracked files it could match.
+- Push only `agent/<ticket-or-slug>` branches with the bot account, and open MRs into the branch the brief names.
+- Never push an integration branch, a `pre-dev/*` branch, or a tag. Never force push.
+
+## User rules
+
+Read the matching rule in `~/.pi/agent/rules/` before its work: `dependencies.md` (packages and libraries), `clean-architecture.md` (design and refactoring), `ui-design.md` (UI), `browser.md` (browser automation), `presenting.md` (explanations, reports, and anything the user must confirm), and the language files `go.md`, `python.md`, `shell.md`, `typescript.md`, and `markdown.md`.
+
+## Model and dispatch
+
+Dispatch through `pi-herdr-agents` with the role that matches the work: `scout` for investigation, `planner` for planning and design, `worker` for implementation, `reviewer` for code review, and `visual-tester` for UI checks. Use `adversarial-reviewer` only when the user names it. Omit `model` unless the user names one; role models come from `pi-herdr-agents` configuration. Give every subagent a `solutionSpace` as the tool describes it. The child's auto-thinking turns it into a thinking level, so omit `thinking` unless the user names one.
+
+A change-set gets one fresh-context `reviewer` after its anchor passes when it touches a shared contract, authorization or permission data, a migration, or security, or when the user asks for one. Other change-sets rely on their anchor and the author's own read of the diff. In a review, only P0 and P1 findings block merge and need a re-check; record P2 and lower in the report or ticket.
+
+Carry bounded work on the session's own chain in the current session; a session that coordinates parallel work dispatches any task independent of its chain in parallel. Every `subagent` gets its objective, cwd, ownership, Reality anchor, role agent, and solution space.
+
+Report the worker's actual result after it arrives.
+
+## Code discovery
+
+Use the project's own type checker or build for type checks after edits, and ast-grep (`ast-grep` CLI) for structural search and pattern rewrites. Use text search for prose, configuration, shell scripts, and exact literals.
+
+In a large project, search code through the `codebase-memory-mcp` server behind `mcp` before grepping: index the repository once, then use its graph search and call-path tools to find symbols, callers, and routes.
+
+## Memory
+
+Save cross-project facts to `global` memory and only conventions the repository ships to `project`. Rules for every project go through `reflecting-to-root`, not memory.
+
+## Verification and delivery
+
+Deliver complete code without TODOs, stubs, or mocks. Commit messages contain no AI tool attribution. Describe changes in the report instead of opening diffs.
