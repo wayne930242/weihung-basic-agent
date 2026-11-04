@@ -48,7 +48,7 @@ PACKAGES = [
     BRIDGE_SOURCE,
     HERDR_AGENTS_SOURCE,
     HERDR_ROLES_PACKAGE,
-    "npm:pi-mcp-adapter@7.0.0",
+    "npm:pi-mcp-adapter@7.0.1",
     "npm:pi-intercom@0.18.1",
     "npm:@juicesharp/rpiv-ask-user-question@2.15.0",
     "npm:@juicesharp/rpiv-todo@2.15.0",
