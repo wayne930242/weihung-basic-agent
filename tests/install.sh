@@ -109,7 +109,7 @@ with tempfile.TemporaryDirectory() as directory:
     assert "npm:@pify/memory@0.14.1" in sources, sources
     assert "npm:pi-loop-monitor@0.2.8" in sources, sources
     assert "npm:@narumitw/pi-goal@0.54.15" in sources, sources
-    assert {"source": "npm:pi-code@1.6.2", "extensions": ["extensions/claude-rules.ts"]} in settings["packages"], settings
+    assert {"source": "npm:pi-code@1.7.0", "extensions": ["extensions/claude-rules.ts"]} in settings["packages"], settings
     assert not any("pi-todo" in source or "pi-curated-themes" in source for source in sources), sources
     assert not {"defaultProvider", "defaultModel", "defaultThinkingLevel", "enabledModels"} & set(settings), settings
     assert settings["theme"] == "catppuccin-mocha", settings

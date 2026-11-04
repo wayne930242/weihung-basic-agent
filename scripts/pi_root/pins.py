@@ -2,7 +2,7 @@
 
 BRIDGE_SOURCE = "git:github.com/wayne930242/pi-claude-bridge@105dbed6871293d0988e4693a28972418b15aae1"
 QUOTAS_SOURCE = "npm:@latentminds/pi-quotas@0.5.0"
-CLAUDE_RULES_SOURCE = "npm:pi-code@1.6.2"
+CLAUDE_RULES_SOURCE = "npm:pi-code@1.7.0"
 # Fork pin of giuseppecrj/pi-herdr-agents: upstream main (v3.7.2+, which carries #84 and #99) rebased with the
 # solutionSpace change of closed PR #87, grouped-workspace placement, the macOS process-identity and cancel-settle
 # fixes, and the fork-only exit hold that pi/extensions/quota-resume.ts and monitor-hold.ts use (branch weihung/v3-integration).
