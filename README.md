@@ -31,7 +31,7 @@ The installer never overwrites a file you own silently, and it is idempotent: re
 
 ## Layering your own material
 
-`bash scripts/install.sh --overlay PATH` layers a second checkout over this one: its `skills/` link beside ours, its `pi/AGENTS.append.md` is appended to the generated `AGENTS.md`, and its `overlay.json` can declare optional plugins. That keeps personal or company material in a private repository while this one stays public.
+`bash scripts/install.sh --overlay PATH` layers a second checkout over this one: its `skills/` link beside ours, its `pi/AGENTS.append.md` is appended to the generated `AGENTS.md`, its `pi/trust.json` (`{"trusted": ["~/dir", ...]}`) marks directories trusted in `~/.pi/agent/trust.json`, and its `overlay.json` can declare optional plugins. That keeps personal or company material in a private repository while this one stays public.
 
 ### Make your own overlay
 

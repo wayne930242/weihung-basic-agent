@@ -75,6 +75,26 @@ class OverlayTests(unittest.TestCase):
             run_script("uninstall.sh", home, "--skip-external", "--overlay", str(overlay), env=env)
             self.assertEqual(json.loads(models.read_text())["providers"], {"ollama": user})
 
+    def test_overlay_trusted_dirs_merge_into_trust_json_and_restore(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory).resolve()
+            home = base / "home"
+            overlay = make_overlay(base)
+            (overlay / "pi/trust.json").write_text(json.dumps({"trusted": ["~/.herdr/worktrees", "/opt/w"]}))
+            trust = home / ".pi/agent/trust.json"
+            trust.parent.mkdir(parents=True)
+            trust.write_text(json.dumps({"/opt/w": False, "/p": True}))
+            env = {"WEIHUNG_OVERLAY": ""}
+            run_script("install.sh", home, "--skip-external", "--overlay", str(overlay), env=env)
+            worktrees = str(home / ".herdr/worktrees")
+            self.assertEqual(json.loads(trust.read_text()), {"/opt/w": True, "/p": True, worktrees: True})
+            # Dropping a directory puts back its earlier decision.
+            (overlay / "pi/trust.json").write_text(json.dumps({"trusted": ["~/.herdr/worktrees"]}))
+            run_script("install.sh", home, "--skip-external", "--overlay", str(overlay), env=env)
+            self.assertEqual(json.loads(trust.read_text()), {"/opt/w": False, "/p": True, worktrees: True})
+            run_script("uninstall.sh", home, "--skip-external", "--overlay", str(overlay), env=env)
+            self.assertEqual(json.loads(trust.read_text()), {"/opt/w": False, "/p": True})
+
     def test_a_later_run_without_an_overlay_keeps_the_recorded_one(self):
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory)

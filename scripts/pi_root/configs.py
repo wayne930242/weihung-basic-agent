@@ -1,6 +1,7 @@
 """The small managed settings: UI, terminal, panes, herdr-agents models, built-in MCP, mcp-adapter, open-tui, computer use, compaction."""
 
 import hashlib
+import os
 from copy import deepcopy
 from pathlib import Path
 
@@ -174,6 +175,42 @@ def restore_overlay_models(ctx: Context) -> None:
     else:
         config.pop("providers", None)
     write_or_remove(path, config)
+
+
+def overlay_trusted_dirs(home: Path) -> list[str]:
+    """The directories the overlay's pi/trust.json lists, `~` expanded and canonical like pi's own trust keys."""
+    root = overlay_root()
+    dirs = read_json(root / "pi/trust.json").get("trusted", []) if root else []
+    return [os.path.realpath(home / entry[2:] if entry.startswith("~/") else entry) for entry in dirs]
+
+
+def apply_overlay_trust(ctx: Context) -> None:
+    """Mark the overlay's directories trusted in ~/.pi/agent/trust.json; pi trusts every directory below a trusted one."""
+    state = ctx.state
+    path = ctx.agent_dir / "trust.json"
+    trust = read_json(path)
+    installed = state.get("installed_trusted_dirs", [])
+    previous = state.setdefault("previous_trusted_dirs", {})
+    desired = overlay_trusted_dirs(ctx.home)
+    for key in desired:
+        if key not in installed:
+            previous.setdefault(key, trust.get(key))
+        trust[key] = True
+    # A directory the overlay dropped goes back to its earlier decision, while it still holds what install wrote.
+    for key in set(installed) - set(desired):
+        restore_value(trust, key, True, previous.pop(key, None))
+    write_or_remove(path, dict(sorted(trust.items())))
+    state["installed_trusted_dirs"] = desired
+
+
+def restore_overlay_trust(ctx: Context) -> None:
+    state = ctx.state
+    path = ctx.agent_dir / "trust.json"
+    trust = read_json(path)
+    previous = state.get("previous_trusted_dirs", {})
+    for key in state.get("installed_trusted_dirs", []):
+        restore_value(trust, key, True, previous.get(key))
+    write_or_remove(path, trust)
 
 
 def disable_builtin_mcp(settings: dict, state: State) -> None:
