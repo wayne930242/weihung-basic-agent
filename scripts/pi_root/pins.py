@@ -64,7 +64,7 @@ PACKAGES = [
     "npm:pi-auto-tab-name@0.2.0",
     "npm:pi-herdr-doc-review@0.12.0",
     # Straw Boss coordination in Herdr: opt-in main agents per tab, an on-demand tower per workspace, scoped broadcast.
-    "npm:pi-straw-boss@0.59.5",
+    "npm:pi-straw-boss@0.60.0",
     "npm:@pify/memory@0.14.1",
     "npm:pi-loop-monitor@0.2.8",
     "npm:@narumitw/pi-goal@0.54.15",
@@ -99,4 +99,4 @@ UNATTENDED_DROPS = (
 )
 UNATTENDED_DROPPED_SKILLS = ("going-to-sleep", "recording-with-obs")
 # anchorloop, the workflow skills and extensions; PI_ANCHORLOOP_ROOT swaps in a checkout for testing.
-ANCHORLOOP_PACKAGE = "npm:pi-anchorloop@2.10.0"
+ANCHORLOOP_PACKAGE = "npm:pi-anchorloop@2.10.1"
