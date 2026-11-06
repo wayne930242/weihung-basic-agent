@@ -62,7 +62,7 @@ PACKAGES = [
     "npm:pi-codex-image-gen@0.3.1",
     "npm:pi-robot-hand@0.4.0",
     "npm:pi-auto-tab-name@0.2.0",
-    "npm:pi-herdr-doc-review@0.12.0",
+    "npm:pi-herdr-doc-review@0.13.0",
     # Straw Boss coordination in Herdr: opt-in main agents per tab, an on-demand tower per workspace, scoped broadcast.
     "npm:pi-straw-boss@0.60.2",
     "npm:@pify/memory@0.14.1",
