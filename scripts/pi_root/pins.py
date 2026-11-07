@@ -67,7 +67,7 @@ PACKAGES = [
     "npm:pi-straw-boss@0.60.4",
     "npm:@pify/memory@0.14.1",
     "npm:pi-loop-monitor@0.2.8",
-    "npm:@narumitw/pi-goal@0.54.15",
+    "npm:@narumitw/pi-goal@0.54.17",
     # Antigravity (agy) Google login: /login antigravity, plus the google_search and generate_image tools.
     "npm:pi-antigravity@0.11.0",
     # Desktop app control through Accessibility (UIA on Windows), kept headless by configs.COMPUTER_USE_SETTINGS.
