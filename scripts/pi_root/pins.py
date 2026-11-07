@@ -83,7 +83,7 @@ HERDR_PLUGINS = (
     ("wayne930242.straw-boss-reaper", "wayne930242/pi-straw-boss/herdr-reaper", "v0.58.3", "reaper_plugin_preinstalled"),
 )
 # The Playwriter CLI drives the user's own Chrome through its extension; playwriter-relay.ts starts its relay.
-PLAYWRITER = "playwriter@0.9.0"
+PLAYWRITER = "playwriter@0.10.0"
 # The unattended install profile (scripts/pi_root/unattended.py) leaves these out: packages and skills that need a person at the
 # computer, a desktop, or an interactive login. Names carry no version, so a pin bump never touches them.
 UNATTENDED_DROPS = (
