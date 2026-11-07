@@ -62,6 +62,9 @@ PACKAGES = [
     "npm:pi-codex-image-gen@0.3.1",
     "npm:pi-robot-hand@0.4.0",
     "npm:pi-auto-tab-name@0.2.0",
+    # show_doc: documents in the browser, answers back as messages. Listed before pi-herdr-doc-review, whose show_doc it
+    # replaces: pi keeps the first tool of a name. pi-herdr-doc-review retires once every live session has reloaded.
+    "npm:pi-better-show@0.2.0",
     "npm:pi-herdr-doc-review@0.13.1",
     # Straw Boss coordination in Herdr: opt-in main agents per tab, an on-demand tower per workspace, scoped broadcast.
     "npm:pi-straw-boss@0.63.0",
@@ -93,6 +96,7 @@ UNATTENDED_DROPS = (
     "npm:pi-robot-hand",
     "npm:pi-antigravity",
     "npm:pi-open-tui",
+    "npm:pi-better-show",
     "npm:pi-herdr-doc-review",
     "npm:pi-auto-tab-name",
     "npm:pi-prose-watch",
