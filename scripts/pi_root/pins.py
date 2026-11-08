@@ -59,7 +59,7 @@ PACKAGES = [
     "npm:pi-jev-compaction@1.0.0",
     # prose_watch: an AI-tone check (Jev) on the prose files a writing task arms.
     "npm:pi-prose-watch@0.1.2",
-    "npm:cc-safety-net@2.7.4",
+    "npm:cc-safety-net@2.7.6",
     "npm:pi-codex-image-gen@0.3.1",
     "npm:pi-robot-hand@0.4.0",
     "npm:pi-auto-tab-name@0.2.0",
@@ -69,7 +69,7 @@ PACKAGES = [
     "npm:pi-straw-boss@0.67.0",
     "npm:@pify/memory@0.14.1",
     "npm:pi-loop-monitor@0.2.8",
-    "npm:@narumitw/pi-goal@0.54.17",
+    "npm:@narumitw/pi-goal@0.55.0",
     # Antigravity (agy) Google login: /login antigravity, plus the google_search and generate_image tools.
     "npm:pi-antigravity@0.11.0",
     # Desktop app control through Accessibility (UIA on Windows), kept headless by configs.COMPUTER_USE_SETTINGS.
@@ -101,4 +101,4 @@ UNATTENDED_DROPS = (
 )
 UNATTENDED_DROPPED_SKILLS = ("going-to-sleep", "recording-with-obs")
 # anchorloop, the workflow skills and extensions; PI_ANCHORLOOP_ROOT swaps in a checkout for testing.
-ANCHORLOOP_PACKAGE = "npm:pi-anchorloop@2.11.0"
+ANCHORLOOP_PACKAGE = "npm:pi-anchorloop@2.12.0"
