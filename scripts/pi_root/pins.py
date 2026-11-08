@@ -66,7 +66,7 @@ PACKAGES = [
     # show_doc: documents in the browser, answers back as messages; it replaced pi-herdr-doc-review (same tool name).
     "npm:pi-better-show@0.4.0",
     # Straw Boss coordination in Herdr: opt-in main agents per tab, an on-demand tower per workspace, scoped broadcast.
-    "npm:pi-straw-boss@0.64.0",
+    "npm:pi-straw-boss@0.65.0",
     "npm:@pify/memory@0.14.1",
     "npm:pi-loop-monitor@0.2.8",
     "npm:@narumitw/pi-goal@0.54.17",
@@ -101,4 +101,4 @@ UNATTENDED_DROPS = (
 )
 UNATTENDED_DROPPED_SKILLS = ("going-to-sleep", "recording-with-obs")
 # anchorloop, the workflow skills and extensions; PI_ANCHORLOOP_ROOT swaps in a checkout for testing.
-ANCHORLOOP_PACKAGE = "npm:pi-anchorloop@2.10.1"
+ANCHORLOOP_PACKAGE = "npm:pi-anchorloop@2.11.0"
