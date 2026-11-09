@@ -61,7 +61,7 @@ PACKAGES = [
     "npm:pi-prose-watch@0.1.2",
     "npm:cc-safety-net@2.7.6",
     "npm:pi-codex-image-gen@0.3.1",
-    "npm:pi-robot-hand@0.4.0",
+    "npm:pi-robot-hand@0.5.2",
     "npm:pi-auto-tab-name@0.2.0",
     # show_doc: documents in the browser, answers back as messages; it replaced pi-herdr-doc-review (same tool name).
     "npm:pi-better-show@0.4.0",
