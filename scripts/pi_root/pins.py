@@ -101,4 +101,4 @@ UNATTENDED_DROPS = (
 )
 UNATTENDED_DROPPED_SKILLS = ("going-to-sleep", "recording-with-obs")
 # anchorloop, the workflow skills and extensions; PI_ANCHORLOOP_ROOT swaps in a checkout for testing.
-ANCHORLOOP_PACKAGE = "npm:pi-anchorloop@2.12.1"
+ANCHORLOOP_PACKAGE = "npm:pi-anchorloop@2.13.0"
