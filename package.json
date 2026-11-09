@@ -8,6 +8,7 @@
       "./pi/extensions/auto-thinking.ts",
       "./pi/extensions/batch-guard.ts",
       "./pi/extensions/idle-compaction.ts",
+      "./pi/extensions/last-reply.ts",
       "./pi/extensions/monitor-hold.ts",
       "./pi/extensions/playwriter-relay.ts",
       "./pi/extensions/quota-resume.ts"
