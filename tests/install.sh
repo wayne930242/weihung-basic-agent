@@ -104,7 +104,7 @@ with tempfile.TemporaryDirectory() as directory:
     assert {"source": "npm:@sherif-fanous/pi-catppuccin@0.3.0", "themes": ["themes/catppuccin-mocha.json"]} in settings["packages"], settings
     assert "npm:@juicesharp/rpiv-todo@2.15.0" in sources and "npm:cc-safety-net@2.7.6" in sources, sources
     assert "npm:pi-codex-image-gen@0.3.1" in sources and not any("pi-web-access" in source for source in sources), sources
-    assert "npm:pi-robot-hand@0.5.2" in sources and not any("pi-secret-drop" in source for source in sources), sources
+    assert "npm:pi-robot-hand@0.5.3" in sources and not any("pi-secret-drop" in source for source in sources), sources
     assert not any("pi-phoenix-otel" in source for source in sources), sources
     assert "npm:@pify/memory@0.14.1" in sources, sources
     assert "npm:pi-loop-monitor@0.2.8" in sources, sources
