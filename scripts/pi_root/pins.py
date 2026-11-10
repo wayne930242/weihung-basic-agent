@@ -5,10 +5,10 @@ QUOTAS_SOURCE = "npm:@latentminds/pi-quotas@0.5.0"
 CLAUDE_RULES_SOURCE = "npm:pi-code@1.7.0"
 # Fork pin of giuseppecrj/pi-herdr-agents: upstream main (v3.8.0+, which carries #99) merged with the
 # solutionSpace change of closed PR #87, grouped-workspace placement, the macOS process-identity and cancel-settle
-# fixes, and the fork-only exit hold that pi/extensions/quota-resume.ts and monitor-hold.ts use (branch weihung/v3-integration).
+# fixes, the complex-coding task category, and the fork-only exit hold that pi/extensions/quota-resume.ts and monitor-hold.ts use (branch weihung/v3-integration).
 # Once upstream releases what this setup needs, return to the npm release: set this to npm:pi-herdr-agents@<version>, drop the PINNED_GIT
 # entry and the FORK_BRANCHES entry in scripts/pi-pins.py, and move "npm:pi-herdr-agents" out of RETIRED_SOURCES.
-HERDR_AGENTS_SOURCE = "git:github.com/wayne930242/pi-herdr-agents@946af428797d27b680b6eb6698483bac846284bc"
+HERDR_AGENTS_SOURCE = "git:github.com/wayne930242/pi-herdr-agents@9e5b5147d2616911abe121a90d71a6f829ad2561"
 # The pi-herdr-agents v3 role pack: planner, /plan, and /skill:plan. Its orchestrate skill is filtered out because
 # skills/orchestrate owns our trimmed version. Pinned by hand (MANUAL_PINS) since a 0.x bump can change the planner.
 HERDR_ROLES_SOURCE = "npm:pi-herdr-roles@0.1.0"
@@ -61,7 +61,7 @@ PACKAGES = [
     "npm:pi-prose-watch@0.1.2",
     "npm:cc-safety-net@2.7.8",
     "npm:pi-codex-image-gen@0.3.1",
-    "npm:pi-robot-hand@0.6.0",
+    "npm:pi-robot-hand@0.6.1",
     "npm:pi-auto-tab-name@0.2.0",
     # show_doc: documents in the browser, answers back as messages; it replaced pi-herdr-doc-review (same tool name).
     "npm:pi-better-show@0.5.0",
