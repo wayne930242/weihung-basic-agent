@@ -237,35 +237,58 @@ class PackageTests(unittest.TestCase):
         self.assertEqual(len(PACKAGES) - len(headless), len(UNATTENDED_DROPS), "every drop names a pinned package")
         self.assertEqual(packages.profile_dropped({}), [])
 
-    def test_switching_to_unattended_removes_the_dropped_packages_and_the_ported_resources(self):
+    def fake_install_run(self, settings: Path, removed: list[str]):
+        def fake_run(args, _home):
+            if args[0] == "npm":
+                fake_npm_install(args)
+            if args[:2] == ["git", "clone"]:
+                Path(args[-1]).joinpath(".git").mkdir(parents=True)
+            if args[:2] == ["pi", "install"]:
+                current = json.loads(settings.read_text()) if settings.exists() else {}
+                current.setdefault("packages", []).append(args[2])
+                settings.parent.mkdir(parents=True, exist_ok=True)
+                settings.write_text(json.dumps(current))
+            if args[:2] == ["pi", "remove"]:
+                removed.append(args[2])
+                current = json.loads(settings.read_text())
+                current["packages"] = [value for value in current["packages"] if value != args[2]]
+                settings.write_text(json.dumps(current))
+        return fake_run
+
+    def assert_ttt_without_pi_skills(self, home: Path):
+        agent = home / ".pi/agent"
+        marker = json.loads((agent / ".weihung-agent-root.json").read_text())
+        self.assertTrue((home / ".local/bin/ttt").is_symlink(), "ttt stays for Linear on an unattended computer")
+        self.assertTrue((agent / "skills/managing-linear-tasks/SKILL.md").is_file())
+        self.assertFalse((agent / "skills/pi-skills").exists() or (agent / "skills/pi-skills").is_symlink())
+        self.assertFalse((home / ".local/share/weihung-agent-root/pi-skills").exists())
+        self.assertNotIn("pi_skills_clone", marker)
+        self.assertIn("ttt_prefix", marker)
+        self.assertNotIn(".pi/agent/skills/pi-skills", marker["ported_resources"])
+
+    def test_switching_to_unattended_removes_the_dropped_packages_and_pi_skills_but_keeps_ttt(self):
         with tempfile.TemporaryDirectory() as directory:
             home = Path(directory)
             settings = home / ".pi/agent/settings.json"
             removed = []
-
-            def fake_run(args, _home):
-                if args[0] == "npm":
-                    fake_npm_install(args)
-                if args[:2] == ["pi", "install"]:
-                    current = json.loads(settings.read_text()) if settings.exists() else {}
-                    current.setdefault("packages", []).append(args[2])
-                    settings.parent.mkdir(parents=True, exist_ok=True)
-                    settings.write_text(json.dumps(current))
-                if args[:2] == ["pi", "remove"]:
-                    removed.append(args[2])
-                    current = json.loads(settings.read_text())
-                    current["packages"] = [value for value in current["packages"] if value != args[2]]
-                    settings.write_text(json.dumps(current))
-
-            with mock.patch.object(external, "run", fake_run), mock.patch.object(external, "require"), \
-                    mock.patch.object(external, "capture", lambda *_: ""):
+            with mock.patch.object(external, "run", self.fake_install_run(settings, removed)), \
+                    mock.patch.object(external, "require"), mock.patch.object(external, "capture", lambda *_: ""):
                 steps.install(home, skip_external=False, force=False)
-                self.assertTrue((home / ".local/bin/ttt").is_symlink())
+                self.assertTrue((home / ".pi/agent/skills/pi-skills").is_symlink())
                 steps.install(home, skip_external=False, force=False, profile="unattended")
             self.assertIn("npm:cc-safety-net@2.7.8", removed)
             self.assertNotIn("npm:pi-robot-hand@0.7.1", json.loads(settings.read_text())["packages"])
-            self.assertFalse((home / ".local/bin/ttt").exists(), "ported resources leave with the switch")
-            self.assertNotIn("ported_resources", json.loads((home / ".pi/agent/.weihung-agent-root.json").read_text()))
+            self.assert_ttt_without_pi_skills(home)
+
+    def test_a_fresh_unattended_install_brings_ttt_and_no_pi_skills(self):
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            settings = home / ".pi/agent/settings.json"
+            with mock.patch.object(external, "run", self.fake_install_run(settings, [])), \
+                    mock.patch.object(external, "require"), mock.patch.object(external, "capture", lambda *_: ""):
+                steps.install(home, skip_external=False, force=False, profile="unattended")
+                steps.install(home, skip_external=False, force=False, profile="unattended")
+            self.assert_ttt_without_pi_skills(home)
 
     def test_an_external_install_without_herdr_on_path_fails_before_installing_anything(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -10,6 +10,8 @@ from .context import State
 from .jsonfile import write_json
 from .paths import MARKER, PI_SKILLS_CLONE, PI_SKILLS_GIT, TTT_PREFIX
 
+PI_SKILLS_LINK = Path(".pi/agent/skills/pi-skills")
+
 
 def managed_resource(home: Path, state: State, destination: Path, source: Path | bytes, force: bool = False, link: bool = False) -> None:
     """Install a file or link while retaining a user-owned predecessor; a link takes a path, a file its bytes."""
@@ -44,6 +46,11 @@ def managed_resource(home: Path, state: State, destination: Path, source: Path |
 
 
 def install_ported_resources(home: Path, state: State, force: bool) -> None:
+    install_ttt(home, state, force)
+    install_pi_skills(home, state, force)
+
+
+def install_ttt(home: Path, state: State, force: bool) -> None:
     agent_dir = home / ".pi/agent"
     prefix = home / TTT_PREFIX
     external.run(["npm", "install", "--prefix", str(prefix), "--no-save", "--no-package-lock", "team-toon-tack@latest"], home)
@@ -68,6 +75,9 @@ def install_ported_resources(home: Path, state: State, force: bool) -> None:
     if not cli.exists():
         raise ValueError(f"team-toon-tack CLI is missing: {cli}")
     managed_resource(home, state, home / ".local/bin/ttt", cli, force, link=True)
+
+
+def install_pi_skills(home: Path, state: State, force: bool) -> None:
     clone = home / PI_SKILLS_CLONE
     if (clone / ".git").is_dir():
         external.run(["git", "-C", str(clone), "pull", "-q", "--ff-only"], home)
@@ -75,7 +85,7 @@ def install_ported_resources(home: Path, state: State, force: bool) -> None:
         external.run(["git", "clone", "-q", "--depth", "1", PI_SKILLS_GIT, str(clone)], home)
     state["pi_skills_clone"] = str(clone)
     write_json(home / MARKER, state)
-    managed_resource(home, state, agent_dir / "skills/pi-skills", clone, force, link=True)
+    managed_resource(home, state, home / PI_SKILLS_LINK, clone, force, link=True)
 
 
 def restore_resource(home: Path, key: str, record: dict) -> None:
@@ -97,6 +107,18 @@ def restore_resource(home: Path, key: str, record: dict) -> None:
     if backup and Path(backup).exists():
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.move(backup, destination)
+
+
+def uninstall_pi_skills(home: Path, state: State) -> None:
+    """Take pi-skills back out and leave every other ported resource in place."""
+    key = str(PI_SKILLS_LINK)
+    record = state.get("ported_resources", {}).pop(key, None)
+    if record:
+        restore_resource(home, key, record)
+    clone = state.pop("pi_skills_clone", None)
+    if clone and Path(clone) == home / PI_SKILLS_CLONE and Path(clone).exists():
+        shutil.rmtree(clone)
+    write_json(home / MARKER, state)
 
 
 def uninstall_ported_resources(home: Path, state: State) -> None:

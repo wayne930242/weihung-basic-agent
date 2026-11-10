@@ -10,7 +10,7 @@ This computer is unattended: nobody sits at it. Work arrives as a brief from a c
 
 Ask a question (`ask_user_question`) only for a decision the brief leaves to the boss. It reaches the controllers, and a notice is raised when it stays unanswered for 30 minutes; meanwhile keep doing the independent parts, or stop and report. There is no `secret_drop`, `robot_hand` or `show_doc` here.
 
-Never deploy, read or edit a vault, or touch production. There is no Linear on this computer.
+Never deploy, read or edit a vault, or touch production. Reach Linear only through `ttt`, and only in a project where a person already ran `ttt init`; never run `ttt init` or set a Linear key yourself.
 
 Report with `tower_send` to the controller that asked: the branch, the MR URL, the commands that ran and their results, and what is open.
 

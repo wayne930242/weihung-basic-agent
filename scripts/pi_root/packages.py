@@ -245,10 +245,10 @@ def apply(ctx: Context) -> None:
         remove_retired_installs(agent_dir, home)
         external.run(["pi", "install", state["anchorloop"]], home)
         if headless:
-            # Linear's ttt and the pi-skills clone are desktop-side tools; a switch from the default profile takes them back out.
-            resources.uninstall_ported_resources(home, state)
-            for key in ("ported_resources", "ttt_prefix", "pi_skills_clone"):
-                state.pop(key, None)
+            # The pi-skills clone is a desktop-side tool; a switch from the default profile takes it back out. Linear's ttt
+            # stays: agents there use it in a project where a person ran `ttt init` with their own key.
+            resources.uninstall_pi_skills(home, state)
+            resources.install_ttt(home, state, ctx.force)
         else:
             resources.install_ported_resources(home, state, ctx.force)
         ctx.save()
