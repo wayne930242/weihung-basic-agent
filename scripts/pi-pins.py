@@ -85,7 +85,7 @@ def collect_pins() -> list[Pin]:
             pins.append(Pin("npm", match[1], match[2]))
         elif match := GIT_PIN.match(source):
             pins.append(Pin("git", match[1], match[2]))
-    for plain in (target.PLAYWRITER,):
+    for plain in (target.PLAYWRITER, target.TEAM_TOON_TACK):
         if match := PLAIN_NPM_PIN.match(plain):
             pins.append(Pin("npm", match[1], match[2]))
     return pins

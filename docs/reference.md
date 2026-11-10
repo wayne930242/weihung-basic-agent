@@ -94,7 +94,7 @@ Registry packages are pinned to exact versions in [scripts/pi_root/pins.py](scri
 ### Ported resources
 
 - **Optional plugins** (only when an overlay declares them and their checkouts exist): installed as pi packages. Without a checkout the installer prints that it skipped the plugin, and a failing `pi install` for one only warns.
-- **team-toon-tack**: installed under `~/.local/share/weihung-agent-root/team-toon-tack`, providing the `managing-linear-tasks` skill, `/ttt-*` prompt templates, and the `ttt` CLI in `~/.local/bin`.
+- **team-toon-tack**: the version `TEAM_TOON_TACK` in `scripts/pi_root/pins.py` pins (`scripts/pi-pins.py` bumps it like the other pins), installed under `~/.local/share/weihung-agent-root/team-toon-tack`, providing the `managing-linear-tasks` skill, `/ttt-*` prompt templates, and the `ttt` CLI in `~/.local/bin`.
 
 ### Settings
 

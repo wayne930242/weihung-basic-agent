@@ -300,6 +300,27 @@ class PackageTests(unittest.TestCase):
                     steps.install(home, skip_external=False, force=False)
             self.assertEqual(calls, [])
 
+    def test_team_toon_tack_installs_its_pinned_version_and_the_pin_tool_tracks_it(self):
+        import importlib.util
+        from pi_root import resources
+        from pi_root.pins import TEAM_TOON_TACK
+        self.assertRegex(TEAM_TOON_TACK, r"^team-toon-tack@\d+\.\d+\.\d+$")
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            calls = []
+
+            def fake_run(args, _home):
+                calls.append(args)
+                fake_npm_install(args)
+
+            with mock.patch.object(external, "run", fake_run):
+                resources.install_ttt(home, {}, force=False)
+        self.assertEqual([args[-1] for args in calls if args[:2] == ["npm", "install"]], [TEAM_TOON_TACK])
+        spec = importlib.util.spec_from_file_location("pi_pins", Path(__file__).resolve().parents[1] / "scripts/pi-pins.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        self.assertIn("team-toon-tack", [pin.name for pin in module.collect_pins()])
+
     def test_the_update_schedule_refuses_outside_macos(self):
         import importlib.util
         spec = importlib.util.spec_from_file_location("pi_pins", Path(__file__).resolve().parents[1] / "scripts/pi-pins.py")

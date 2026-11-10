@@ -9,6 +9,7 @@ from . import external
 from .context import State
 from .jsonfile import write_json
 from .paths import MARKER, PI_SKILLS_CLONE, PI_SKILLS_GIT, TTT_PREFIX
+from .pins import TEAM_TOON_TACK
 
 PI_SKILLS_LINK = Path(".pi/agent/skills/pi-skills")
 
@@ -53,7 +54,7 @@ def install_ported_resources(home: Path, state: State, force: bool) -> None:
 def install_ttt(home: Path, state: State, force: bool) -> None:
     agent_dir = home / ".pi/agent"
     prefix = home / TTT_PREFIX
-    external.run(["npm", "install", "--prefix", str(prefix), "--no-save", "--no-package-lock", "team-toon-tack@latest"], home)
+    external.run(["npm", "install", "--prefix", str(prefix), "--no-save", "--no-package-lock", TEAM_TOON_TACK], home)
     ttt_root = prefix / "node_modules/team-toon-tack"
     if not (ttt_root / "skills/managing-linear-tasks/SKILL.md").is_file():
         raise ValueError(f"team-toon-tack package is missing: {ttt_root}")
