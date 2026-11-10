@@ -3,12 +3,12 @@
 BRIDGE_SOURCE = "git:github.com/wayne930242/pi-claude-bridge@f77367a69f4d669eda7f688c09b8b0bddaa0424b"
 QUOTAS_SOURCE = "npm:@latentminds/pi-quotas@0.5.0"
 CLAUDE_RULES_SOURCE = "npm:pi-code@1.7.0"
-# Fork pin of giuseppecrj/pi-herdr-agents: upstream main (v3.7.2+, which carries #84 and #99) rebased with the
+# Fork pin of giuseppecrj/pi-herdr-agents: upstream main (v3.8.0+, which carries #99) merged with the
 # solutionSpace change of closed PR #87, grouped-workspace placement, the macOS process-identity and cancel-settle
 # fixes, and the fork-only exit hold that pi/extensions/quota-resume.ts and monitor-hold.ts use (branch weihung/v3-integration).
 # Once upstream releases what this setup needs, return to the npm release: set this to npm:pi-herdr-agents@<version>, drop the PINNED_GIT
 # entry and the FORK_BRANCHES entry in scripts/pi-pins.py, and move "npm:pi-herdr-agents" out of RETIRED_SOURCES.
-HERDR_AGENTS_SOURCE = "git:github.com/wayne930242/pi-herdr-agents@6f530b9653db1183ad6e4100b3a34cd5e2427fe8"
+HERDR_AGENTS_SOURCE = "git:github.com/wayne930242/pi-herdr-agents@946af428797d27b680b6eb6698483bac846284bc"
 # The pi-herdr-agents v3 role pack: planner, /plan, and /skill:plan. Its orchestrate skill is filtered out because
 # skills/orchestrate owns our trimmed version. Pinned by hand (MANUAL_PINS) since a 0.x bump can change the planner.
 HERDR_ROLES_SOURCE = "npm:pi-herdr-roles@0.1.0"
