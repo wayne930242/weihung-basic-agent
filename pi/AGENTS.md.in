@@ -18,7 +18,7 @@ Start any process that must outlive its command (dev server, watcher) with `Moni
 
 ## Git safety
 
-- Force push to any remote branch needs explicit user confirmation: state the exact command and target and wait.
+- Force push to a remote branch needs explicit user confirmation: state the exact command and target and wait. The exception is your own unmerged MR source branch (one this work created and no one else pushes to), which takes `git push --force-with-lease` without asking, for example after rebasing it on its target.
 - Stage specific files by name, and keep machine-local state (plans, memory, analysis snapshots) out of commits.
 - Before committing a new `.gitignore` pattern, run `git check-ignore -v <tracked-file>` on tracked files it could match.
 
