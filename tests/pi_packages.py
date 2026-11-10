@@ -263,7 +263,7 @@ class PackageTests(unittest.TestCase):
                 self.assertTrue((home / ".local/bin/ttt").is_symlink())
                 steps.install(home, skip_external=False, force=False, profile="unattended")
             self.assertIn("npm:cc-safety-net@2.7.8", removed)
-            self.assertNotIn("npm:pi-robot-hand@0.7.0", json.loads(settings.read_text())["packages"])
+            self.assertNotIn("npm:pi-robot-hand@0.7.1", json.loads(settings.read_text())["packages"])
             self.assertFalse((home / ".local/bin/ttt").exists(), "ported resources leave with the switch")
             self.assertNotIn("ported_resources", json.loads((home / ".pi/agent/.weihung-agent-root.json").read_text()))
 
