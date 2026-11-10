@@ -277,7 +277,7 @@ class PackageTests(unittest.TestCase):
                 self.assertTrue((home / ".pi/agent/skills/pi-skills").is_symlink())
                 steps.install(home, skip_external=False, force=False, profile="unattended")
             self.assertIn("npm:cc-safety-net@2.7.8", removed)
-            self.assertNotIn("npm:pi-robot-hand@0.7.1", json.loads(settings.read_text())["packages"])
+            self.assertNotIn("npm:pi-robot-hand@0.7.2", json.loads(settings.read_text())["packages"])
             self.assert_ttt_without_pi_skills(home)
 
     def test_a_fresh_unattended_install_brings_ttt_and_no_pi_skills(self):
