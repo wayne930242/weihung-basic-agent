@@ -66,7 +66,7 @@ PACKAGES = [
     # show_doc: documents in the browser, answers back as messages; it replaced pi-herdr-doc-review (same tool name).
     "npm:pi-better-show@0.5.2",
     # Straw Boss coordination in Herdr: opt-in main agents per tab, an on-demand tower per workspace, scoped broadcast.
-    "npm:pi-straw-boss@0.73.0",
+    "npm:pi-straw-boss@0.74.0",
     "npm:@pify/memory@0.14.1",
     "npm:pi-loop-monitor@0.2.8",
     "npm:@narumitw/pi-goal@0.55.0",
