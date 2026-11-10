@@ -1,6 +1,6 @@
 """Every pinned package source; `scripts/pi-pins.py` rewrites the versions in this file, so it imports nothing."""
 
-BRIDGE_SOURCE = "git:github.com/wayne930242/pi-claude-bridge@28b209aba959d459aeced5b7c8b81c322c0fd7f5"
+BRIDGE_SOURCE = "git:github.com/wayne930242/pi-claude-bridge@f77367a69f4d669eda7f688c09b8b0bddaa0424b"
 QUOTAS_SOURCE = "npm:@latentminds/pi-quotas@0.5.0"
 CLAUDE_RULES_SOURCE = "npm:pi-code@1.7.0"
 # Fork pin of giuseppecrj/pi-herdr-agents: upstream main (v3.7.2+, which carries #84 and #99) rebased with the
@@ -54,7 +54,7 @@ PACKAGES = [
     "npm:@juicesharp/rpiv-ask-user-question@2.15.0",
     "npm:@juicesharp/rpiv-todo@2.15.0",
     THEME_PACKAGE,
-    "npm:pi-open-tui@0.4.3",
+    "npm:pi-open-tui@0.4.4",
     QUOTAS_SOURCE,
     "npm:pi-jev-compaction@1.0.0",
     # prose_watch: an AI-tone check (Jev) on the prose files a writing task arms.
@@ -71,7 +71,7 @@ PACKAGES = [
     "npm:pi-loop-monitor@0.2.8",
     "npm:@narumitw/pi-goal@0.55.0",
     # Antigravity (agy) Google login: /login antigravity, plus the google_search and generate_image tools.
-    "npm:pi-antigravity@0.11.0",
+    "npm:pi-antigravity@0.12.0",
     # Desktop app control through Accessibility (UIA on Windows), kept headless by configs.COMPUTER_USE_SETTINGS.
     "npm:@injaneity/pi-computer-use@0.5.1",
     CLAUDE_RULES_PACKAGE,

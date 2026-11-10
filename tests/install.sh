@@ -119,7 +119,7 @@ with tempfile.TemporaryDirectory() as directory:
     assert settings["terminal"]["showTerminalProgress"] is True, settings
     assert settings["terminal"]["images"] == "kitty", settings
     assert settings["compaction"] == {"modelOverrides": {"claude-bridge/claude-opus-5-5": {"reserveTokens": 500000}, "claude-bridge/claude-sonnet-5-5": {"reserveTokens": 500000}}}, settings
-    assert "powerline" not in settings and "npm:pi-open-tui@0.4.3" in settings["packages"], settings
+    assert "powerline" not in settings and "npm:pi-open-tui@0.4.4" in settings["packages"], settings
     mcp = json.loads((home / ".pi/agent/mcp-adapter.json").read_text())
     assert mcp["settings"] == {"hostConfigDiscovery": "on", "namespaceProxyTools": False}, mcp
     assert mcp["mcpServers"]["codebase-memory-mcp"] == {"command": str(home.resolve() / ".local/bin/codebase-memory-mcp")}, mcp
