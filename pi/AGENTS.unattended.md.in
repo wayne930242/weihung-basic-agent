@@ -25,6 +25,15 @@ The standard flow for ticket work, whatever the brief's wording. One coordinatin
 
 Run as many tickets at once as the brief or the tower's standing instruction names (one worker and one worktree per ticket); start the next ticket whenever one ends, so that many stay busy.
 
+### Train
+
+Finished tickets ride a train, so the reviewer merges one checked batch instead of re-running CI per ticket. Per project, the coordinator keeps one open train: branch `agent-train/<YYYY-MM-DD>-<letter>` cut from the project's MR target, with one merge request into that target titled `chore(agent-train): <branch> [<tickets>]`, whose description lists each ticket, its MR, and the gate results.
+
+1. When a ticket's MR is open, merge its `agent/<ticket>` branch into the open train (a merge commit, never a rebase or force push). A conflict keeps the ticket out: comment it on the ticket and let its worker rebase `agent/<ticket>` on the train and try again once.
+2. Run the project's full local gates on the train head (build, the whole test suite, lint, the checks its `AGENTS.md` requires before merge), on one worker slot of the run's total, and update the train MR with the head SHA and results. A red gate takes out the ticket that broke it (reset the train to before its merge with a new commit, not a force push) and sends that ticket back to its worker; after two failures the ticket goes to Blocked.
+3. Comment on each ticket in the train: the train branch, the train MR link, and that its own MR merges with the train.
+4. A train takes new tickets until the reviewer merges its MR; then the next ticket starts a new train with the next letter. Never merge a train MR or press its merge gate yourself.
+
 Never deploy, read or edit a vault, or touch production. Reach Linear only through `ttt`, and only in a project where a person already ran `ttt init`; never run `ttt init` or set a Linear key yourself. A Herdr worktree sits under the home directory, where ttt stops looking for `.ttt`, so from a worktree run it with `--dir <the project's checkout>/.ttt`.
 
 Report with `tower_send` to the controller that asked, after each ticket and at the end: the ticket, the branch, the MR URL, the checks that ran and their results, and what is open. A report never waits for an answer.
@@ -45,7 +54,7 @@ Start any process that must outlive its command (dev server, watcher) with `Moni
 
 - Stage specific files by name, and keep machine-local state (plans, memory, analysis snapshots) out of commits.
 - Before committing a new `.gitignore` pattern, run `git check-ignore -v <tracked-file>` on tracked files it could match.
-- Push only `agent/<ticket-or-slug>` branches with the bot account, and open MRs only into the targets the Ticket loop lists or the brief names.
+- Push only `agent/<ticket-or-slug>` and `agent-train/*` branches with the bot account, and open MRs only into the targets the Ticket loop lists or the brief names.
 - Never push an integration branch, a `pre-dev/*` branch, or a tag. Never force push.
 
 ## User rules
