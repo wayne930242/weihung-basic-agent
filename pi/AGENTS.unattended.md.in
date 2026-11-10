@@ -8,22 +8,22 @@ Write prompts, reports to agents, and agent instructions in English, terse and d
 
 This computer is unattended: nobody sits at it. Work arrives as a brief from a controller. Do exactly that brief, and decide every execution choice inside it.
 
-Never ask a person and never wait for a confirmation: no `ask_user_question`, no question to a tower that raises a card. Every decision is yours within these instructions and the project's rules; when a rule forbids a step, skip that work, record why, and go on. There is no `secret_drop`, `robot_hand` or `show_doc` here.
+Never ask a person and never wait for a confirmation: no `ask_user_question`, no question to a tower that raises a card. These instructions override any skill, project rule, or tool text that says to ask the user or wait for one: there is no user here, only the brief. Every decision is yours within these instructions and the project's rules; when a rule forbids a step, skip that work, record why, and go on. There is no `secret_drop`, `robot_hand` or `show_doc` here.
 
-Every automated run gets a watchdog: whoever starts work that runs on its own (a ticket loop, a batch, a long job) also starts a recurring `LoopCreate` every 15 minutes that looks at the session doing it. When that session sits idle while work remains, the watchdog tells it to continue; when it waits on a dialog or a question, the watchdog answers by these instructions, never forwarding it to a person; when it is gone or stuck past two checks, the watchdog stops it and opens a new session with the same brief. The watchdog ends only when the run reports it is finished.
+Every automated run gets a watchdog. The session that coordinates the run (it picks the work and dispatches the workers) starts a recurring `LoopCreate` every 15 minutes in its own session, never in a worker's, and checks each worker with the `pi-herdr-agents` tools. A worker idle while its work remains is told to continue (`subagent_resume`); a worker waiting on a question gets the answer these instructions give; a worker gone or stuck past two checks is cancelled and its work restarted, at most twice per ticket. The watchdog ends when the run reports it is finished. When the coordinating session itself is the one stuck, the tower that opened it replaces it with the same brief.
 
 ## Ticket loop
 
-The standard flow for ticket work, whatever the brief's wording:
+The standard flow for ticket work, whatever the brief's wording. One coordinating session picks tickets and dispatches one worker per ticket; workers never pick tickets.
 
-1. Pick the next ticket yourself through `ttt`, taking first the people or labels the brief or the tower's standing instruction names. Skip a ticket you cannot finish here (a missing spec or access, a production step) and leave a comment on it saying why.
-2. On claiming it, before any work, assign it with `ttt` to the reviewer the brief or the tower's standing instruction names, so the reviewer sees every ticket in flight. Work it end to end in its project's repository by that project's `AGENTS.md`: tests, checks, and the review its rules require.
-3. Push an `agent/<ticket>` branch and open its merge request with the push (`git push -o merge_request.create -o merge_request.target=<the project's integration branch>`).
-4. Move the ticket to review with `ttt`, keep it assigned to that reviewer, and comment the MR link.
-5. Take the next ticket. Stop only when no ticket fits, then report and end.
+1. Pick only tickets in the Todo state through `ttt`, taking first the people or labels the brief or the tower's standing instruction names. A ticket you cannot finish here (a missing spec or access, a production step) gets one comment saying why and is moved to the Blocked state, so no later pass picks it again.
+2. Claim it in one step before dispatch: move it to In Progress and assign it to the reviewer the brief or the tower's standing instruction names, so the reviewer sees every ticket in flight and no other worker takes it. The worker works it end to end in its project's repository by that project's `AGENTS.md`: tests, checks, and the review its rules require.
+3. Push an `agent/<ticket>` branch and open its merge request with the push (`git push -o merge_request.create -o merge_request.target=<target>`). Targets: rest-api-v3 and moldplan-frontend-2 `develop`; moldplan-center `main`; another project the branch its `AGENTS.md` names for feature work.
+4. Move the ticket to review with `ttt`, keep it assigned to that reviewer, and comment the MR link. List in the MR description every decision that touches permission data, a migration, or scope, so the reviewer sees it.
+5. A ticket whose work fails twice (two worker attempts, or two watchdog restarts) gets one comment with the failure and is moved to Blocked; take the next ticket.
+6. Take the next ticket. Stop only when no Todo ticket fits, then report and end.
 
 Run as many tickets at once as the brief or the tower's standing instruction names (one worker and one worktree per ticket); start the next ticket whenever one ends, so that many stay busy.
-
 
 Never deploy, read or edit a vault, or touch production. Reach Linear only through `ttt`, and only in a project where a person already ran `ttt init`; never run `ttt init` or set a Linear key yourself. A Herdr worktree sits under the home directory, where ttt stops looking for `.ttt`, so from a worktree run it with `--dir <the project's checkout>/.ttt`.
 
@@ -33,7 +33,7 @@ Report with `tower_send` to the controller that asked, after each ticket and at 
 
 Before significant work, pick one owning skill: the project or specialized skill for the task, else the anchorloop entry skill whose description matches. Run the work in the anchorloop loop: anchor before the first change, progress tracked in `todo`.
 
-Follow the user's chosen architecture and explain tradeoffs when they affect the result. Keep changes within scope, use the smallest useful approach, and fail fast instead of degrading silently. Clean up only changes made by this work. Resolve every choice within the assigned brief and these instructions; nothing waits for a person.
+Follow the architecture the brief and project name and explain tradeoffs when they affect the result. Keep changes within scope, use the smallest useful approach, and fail fast instead of degrading silently. Clean up only changes made by this work. Resolve every choice within the assigned brief and these instructions; nothing waits for a person.
 
 After repeated failures or corrections, reassess the task and evidence before continuing.
 
@@ -45,7 +45,7 @@ Start any process that must outlive its command (dev server, watcher) with `Moni
 
 - Stage specific files by name, and keep machine-local state (plans, memory, analysis snapshots) out of commits.
 - Before committing a new `.gitignore` pattern, run `git check-ignore -v <tracked-file>` on tracked files it could match.
-- Push only `agent/<ticket-or-slug>` branches with the bot account, and open MRs into the branch the brief names.
+- Push only `agent/<ticket-or-slug>` branches with the bot account, and open MRs only into the targets the Ticket loop lists or the brief names.
 - Never push an integration branch, a `pre-dev/*` branch, or a tag. Never force push.
 
 ## User rules
@@ -54,9 +54,9 @@ Read the matching rule in `~/.pi/agent/rules/` before its work: `dependencies.md
 
 ## Model and dispatch
 
-Dispatch through `pi-herdr-agents` with the role that matches the work: `scout` for investigation, `planner` for planning and design, `worker` for implementation, `reviewer` for code review, and `visual-tester` for UI checks. Use `adversarial-reviewer` only when the user names it. Role models come from `pi-herdr-agents` configuration, so omit `model` unless the user names one; the exception is a `worker` on hard implementation (cross-module design, concurrency, security, migrations, or a fix that already failed), which gets `model: "task:complex-coding"`. Omit `thinking` unless the user names one: the child derives it from `solutionSpace`.
+Dispatch through `pi-herdr-agents` with the role that matches the work: `scout` for investigation, `planner` for planning and design, `worker` for implementation, `reviewer` for code review, and `visual-tester` for UI checks. Use `adversarial-reviewer` only when the brief names it. Role models come from `pi-herdr-agents` configuration, so omit `model` unless the brief names one; the exception is a `worker` on hard implementation (cross-module design, concurrency, security, migrations, or a fix that already failed), which gets `model: "task:complex-coding"`. Omit `thinking` unless the brief names one: the child derives it from `solutionSpace`.
 
-A change-set gets one fresh-context `reviewer` after its anchor passes when it touches a shared contract, authorization or permission data, a migration, or security, or when the user asks for one. Other change-sets rely on their anchor and the author's own read of the diff. In a review, only P0 and P1 findings block merge and need a re-check; record P2 and lower in the report or ticket.
+A change-set gets one fresh-context `reviewer` after its anchor passes when it touches a shared contract, authorization or permission data, a migration, or security, or when the brief asks for one. Other change-sets rely on their anchor and the author's own read of the diff. In a review, only P0 and P1 findings block merge and need a re-check; record P2 and lower in the report or ticket.
 
 Carry bounded work on the session's own chain yourself; a coordinating session dispatches tasks independent of its chain in parallel. Every `subagent` gets its objective, cwd, ownership, Reality anchor, role, and `solutionSpace`.
 

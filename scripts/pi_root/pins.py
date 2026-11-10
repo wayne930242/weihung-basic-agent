@@ -101,6 +101,8 @@ UNATTENDED_DROPS = (
     "npm:pi-better-show",
     "npm:pi-auto-tab-name",
     "npm:pi-prose-watch",
+    # nobody answers a question on an unattended computer
+    "npm:@juicesharp/rpiv-ask-user-question",
 )
 UNATTENDED_DROPPED_SKILLS = ("going-to-sleep", "recording-with-obs")
 # anchorloop, the workflow skills and extensions; PI_ANCHORLOOP_ROOT swaps in a checkout for testing.
