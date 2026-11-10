@@ -3,17 +3,18 @@
   "agents": {
     "scout": "claude-bridge/claude-sonnet-5-5",
     "worker": "claude-bridge/claude-sonnet-5-5",
-    "reviewer": "claude-bridge/claude-opus-5-5",
-    "adversarial-reviewer": "claude-bridge/claude-opus-5-5",
+    "reviewer": "claude-bridge/claude-fable-5-2",
+    "adversarial-reviewer": "claude-bridge/claude-fable-5-2",
     "visual-tester": "claude-bridge/claude-sonnet-5-5",
     "planner": "claude-bridge/claude-opus-5-5"
   },
   "tasks": {
     "coding": [
+      "claude-bridge/claude-fable-5-2",
       "claude-bridge/claude-sonnet-5-5"
     ],
     "review": [
-      "claude-bridge/claude-opus-5-5"
+      "claude-bridge/claude-fable-5-2"
     ],
     "recon": [
       "claude-bridge/claude-sonnet-5-5"
