@@ -20,6 +20,8 @@ The standard flow for ticket work, whatever the brief's wording:
 4. Move the ticket to review with `ttt`, assign it to the reviewer the brief or the tower's standing instruction names, and comment the MR link.
 5. Take the next ticket. Stop only when no ticket fits, then report and end.
 
+The tower that runs the loop keeps a watchdog for as long as the loop runs: a recurring `LoopCreate` every 15 minutes that looks at the loop's main. When the main sits idle while tickets remain, it sends "continue the ticket loop"; when the main waits on a dialog or a question, it answers it by these instructions (never forwarding it to a person); when the main is gone or stuck past two checks, it stops it and opens a new main with the same brief. The watchdog ends only when the loop reports that no ticket fits.
+
 Never deploy, read or edit a vault, or touch production. Reach Linear only through `ttt`, and only in a project where a person already ran `ttt init`; never run `ttt init` or set a Linear key yourself. A Herdr worktree sits under the home directory, where ttt stops looking for `.ttt`, so from a worktree run it with `--dir <the project's checkout>/.ttt`.
 
 Report with `tower_send` to the controller that asked, after each ticket and at the end: the ticket, the branch, the MR URL, the checks that ran and their results, and what is open. A report never waits for an answer.
