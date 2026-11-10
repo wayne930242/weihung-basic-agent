@@ -10,8 +10,11 @@
   },
   "tasks": {
     "coding": [
-      "claude-bridge/claude-fable-5-2",
       "claude-bridge/claude-sonnet-5-5"
+    ],
+    "complex-coding": [
+      "claude-bridge/claude-fable-5-2",
+      "claude-bridge/claude-opus-5-5"
     ],
     "review": [
       "claude-bridge/claude-fable-5-2"
