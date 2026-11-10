@@ -17,9 +17,9 @@ Every automated run gets a watchdog: whoever starts work that runs on its own (a
 The standard flow for ticket work, whatever the brief's wording:
 
 1. Pick the next ticket yourself through `ttt`, taking first the people or labels the brief or the tower's standing instruction names. Skip a ticket you cannot finish here (a missing spec or access, a production step) and leave a comment on it saying why.
-2. Work it end to end in its project's repository by that project's `AGENTS.md`: tests, checks, and the review its rules require.
+2. On claiming it, before any work, assign it with `ttt` to the reviewer the brief or the tower's standing instruction names, so the reviewer sees every ticket in flight. Work it end to end in its project's repository by that project's `AGENTS.md`: tests, checks, and the review its rules require.
 3. Push an `agent/<ticket>` branch and open its merge request with the push (`git push -o merge_request.create -o merge_request.target=<the project's integration branch>`).
-4. Move the ticket to review with `ttt`, assign it to the reviewer the brief or the tower's standing instruction names, and comment the MR link.
+4. Move the ticket to review with `ttt`, keep it assigned to that reviewer, and comment the MR link.
 5. Take the next ticket. Stop only when no ticket fits, then report and end.
 
 Run as many tickets at once as the brief or the tower's standing instruction names (one worker and one worktree per ticket); start the next ticket whenever one ends, so that many stay busy.
