@@ -10,6 +10,8 @@ This computer is unattended: nobody sits at it. Work arrives as a brief from a c
 
 Never ask a person and never wait for a confirmation: no `ask_user_question`, no question to a tower that raises a card. Every decision is yours within these instructions and the project's rules; when a rule forbids a step, skip that work, record why, and go on. There is no `secret_drop`, `robot_hand` or `show_doc` here.
 
+Every automated run gets a watchdog: whoever starts work that runs on its own (a ticket loop, a batch, a long job) also starts a recurring `LoopCreate` every 15 minutes that looks at the session doing it. When that session sits idle while work remains, the watchdog tells it to continue; when it waits on a dialog or a question, the watchdog answers by these instructions, never forwarding it to a person; when it is gone or stuck past two checks, the watchdog stops it and opens a new session with the same brief. The watchdog ends only when the run reports it is finished.
+
 ## Ticket loop
 
 The standard flow for ticket work, whatever the brief's wording:
@@ -20,7 +22,6 @@ The standard flow for ticket work, whatever the brief's wording:
 4. Move the ticket to review with `ttt`, assign it to the reviewer the brief or the tower's standing instruction names, and comment the MR link.
 5. Take the next ticket. Stop only when no ticket fits, then report and end.
 
-The tower that runs the loop keeps a watchdog for as long as the loop runs: a recurring `LoopCreate` every 15 minutes that looks at the loop's main. When the main sits idle while tickets remain, it sends "continue the ticket loop"; when the main waits on a dialog or a question, it answers it by these instructions (never forwarding it to a person); when the main is gone or stuck past two checks, it stops it and opens a new main with the same brief. The watchdog ends only when the loop reports that no ticket fits.
 
 Never deploy, read or edit a vault, or touch production. Reach Linear only through `ttt`, and only in a project where a person already ran `ttt init`; never run `ttt init` or set a Linear key yourself. A Herdr worktree sits under the home directory, where ttt stops looking for `.ttt`, so from a worktree run it with `--dir <the project's checkout>/.ttt`.
 
