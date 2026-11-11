@@ -46,4 +46,6 @@ Save cross-project facts to `global` memory and only conventions the repository 
 
 ## Verification and delivery
 
+Test minimally (the user's standing rule): run the smallest set of tests that covers the change, and after a green run test only the delta since it (`git diff <green sha>..HEAD`); never rerun a suite whose inputs have not changed, and never test again what another gate already passed on the same tree. Whole suites run only where a gate requires them, once.
+
 Deliver complete code without TODOs, stubs, or mocks. Commit messages contain no AI tool attribution. Before the user must understand or confirm a plan, report, comparison, or decision, open it with `show_doc`: an HTML page as `presenting.md` describes, or the document the user edits. Describe changes instead of opening diffs.
