@@ -25,7 +25,7 @@ The installer never overwrites a file you own silently, and it is idempotent: re
 
 - **Skills** in `skills/`: `orchestrate`, `reflecting-to-root`, `maintaining-pi-setup`, `publishing-pi-extensions`, `recording-with-obs`, `going-to-sleep`.
 - **Rules** in `rules/`: conventions for Git, deployment, dependencies, architecture, UI, Go, Python, shell, TypeScript, and Markdown, plus stream rules that block known command mistakes.
-- **Role overrides** in `agents/` for the `pi-herdr-agents` roles, and **model routing** in `pi/herdr-agents-models.json`.
+- **Role overrides** in `agents/` for the `pi-herdr-agents` roles, and **model routing** in `pi/herdr-agents-models.json` (and `pi/herdr-agents-models.unattended.json` for the unattended profile).
 - **Extensions** in `pi/extensions/`: auto thinking level, idle compaction, quota resume, batch guard, monitor hold, and the Playwriter relay.
 - **Instructions**: `pi/AGENTS.md.in` becomes `~/.pi/agent/AGENTS.md`.
 
