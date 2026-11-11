@@ -9,7 +9,7 @@ from .context import Context, State
 from .jsonfile import read_json, write_json
 from .managed import record_keys, remember_keys, restore_keys, restore_nested, restore_value
 from . import unattended
-from .paths import COMPUTER_USE_CONFIG, HERDR_MODELS, LENS_CONFIG, OPEN_TUI_CONFIG, RETIRED_ROLES_DIR, overlay_root
+from .paths import COMPUTER_USE_CONFIG, HERDR_MODELS, HERDR_MODELS_UNATTENDED, LENS_CONFIG, OPEN_TUI_CONFIG, RETIRED_ROLES_DIR, overlay_root
 
 # pi's native compaction fires at contextWindow - reserveTokens: 500K for the 1M Opus and Sonnet, a
 # ceiling for a long running turn; idle-compaction.ts compacts at 300K between turns.
@@ -104,16 +104,22 @@ def retire_model_profile(ctx: Context) -> None:
         state.pop(key, None)
 
 
+def models_source(ctx: Context):
+    return HERDR_MODELS_UNATTENDED if unattended.is_unattended(ctx.profile) else HERDR_MODELS
+
+
 def apply_herdr_models(ctx: Context) -> None:
-    """Write pi/herdr-agents-models.json as the pi-herdr-agents `models`; a hand edit since the last install stops the run."""
+    """Write pi/herdr-agents-models.json (pi/herdr-agents-models.unattended.json for the unattended install profile) as the
+    pi-herdr-agents `models`; a hand edit since the last install stops the run."""
     retire_model_profile(ctx)
     state = ctx.state
     config = read_json(ctx.herdr_config_path)
-    desired = read_json(HERDR_MODELS)
+    source = models_source(ctx)
+    desired = read_json(source)
     current = config.get("models")
     edited = current not in (None, desired, state.get("installed_herdr_models"))
     if edited and not ctx.force:
-        raise ValueError(f"{ctx.herdr_config_path} `models` differs from {HERDR_MODELS}; move the change into the "
+        raise ValueError(f"{ctx.herdr_config_path} `models` differs from {source}; move the change into the "
                          "repository file, or rerun with --force to replace it")
     state.setdefault("previous_herdr_models", deepcopy(current))
     config["models"] = desired

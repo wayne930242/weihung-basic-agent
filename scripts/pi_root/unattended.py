@@ -1,7 +1,7 @@
 """The unattended install profile: which pins, resources and skills a computer nobody sits at leaves out.
 
 This is an install profile saved in the marker (state["profile"]). It is not the model strategy profile that was removed;
-role models still come from pi/herdr-agents-models.json alone.
+role models come from pi/herdr-agents-models.unattended.json here and pi/herdr-agents-models.json elsewhere, with no tiers.
 """
 
 from pathlib import Path

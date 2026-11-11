@@ -14,6 +14,8 @@ HERDR_AGENTS_ROOT_VARIABLE = "PI_HERDR_AGENTS_ROOT"
 ANCHORLOOP_ROOT_VARIABLE = "PI_ANCHORLOOP_ROOT"
 # The pi-herdr-agents `models` object (role, default, and task models) this repository writes into its config.
 HERDR_MODELS = ROOT / "pi/herdr-agents-models.json"
+# The unattended install profile's role models (Opus where the default routes to Fable: the box's plan has no Fable quota).
+HERDR_MODELS_UNATTENDED = ROOT / "pi/herdr-agents-models.unattended.json"
 # The model strategy profile was removed; its generated tier roles and marker keys are retired on install.
 RETIRED_ROLES_DIR = Path(".pi/agent/herdr-agents/roles")
 LENS_CONFIG = Path(".pi-lens/config.json")

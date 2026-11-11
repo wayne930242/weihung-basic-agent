@@ -151,6 +151,23 @@ class HerdrModelsTests(unittest.TestCase):
             run_script("install.sh", home, "--skip-external", "--force")
             self.assertEqual(json.loads(config.read_text())["models"], self.repo_models)
 
+    def test_the_unattended_profile_writes_its_own_models_without_fable(self):
+        unattended_models = json.loads((ROOT / "pi/herdr-agents-models.unattended.json").read_text())
+        self.assertEqual(unattended_models.keys(), self.repo_models.keys())
+        self.assertEqual(unattended_models["agents"].keys(), self.repo_models["agents"].keys())
+        self.assertEqual(unattended_models["tasks"].keys(), self.repo_models["tasks"].keys())
+        self.assertNotIn("fable", json.dumps(unattended_models))
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            config = home / ".pi/agent/herdr-agents/config.json"
+            run_script("install.sh", home, "--skip-external", "--profile", "unattended")
+            self.assertEqual(json.loads(config.read_text())["models"], unattended_models)
+            run_script("install.sh", home, "--skip-external")
+            self.assertEqual(json.loads(config.read_text())["models"], unattended_models, "a bare run keeps the profile")
+            run_script("install.sh", home, "--skip-external", "--profile", "default")
+            self.assertEqual(json.loads(config.read_text())["models"], self.repo_models)
+
+
 class RemovedModelProfileTests(unittest.TestCase):
     """The model strategy profile was removed on 2026-10-03; models live in pi/herdr-agents-models.json."""
 
