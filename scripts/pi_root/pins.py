@@ -54,22 +54,22 @@ PACKAGES = [
     "npm:@juicesharp/rpiv-ask-user-question@2.15.0",
     "npm:@juicesharp/rpiv-todo@2.15.0",
     THEME_PACKAGE,
-    "npm:pi-open-tui@0.4.4",
+    "npm:pi-open-tui@0.4.5",
     QUOTAS_SOURCE,
     "npm:pi-jev-compaction@1.0.0",
     # prose_watch: an AI-tone check (Jev) on the prose files a writing task arms.
     "npm:pi-prose-watch@0.1.2",
-    "npm:cc-safety-net@2.7.9",
+    "npm:cc-safety-net@2.7.11",
     "npm:pi-codex-image-gen@0.3.1",
     "npm:pi-robot-hand@0.7.2",
     "npm:pi-auto-tab-name@0.2.0",
     # show_doc: documents in the browser, answers back as messages; it replaced pi-herdr-doc-review (same tool name).
-    "npm:pi-better-show@0.5.2",
+    "npm:pi-better-show@0.6.0",
     # Straw Boss coordination in Herdr: opt-in main agents per tab, an on-demand tower per workspace, scoped broadcast.
     "npm:pi-straw-boss@0.75.2",
     "npm:@pify/memory@0.14.1",
     "npm:pi-loop-monitor@0.2.8",
-    "npm:@narumitw/pi-goal@0.55.0",
+    "npm:@narumitw/pi-goal@0.55.1",
     # Antigravity (agy) Google login: /login antigravity, plus the google_search and generate_image tools.
     "npm:pi-antigravity@0.12.0",
     # Desktop app control through Accessibility (UIA on Windows), kept headless by configs.COMPUTER_USE_SETTINGS.
@@ -88,7 +88,7 @@ HERDR_PLUGINS = (
 PLAYWRITER = "playwriter@0.10.0"
 # team-toon-tack: the ttt CLI, the managing-linear-tasks skill and the /ttt-* prompts (resources.py). Pinned like every other
 # package, since an unattended computer runs it in the account that holds a person's Linear key.
-TEAM_TOON_TACK = "team-toon-tack@3.14.0"
+TEAM_TOON_TACK = "team-toon-tack@3.14.1"
 # The unattended install profile (scripts/pi_root/unattended.py) leaves these out: packages and skills that need a person at the
 # computer, a desktop, or an interactive login. Names carry no version, so a pin bump never touches them.
 UNATTENDED_DROPS = (
