@@ -88,7 +88,7 @@ HERDR_PLUGINS = (
 PLAYWRITER = "playwriter@0.10.0"
 # team-toon-tack: the ttt CLI, the managing-linear-tasks skill and the /ttt-* prompts (resources.py). Pinned like every other
 # package, since an unattended computer runs it in the account that holds a person's Linear key.
-TEAM_TOON_TACK = "team-toon-tack@3.12.0"
+TEAM_TOON_TACK = "team-toon-tack@3.13.0"
 # The unattended install profile (scripts/pi_root/unattended.py) leaves these out: packages and skills that need a person at the
 # computer, a desktop, or an interactive login. Names carry no version, so a pin bump never touches them.
 UNATTENDED_DROPS = (
