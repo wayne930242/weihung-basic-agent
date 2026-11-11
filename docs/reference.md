@@ -101,7 +101,7 @@ Registry packages are pinned to exact versions in [scripts/pi_root/pins.py](scri
 | File | Keys |
 |---|---|
 | `~/.pi/agent/settings.json` | `packages`, `theme`, `editorPaddingX`, `collapseChangelog`, `enableInstallTelemetry` (`false`), `terminal.showTerminalProgress` |
-| `~/.pi/agent/herdr-agents/config.json` | `models` (from [pi/herdr-agents-models.json](pi/herdr-agents-models.json)), `panes.mode` (`split`), `panes.direction` (`right`) |
+| `~/.pi/agent/herdr-agents/config.json` | `models` (from [pi/herdr-agents-models.json](pi/herdr-agents-models.json), or [pi/herdr-agents-models.unattended.json](pi/herdr-agents-models.unattended.json) for the unattended profile), `panes.mode` (`split`), `panes.direction` (`right`) |
 | `~/.pi/agent/mcp-adapter.json` | `settings.hostConfigDiscovery`, `settings.namespaceProxyTools`, `mcpServers.codebase-memory-mcp` |
 
 Other keys in these files stay as the user wrote them.

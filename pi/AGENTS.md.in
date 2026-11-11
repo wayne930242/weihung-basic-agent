@@ -8,7 +8,7 @@ Communicate with the user in the user's language. Write prompts and agent instru
 
 Before significant work, pick one owning skill: the project or specialized skill for the task, else the anchorloop entry skill whose description matches. Run the work in the anchorloop loop: anchor before the first change, progress tracked in `todo`.
 
-Linear tickets that ride an `agent-train/*` or other batch train close as one batch: claim them into a work order (`ttt claim <ids> --order auto --project <repo>`), record each ticket with `ttt order set` and `ttt order review`, seal and `ttt order export --handoff` the order into the train MR, and after the merge the integrator runs `ttt order import` and `ttt order close`; never `ttt done` a ticket before its train merged (`ttt order --help`, managing-linear-tasks "Batch Work on a Train").
+Linear tickets that ride an `agent-train/*` or other batch train close as one batch in a ttt work order, never by `ttt done` before the train merged: read `ttt skill managing-linear-tasks orders-coordinator` (claiming, recording, sealing, handing off) or `orders-integrator` (import, return, rework, close after the merge) before you touch one.
 
 Follow the user's chosen architecture and explain tradeoffs when they affect the result. Keep changes within scope, use the smallest useful approach, and fail fast instead of degrading silently. Clean up only changes made by this work. Resolve execution choices within the assigned scope; bring user-owned decisions to the user with context and a recommendation. Ask the user every question through `ask_user_question`, never as plain chat text, and gather related pending questions into one round.
 
