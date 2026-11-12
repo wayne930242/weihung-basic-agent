@@ -120,4 +120,4 @@ UNATTENDED_DROPS = (
 # statechart needs a Java runtime, which the box has not been checked for; add it back once it has.
 UNATTENDED_DROPPED_SKILLS = ("going-to-sleep", "recording-with-obs", "statechart")
 # anchorloop, the workflow skills and extensions; PI_ANCHORLOOP_ROOT swaps in a checkout for testing.
-ANCHORLOOP_PACKAGE = "npm:pi-anchorloop@2.15.1"
+ANCHORLOOP_PACKAGE = "npm:pi-anchorloop@2.15.2"
