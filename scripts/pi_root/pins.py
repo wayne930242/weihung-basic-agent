@@ -56,8 +56,8 @@ PACKAGES = [
     "npm:pi-jev-compaction@1.0.0",
     # prose_watch: an AI-tone check (Jev) on the prose files a writing task arms.
     "npm:pi-prose-watch@0.1.2",
-    "npm:cc-safety-net@2.7.11",
-    "npm:pi-codex-image-gen@0.3.1",
+    "npm:cc-safety-net@2.7.12",
+    "npm:pi-codex-image-gen@0.3.2",
     "npm:pi-robot-hand@0.8.0",
     "npm:pi-auto-tab-name@0.2.0",
     # show_doc: documents in the browser, answers back as messages; it replaced pi-herdr-doc-review (same tool name).
@@ -84,7 +84,7 @@ HERDR_PLUGINS = (
     ("wayne930242.straw-boss-reaper", "wayne930242/pi-straw-boss/herdr-reaper", "v0.58.3", "reaper_plugin_preinstalled"),
 )
 # The Playwriter CLI drives the user's own Chrome through its extension; playwriter-relay.ts starts its relay.
-PLAYWRITER = "playwriter@0.10.0"
+PLAYWRITER = "playwriter@0.11.0"
 # team-toon-tack: the ttt CLI, the managing-linear-tasks skill and the /ttt-* prompts (resources.py). Pinned like every other
 # package, since an unattended computer runs it in the account that holds a person's Linear key.
 TEAM_TOON_TACK = "team-toon-tack@3.16.0"

@@ -294,7 +294,7 @@ class PackageTests(unittest.TestCase):
                 self.assertTrue((home / ".pi/agent/skills/pi-skills").is_symlink())
                 self.assertTrue((home / ".agents/skills/statechart/SKILL.md").is_file())
                 steps.install(home, skip_external=False, force=False, profile="unattended")
-            self.assertIn("npm:cc-safety-net@2.7.11", removed)
+            self.assertIn("npm:cc-safety-net@2.7.12", removed)
             self.assertNotIn("npm:pi-robot-hand@0.8.0", json.loads(settings.read_text())["packages"])
             self.assert_ttt_without_pi_skills(home)
 

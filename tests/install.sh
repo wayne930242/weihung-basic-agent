@@ -103,8 +103,8 @@ with tempfile.TemporaryDirectory() as directory:
     registry = [source.removeprefix("npm:") for source in sources if source.startswith("npm:")]
     assert registry and all("@" in name[1:] for name in registry), registry
     assert {"source": "npm:@sherif-fanous/pi-catppuccin@0.3.0", "themes": ["themes/catppuccin-mocha.json"]} in settings["packages"], settings
-    assert "npm:@juicesharp/rpiv-todo@2.15.0" in sources and "npm:cc-safety-net@2.7.11" in sources, sources
-    assert "npm:pi-codex-image-gen@0.3.1" in sources and not any("pi-web-access" in source for source in sources), sources
+    assert "npm:@juicesharp/rpiv-todo@2.15.0" in sources and "npm:cc-safety-net@2.7.12" in sources, sources
+    assert "npm:pi-codex-image-gen@0.3.2" in sources and not any("pi-web-access" in source for source in sources), sources
     assert "npm:pi-robot-hand@0.8.0" in sources and not any("pi-secret-drop" in source for source in sources), sources
     assert not any("pi-phoenix-otel" in source for source in sources), sources
     assert "npm:@pify/memory@0.14.1" in sources, sources
