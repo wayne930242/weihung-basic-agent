@@ -18,6 +18,8 @@ Before app-specific work outside the session's directory, read that app's `AGENT
 
 Start any process that must outlive its command (dev server, watcher) with `MonitorCreate`, never `&` or `nohup` in `bash`: pi stops a monitor's process group with the session, while a backgrounded `bash` child outlives it. Record its PID and port; when the work ends, `MonitorStop` it and confirm by PID and port that nothing of yours remains. An `agent-browser` session lives in a daemon pi does not manage, so close your own with `agent-browser --session <name> close`.
 
+A long-lived main (a standing session, or a coordinator that runs for days) rotates its session at a milestone, or when `pi-session-doctor` asks: write `scratch/handoff-<name>.md` with the goal, the open todos only, the monitors and loops to recreate, the replies you owe and to whom, the branches and worktrees in flight, and the user's last instructions verbatim, then ask the boss or the tower to start a new session from it. The new session reads the handoff, recreates the monitors and loops, and drops completed todos. Never run `/new`, kill a process, or stop running work to rotate.
+
 ## Git safety
 
 - Force push to a remote branch needs explicit user confirmation: state the exact command and target and wait. The exception is your own unmerged MR source branch (one this work created and no one else pushes to), which takes `git push --force-with-lease` without asking, for example after rebasing it on its target.
