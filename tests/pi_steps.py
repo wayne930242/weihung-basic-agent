@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
 from pi_root import configs, jsonfile, steps
 from support.pi import FAKE_NPM, PI_TARGET, ROOT, run_script
+from support.statechart import make_pin
 
 
 class StepTests(unittest.TestCase):
@@ -90,7 +91,7 @@ class StepTests(unittest.TestCase):
             subprocess.run(["git", "init", "-q", str(pi_skills)], check=True)
             subprocess.run(["git", "-C", str(pi_skills), "add", "."], check=True)
             subprocess.run(["git", "-C", str(pi_skills), "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "fixture"], check=True)
-            env = {"PATH": str(bin_dir) + os.pathsep + os.environ["PATH"], "PI_SKILLS_GIT": str(pi_skills)}
+            env = {"PATH": str(bin_dir) + os.pathsep + os.environ["PATH"], "PI_SKILLS_GIT": str(pi_skills), **make_pin(home)}
             command = [sys.executable, str(PI_TARGET), "install", "--home", str(home)]
             failed = subprocess.run(command, env={**os.environ, "HOME": str(home), **env},
                                     text=True, capture_output=True, check=False)
@@ -105,8 +106,11 @@ class StepTests(unittest.TestCase):
                                     text=True, capture_output=True, check=False)
             self.assertNotEqual(failed.returncode, 0)
             subprocess.run(command, env={**os.environ, "HOME": str(home), **env}, check=True)
+            self.assertIn("disable-model-invocation: true", (home / ".agents/skills/statechart/SKILL.md").read_text())
             run_script("uninstall.sh", home, "--skip-external")
             self.assertFalse(marker.exists())
+            self.assertFalse((home / ".agents/skills/statechart").is_symlink())
+            self.assertFalse((home / ".local/share/weihung-agent-root/statechart").exists())
 
     def test_instructions_backup_survives_a_failed_install_and_uninstall(self):
         with tempfile.TemporaryDirectory() as directory:

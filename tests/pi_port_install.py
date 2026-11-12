@@ -7,6 +7,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+from support.statechart import make_pin
+
 ROOT = Path(__file__).resolve().parent.parent
 COMMANDS = ("assign", "cancel", "comment", "create", "done", "edit", "estimate", "show", "status", "sync", "work-on", "write-work-on-skill")
 
@@ -63,7 +65,7 @@ if '--prefix' in args:
     write(bin_dir / "herdr", "#!/bin/sh\nexit 0\n", True)
     env = {**os.environ, "HOME": str(home), "PATH": f"{bin_dir}:{os.environ['PATH']}",
            "WEIHUNG_OVERLAY": "", "TEST_TTT_FIXTURE": str(fixture),
-           "PI_SKILLS_GIT": str(pi_skills)}
+           "PI_SKILLS_GIT": str(pi_skills), **make_pin(base)}
     agent = home / ".pi/agent"
     write(agent / "prompts/ttt-status.md", "user prompt\n")
     write(agent / "skills/infra-owner/SKILL.md", "user skill\n")

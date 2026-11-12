@@ -91,6 +91,17 @@ PLAYWRITER = "playwriter@0.10.0"
 # team-toon-tack: the ttt CLI, the managing-linear-tasks skill and the /ttt-* prompts (resources.py). Pinned like every other
 # package, since an unattended computer runs it in the account that holds a person's Linear key.
 TEAM_TOON_TACK = "team-toon-tack@3.16.0"
+# The statechart skill (MIT, Lauren Tan's pstack in cursor/plugins) and the TLC jar it runs, both fetched at a fixed
+# revision or checksum (scripts/pi_root/resources.py). The skill's own runner would install Java and the jar through mise;
+# the installer fetches the jar itself and the installed wrapper points the runner at it, so mise is not needed.
+# Bump by hand: set `rev` to a commit of the repository, and `jar_url` plus `jar_sha256` to a tla2tools release.
+STATECHART = {
+    "git": "https://github.com/cursor/plugins.git",
+    "rev": "a5539b15a3d56e04992565aafee2b37051329ce3",
+    "path": "harness/pstack/claude-code/skills/statechart",
+    "jar_url": "https://github.com/tlaplus/tlaplus/releases/download/v1.7.4/tla2tools.jar",
+    "jar_sha256": "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88",
+}
 # The unattended install profile (scripts/pi_root/unattended.py) leaves these out: packages and skills that need a person at the
 # computer, a desktop, or an interactive login. Names carry no version, so a pin bump never touches them.
 UNATTENDED_DROPS = (
@@ -106,6 +117,7 @@ UNATTENDED_DROPS = (
     # nobody answers a question on an unattended computer
     "npm:@juicesharp/rpiv-ask-user-question",
 )
-UNATTENDED_DROPPED_SKILLS = ("going-to-sleep", "recording-with-obs")
+# statechart needs a Java runtime, which the box has not been checked for; add it back once it has.
+UNATTENDED_DROPPED_SKILLS = ("going-to-sleep", "recording-with-obs", "statechart")
 # anchorloop, the workflow skills and extensions; PI_ANCHORLOOP_ROOT swaps in a checkout for testing.
 ANCHORLOOP_PACKAGE = "npm:pi-anchorloop@2.14.1"

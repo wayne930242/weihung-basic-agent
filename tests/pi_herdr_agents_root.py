@@ -7,6 +7,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from support.statechart import make_pin
+
 ROOT = Path(__file__).resolve().parent.parent
 PINNED_SPEC = "git:github.com/wayne930242/pi-herdr-agents@76ddee78425d43e99789bc55f084411222c0cbc7"
 RETIRED_NPM = "npm:pi-herdr-agents@2.0.4"
@@ -219,7 +221,7 @@ if '--prefix' in args:
                            check=True, capture_output=True)
         self.write(bin_dir / "pi", f"#!/bin/sh\necho \"$@\" >> '{self.calls}'\n")
         self.write(bin_dir / "herdr", "#!/bin/sh\nexit 0\n")
-        self.env = {"PI_SKILLS_GIT": str(pi_skills), "WEIHUNG_OVERLAY": ""}
+        self.env = {"PI_SKILLS_GIT": str(pi_skills), "WEIHUNG_OVERLAY": "", **make_pin(self.base)}
 
     @staticmethod
     def write(path, content):

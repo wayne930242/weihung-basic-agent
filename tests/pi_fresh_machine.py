@@ -7,6 +7,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+from support.statechart import make_pin
+
 ROOT = Path(__file__).resolve().parent.parent
 ANCHORLOOP_PACKAGE = "npm:pi-anchorloop@2.14.1"
 PINS = (ROOT / "scripts/pi_root/pins.py").read_text()
@@ -95,7 +97,7 @@ esac
 """, True)
     env = {**os.environ, "HOME": str(home), "PATH": f"{bin_dir}:{os.environ['PATH']}",
            "WEIHUNG_OVERLAY": str(overlay),
-           "TEST_TTT_FIXTURE": str(fixture), "PI_SKILLS_GIT": str(pi_skills), "TEST_NPM_CALLS": str(npm_calls)}
+           "TEST_TTT_FIXTURE": str(fixture), "PI_SKILLS_GIT": str(pi_skills), "TEST_NPM_CALLS": str(npm_calls), **make_pin(base)}
     agent = home / ".pi/agent"
 
     result = run("install.sh", home, env)
