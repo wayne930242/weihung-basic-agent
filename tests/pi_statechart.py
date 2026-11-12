@@ -150,12 +150,63 @@ class StatechartTests(unittest.TestCase):
         self.assertFalse((root / "skill").is_symlink())
         self.assertTrue((self.home / LINK / "SKILL.md").is_file())
 
+    def test_a_broken_clone_inside_a_repository_never_touches_that_repository(self):
+        notes = self.home / "notes.txt"
+        notes.write_text("committed\n")
+        for command in (["init", "-q"], ["add", "notes.txt"], ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "home"]):
+            subprocess.run(["git", "-C", str(self.home), *command], check=True, capture_output=True)
+        notes.write_text("uncommitted work\n")
+        (self.home / paths.STATECHART_ROOT / "cursor-plugins/.git").mkdir(parents=True)
+        self.install()
+        self.assertEqual(notes.read_text(), "uncommitted work\n")
+        remote = subprocess.run(["git", "-C", str(self.home), "config", "--get", "remote.origin.url"], capture_output=True, text=True)
+        self.assertEqual(remote.stdout, "")
+        self.assertTrue((self.home / LINK / "SKILL.md").is_file())
+
+    def test_git_variables_in_the_environment_never_redirect_the_clone(self):
+        other = self.base / "other"
+        other.mkdir()
+        (other / "notes.txt").write_text("committed\n")
+        for command in (["init", "-q"], ["add", "notes.txt"], ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "other"]):
+            subprocess.run(["git", "-C", str(other), *command], check=True, capture_output=True)
+        (other / "notes.txt").write_text("uncommitted work\n")
+        with mock.patch.dict(os.environ, {"GIT_DIR": str(other / ".git"), "GIT_WORK_TREE": str(other)}):
+            self.install()
+        self.assertEqual((other / "notes.txt").read_text(), "uncommitted work\n")
+        self.assertTrue((self.home / LINK / "SKILL.md").is_file())
+
+    def test_a_restore_that_git_refuses_stops_the_install(self):
+        self.install()
+        clone = self.home / paths.STATECHART_ROOT / "cursor-plugins"
+        (clone / SKILL_PATH / "references/render.md").write_text("edited\n")
+        (clone / ".git/index.lock").write_text("")
+        with self.assertRaises(subprocess.CalledProcessError):
+            self.install()
+
+    def test_a_skill_path_that_is_a_file_is_replaced(self):
+        root = self.home / paths.STATECHART_ROOT
+        root.mkdir(parents=True)
+        (root / "skill").write_text("stray\n")
+        self.install()
+        self.assertTrue((self.home / LINK / "SKILL.md").is_file())
+
+    def test_a_failed_source_on_a_pin_bump_keeps_the_previous_jar_live(self):
+        self.install()
+        pin = Path(os.environ["PI_STATECHART_PIN"])
+        old = json.loads(pin.read_text())
+        jar = self.base / "tla2tools-next.jar"
+        jar.write_bytes(b"next jar\n")
+        pin.write_text(json.dumps({**old, "rev": "0" * 40, "jar_url": jar.as_uri(), "jar_sha256": sha256_of(jar)}))
+        with self.assertRaises(subprocess.CalledProcessError):
+            self.install()
+        self.assertEqual(sha256_of(self.home / paths.STATECHART_ROOT / "tla2tools.jar"), old["jar_sha256"])
+
     def test_a_second_install_changes_nothing_and_fetches_nothing(self):
         first = self.install()
         calls = []
         with mock.patch.object(external, "run", lambda args, _home: calls.append(args)):
             second = self.install()
-        self.assertEqual(calls, [])
+        self.assertEqual([args for args in calls if "fetch" in args or "curl" in args or "init" in args], [])
         self.assertEqual(first, second)
         self.assertTrue((self.home / LINK / "SKILL.md").is_file())
 

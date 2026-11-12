@@ -7,8 +7,13 @@ import sys
 from pathlib import Path
 
 
+# Variables that make git act on a repository other than the one each command names with `-C`.
+GIT_REPOSITORY_VARIABLES = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_OBJECT_DIRECTORY",
+                            "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_COMMON_DIR", "GIT_NAMESPACE")
+
+
 def environment(home: Path) -> dict[str, str]:
-    env = os.environ.copy()
+    env = {key: value for key, value in os.environ.items() if key not in GIT_REPOSITORY_VARIABLES}
     env["HOME"] = str(home)
     env["PI_CODING_AGENT_DIR"] = str(home / ".pi/agent")
     return env
