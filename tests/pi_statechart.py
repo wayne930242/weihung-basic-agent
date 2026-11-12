@@ -175,6 +175,32 @@ class StatechartTests(unittest.TestCase):
         self.assertEqual((other / "notes.txt").read_text(), "uncommitted work\n")
         self.assertTrue((self.home / LINK / "SKILL.md").is_file())
 
+    def test_a_clone_whose_git_is_a_link_to_another_repository_never_touches_it(self):
+        other = self.base / "other"
+        other.mkdir()
+        (other / "notes.txt").write_text("committed\n")
+        for command in (["init", "-q", "-b", "main"], ["add", "notes.txt"], ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "other"]):
+            subprocess.run(["git", "-C", str(other), *command], check=True, capture_output=True)
+        clone = self.home / paths.STATECHART_ROOT / "cursor-plugins"
+        clone.mkdir(parents=True)
+        (clone / ".git").write_text(f"gitdir: {other / '.git'}\n")
+        self.install()
+        head = subprocess.run(["git", "-C", str(other), "symbolic-ref", "HEAD"], capture_output=True, text=True)
+        self.assertEqual(head.stdout.strip(), "refs/heads/main")
+        remote = subprocess.run(["git", "-C", str(other), "config", "--get", "remote.origin.url"], capture_output=True, text=True)
+        self.assertEqual(remote.stdout, "")
+        self.assertTrue((clone / ".git").is_dir())
+
+    @unittest.skipUnless(Path(tempfile.gettempdir().upper()).exists(), "needs a case-insensitive file system")
+    def test_a_home_spelled_in_another_case_restores_the_clone_offline(self):
+        self.install()
+        other_case = Path(str(self.home).swapcase())
+        calls = []
+        real_run = external.run
+        with mock.patch.object(external, "run", lambda args, home: (calls.append(args), real_run(args, home))):
+            resources.install_statechart(other_case, jsonfile.read_json(self.home / paths.MARKER), False)
+        self.assertEqual([args for args in calls if "fetch" in args or "init" in args], [])
+
     def test_a_restore_that_git_refuses_stops_the_install(self):
         self.install()
         clone = self.home / paths.STATECHART_ROOT / "cursor-plugins"
@@ -200,6 +226,7 @@ class StatechartTests(unittest.TestCase):
         with self.assertRaises(subprocess.CalledProcessError):
             self.install()
         self.assertEqual(sha256_of(self.home / paths.STATECHART_ROOT / "tla2tools.jar"), old["jar_sha256"])
+        self.assertFalse((self.home / paths.STATECHART_ROOT / "tla2tools.jar.part").exists())
 
     def test_a_second_install_changes_nothing_and_fetches_nothing(self):
         first = self.install()

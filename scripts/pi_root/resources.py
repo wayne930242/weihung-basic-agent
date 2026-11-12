@@ -157,8 +157,13 @@ def fetch_statechart_source(home: Path, clone: Path, pin: dict[str, str]) -> Non
 
 
 def is_own_repository(home: Path, clone: Path) -> bool:
+    """The clone holds its own .git directory (not a gitfile or link into another repository) and git agrees it is the top."""
+    dot_git = clone / ".git"
+    if dot_git.is_symlink() or not dot_git.is_dir():
+        return False
     top = external.capture(["git", "-C", str(clone), "rev-parse", "--show-toplevel"], home).strip()
-    return bool(top) and Path(top).resolve() == clone.resolve()
+    # samefile, not a path comparison: git reports the name as it is on disk, which may differ in case or form.
+    return bool(top) and os.path.samefile(top, clone)
 
 
 def remove_path(path: Path) -> None:
