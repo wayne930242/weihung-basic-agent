@@ -69,6 +69,8 @@ PACKAGES = [
     "npm:pi-straw-boss@0.75.3",
     "npm:@pify/memory@0.14.1",
     "npm:pi-loop-monitor@0.2.8",
+    # /doctor: profiles main-thread stalls and asks long, strained mains to rotate through a handoff file.
+    "npm:pi-session-doctor@0.1.0",
     "npm:@narumitw/pi-goal@0.55.1",
     # Antigravity (agy) Google login: /login antigravity, plus the google_search and generate_image tools.
     "npm:pi-antigravity@0.12.0",
