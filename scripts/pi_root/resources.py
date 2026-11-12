@@ -23,8 +23,9 @@ STATECHART_WRAPPER = r"""#!/bin/sh
 # Installed by weihung-agent-root; not part of the upstream skill. Runs the pinned statechart with the pinned TLC jar
 # and a Java 11 or later runtime, so the skill never installs either through mise. JAVA and TLA2TOOLS in the
 # environment win.
+%(jar)s
 java_major() {
-  "$1" -version 2>&1 | sed -n '1s/.*version "\([0-9][0-9]*\).*/\1/p'
+  "$1" -version 2>&1 | sed -n 's/.*version "\([0-9][0-9]*\).*/\1/p' | sed -n 1p
 }
 if [ -z "${JAVA:-}" ]; then
   for candidate in "${JAVA_HOME:-/nonexistent}/bin/java" java /opt/homebrew/opt/openjdk/bin/java /opt/homebrew/opt/openjdk@*/bin/java \
@@ -42,7 +43,7 @@ if [ -z "${JAVA:-}" ]; then
   exit 127
 fi
 export JAVA
-export TLA2TOOLS="${TLA2TOOLS:-%(jar)s}"
+export TLA2TOOLS="${TLA2TOOLS:-$jar}"
 exec %(entry)s "$@"
 """
 
@@ -134,17 +135,18 @@ def sha256_file(path: Path) -> str:
 
 
 def fetch_statechart_source(home: Path, clone: Path, pin: dict[str, str]) -> None:
-    """Check out only the skill's folder at the pinned revision; a clone already there is left alone."""
-    if (clone / ".git").is_dir() and external.capture(["git", "-C", str(clone), "rev-parse", "HEAD"], home).strip() == pin["rev"]:
-        return
+    """Check out only the skill's folder at the pinned revision, restoring it offline when the clone already has it."""
     git = ["git", "-C", str(clone)]
-    if not (clone / ".git").is_dir():
-        clone.mkdir(parents=True, exist_ok=True)
-        external.run(["git", "init", "-q", str(clone)], home)
-    external.run([*git, "config", "remote.origin.url", pin["git"]], home)
-    external.run([*git, "sparse-checkout", "set", "--cone", pin["path"]], home)
-    external.run([*git, "fetch", "-q", "--depth", "1", "origin", pin["rev"]], home)
-    external.run([*git, "checkout", "-q", "--detach", "FETCH_HEAD"], home)
+    if not external.capture([*git, "cat-file", "-t", pin["rev"] + "^{commit}"], home).strip():
+        if not (clone / ".git").is_dir():
+            clone.mkdir(parents=True, exist_ok=True)
+            external.run(["git", "init", "-q", str(clone)], home)
+        external.run([*git, "config", "remote.origin.url", pin["git"]], home)
+        external.run([*git, "sparse-checkout", "set", "--cone", pin["path"]], home)
+        external.run([*git, "fetch", "-q", "--depth", "1", "origin", pin["rev"]], home)
+    # Local state is forced back to the pinned tree: edited and deleted files return, untracked files in the skill's path go.
+    external.capture([*git, "checkout", "-q", "-f", "--detach", pin["rev"]], home)
+    external.capture([*git, "clean", "-q", "-fdx", "--", pin["path"]], home)
     head = external.capture([*git, "rev-parse", "HEAD"], home).strip()
     if head != pin["rev"]:
         raise ValueError(f"statechart source is at {head or 'no revision'}, not the pinned {pin['rev']}: {clone}")
@@ -166,7 +168,9 @@ def fetch_tla2tools(home: Path, jar: Path, pin: dict[str, str]) -> None:
 
 def build_statechart_skill(skill: Path, source: Path, jar: Path) -> None:
     """The folder pi reads: every file of the upstream skill linked in place, except scripts/statechart, which is the wrapper."""
-    if skill.exists() or skill.is_symlink():
+    if skill.is_symlink():
+        skill.unlink()
+    elif skill.exists():
         shutil.rmtree(skill)
     (skill / "scripts").mkdir(parents=True)
     for entry in source.iterdir():
@@ -176,7 +180,7 @@ def build_statechart_skill(skill: Path, source: Path, jar: Path) -> None:
         if entry.name != "statechart":
             (skill / "scripts" / entry.name).symlink_to(entry)
     wrapper = skill / "scripts/statechart"
-    wrapper.write_text(STATECHART_WRAPPER % {"jar": jar, "entry": shlex.quote(str(source / "scripts/statechart"))})
+    wrapper.write_text(STATECHART_WRAPPER % {"jar": "jar=" + shlex.quote(str(jar)), "entry": shlex.quote(str(source / "scripts/statechart"))})
     wrapper.chmod(0o755)
 
 
@@ -187,11 +191,11 @@ def install_statechart(home: Path, state: State, force: bool) -> None:
     state["statechart_root"] = str(root)
     write_json(home / MARKER, state)
     clone, jar, skill = root / "cursor-plugins", root / "tla2tools.jar", root / "skill"
+    fetch_tla2tools(home, jar, pin)
     fetch_statechart_source(home, clone, pin)
     source = clone / pin["path"]
     if not (source / "SKILL.md").is_file() or not (source / "scripts/statechart").is_file():
         raise ValueError(f"statechart skill is missing from {source}")
-    fetch_tla2tools(home, jar, pin)
     build_statechart_skill(skill, source, jar)
     managed_resource(home, state, home / STATECHART_LINK, skill, force, link=True)
 

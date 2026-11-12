@@ -3,6 +3,7 @@
 import hashlib
 import json
 import os
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -17,6 +18,11 @@ from pi_root import external, jsonfile, paths, pins, resources, unattended
 from support.statechart import SKILL_PATH, make_pin
 
 LINK = ".agents/skills/statechart"
+SKILL_MD_NEXT = "---\nname: statechart\ndescription: Test skill\ndisable-model-invocation: true\n---\n# next revision\n"
+
+
+def sha256_of(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 class StatechartTests(unittest.TestCase):
@@ -86,6 +92,63 @@ class StatechartTests(unittest.TestCase):
         if result.returncode:
             self.assertEqual(result.returncode, 127)
             self.assertIn("needs Java 11 or later", result.stderr)
+
+    def test_a_home_path_with_shell_metacharacters_reaches_the_wrapper_verbatim_and_runs_nothing(self):
+        odd = self.base / "h'o\"m$X`touch pwned`}e"
+        odd.mkdir()
+        self.home = odd
+        self.install()
+        wrapper = (odd / LINK / "scripts/statechart").read_text()
+        self.assertNotIn(str(odd), wrapper.replace(shlex.quote(str(odd)), ""))
+        result = self.run_skill(JAVA="/fake/java", TLA2TOOLS="")
+        self.assertIn(f"TLA2TOOLS={odd / paths.STATECHART_ROOT / 'tla2tools.jar'}", result.stdout)
+        self.assertFalse(Path("pwned").exists() or (odd / "pwned").exists())
+
+    def test_the_java_version_is_read_from_the_line_that_has_it(self):
+        self.install()
+        java = self.fake_java('Picked up JAVA_TOOL_OPTIONS: -Xmx1g\nopenjdk version "21.0.4" 2024-07-16')
+        env = {key: value for key, value in os.environ.items() if key not in ("JAVA", "JAVA_HOME")}
+        result = subprocess.run([str(self.home / LINK / "scripts/statechart")], text=True, capture_output=True, check=True,
+                                env={**env, "PATH": f"{java.parent}{os.pathsep}{os.environ['PATH']}"})
+        self.assertIn(f"JAVA={java}", result.stdout)
+
+    def test_a_reinstall_restores_deleted_and_edited_clone_files(self):
+        self.install()
+        source = self.home / paths.STATECHART_ROOT / "cursor-plugins" / SKILL_PATH
+        (source / "references/render.md").write_text("edited\n")
+        (source / "scripts/statechart.ts").unlink()
+        (source / "stray").write_text("untracked\n")
+        self.install()
+        self.assertEqual((source / "references/render.md").read_text(), "# Render\n")
+        self.assertTrue((source / "scripts/statechart.ts").is_file())
+        self.assertFalse((source / "stray").exists())
+
+    def test_a_failed_jar_on_a_pin_bump_keeps_the_previous_revision_and_jar_live(self):
+        self.install()
+        pin = Path(os.environ["PI_STATECHART_PIN"])
+        old = json.loads(pin.read_text())
+        repo = Path(old["git"])
+        (repo / SKILL_PATH / "SKILL.md").write_text(SKILL_MD_NEXT)
+        for command in (["add", "."], ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "next"]):
+            subprocess.run(["git", "-C", str(repo), *command], check=True, capture_output=True)
+        rev = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], check=True, capture_output=True, text=True).stdout.strip()
+        pin.write_text(json.dumps({**old, "rev": rev, "jar_sha256": hashlib.sha256(b"other").hexdigest()}))
+        with self.assertRaisesRegex(ValueError, "checksum"):
+            self.install()
+        self.assertNotIn("next revision", (self.home / LINK / "SKILL.md").read_text())
+        self.assertEqual(sha256_of(self.home / paths.STATECHART_ROOT / "tla2tools.jar"), old["jar_sha256"])
+
+    def test_a_skill_dir_that_is_a_symlink_is_unlinked_not_followed(self):
+        precious = self.base / "precious"
+        precious.mkdir()
+        (precious / "keep").write_text("mine\n")
+        root = self.home / paths.STATECHART_ROOT
+        root.mkdir(parents=True)
+        (root / "skill").symlink_to(precious)
+        self.install()
+        self.assertEqual((precious / "keep").read_text(), "mine\n")
+        self.assertFalse((root / "skill").is_symlink())
+        self.assertTrue((self.home / LINK / "SKILL.md").is_file())
 
     def test_a_second_install_changes_nothing_and_fetches_nothing(self):
         first = self.install()
