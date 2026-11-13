@@ -26,6 +26,8 @@ GIT_PIN = re.compile(r"^(git:[^@]+)@([0-9a-f]{7,40})$")
 PLAIN_NPM_PIN = re.compile(r"^([^/@:]+)@(.+)$")
 MAIN_BRANCH = "main"
 # npm pins `auto` leaves alone: a pi-herdr-agents bump means checking the role discovery pi-straw-boss's role pack registers on.
+# pi-straw-boss stays auto although it ships the roles (its role pack, since 0.79.0): its release flow runs `/boss roles-check`
+# (the boss's decision, 2026-11-13).
 MANUAL_PINS = {"pi-herdr-agents"}
 # Fork pins follow an integration or PR branch instead of the remote HEAD, so `outdated` and a named `bump` never move
 # them to the default branch. pi-herdr-agents is a fork pin until upstream releases giuseppecrj/pi-herdr-agents#84 and #87;

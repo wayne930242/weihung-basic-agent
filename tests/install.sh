@@ -33,6 +33,19 @@ run_install() {
   HOME="$fake_home" bash "$INSTALL_SCRIPT" --home "$fake_home" --skip-external "$@"
 }
 
+install_removes_retired_agents_link() {
+  local temp_dir
+  temp_dir="$(mktemp -d)"
+  local fake_home="$temp_dir/home"
+
+  mkdir -p "$fake_home/.pi/agent"
+  ln -s "$REPO_ROOT/agents" "$fake_home/.pi/agent/agents"
+  run_install "$fake_home" >/dev/null
+  assert_absent "$fake_home/.pi/agent/agents"
+
+  rm -rf "$temp_dir"
+}
+
 fresh_install_creates_expected_links() {
   local temp_dir
   temp_dir="$(mktemp -d)"
@@ -47,7 +60,7 @@ fresh_install_creates_expected_links() {
     assert_symlink_target "$fake_home/.agents/skills/$name" "$REPO_ROOT/skills/$name"
   done
   assert_symlink_target "$fake_home/.pi/agent/rules" "$REPO_ROOT/rules"
-  assert_symlink_target "$fake_home/.pi/agent/agents" "$REPO_ROOT/agents"
+  assert_absent "$fake_home/.pi/agent/agents"
   [[ -f "$fake_home/.pi/agent/AGENTS.md" ]] || fail "expected generated pi instructions"
   # The literal tilde is the text the generated instructions contain, not a path to expand.
   # shellcheck disable=SC2088
@@ -281,6 +294,7 @@ PY
 
 run_all_tests() {
   fresh_install_creates_expected_links
+  install_removes_retired_agents_link
   install_is_idempotent_and_writes_pi_settings
   target_option_is_rejected
   conflict_without_force_fails

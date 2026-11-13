@@ -8,7 +8,6 @@ REPO_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 source "$SCRIPT_DIR/python.sh"
 SKILLS_DIR="$REPO_ROOT/skills"
 RULES_DIR="$REPO_ROOT/rules"
-AGENTS_DIR="$REPO_ROOT/agents"
 CODEBASE_MEMORY_INSTALL_URL="https://raw.githubusercontent.com/DeusData/codebase-memory-mcp/main/install.sh"
 
 OVERLAY_ROOT=""
@@ -27,7 +26,7 @@ Usage: bash scripts/install.sh [--home PATH] [--force] [--skip-external] [--over
 Installs this repository's pi setup:
   - ~/.agents/skills/*/        links to skills/ (and the overlay's skills/)
   - ~/.pi/agent/rules          link to rules/
-  - ~/.pi/agent/agents         link to agents/
+  - removes the retired ~/.pi/agent/agents link to agents/ (pi-straw-boss ships the roles)
   - ~/.local/bin/codebase-memory-mcp when missing
   - --profile unattended (saved; a bare run keeps it, --profile default restores) leaves out the desktop-only packages,
     skills and tools and uses pi/AGENTS.unattended.md.in
@@ -278,7 +277,11 @@ for index in "${!root_skills[@]}"; do
   install_link "${skill_sources[$index]}" "$TARGET_HOME/.agents/skills/${root_skills[$index]}"
 done
 install_link "$RULES_DIR" "$TARGET_HOME/.pi/agent/rules"
-install_link "$AGENTS_DIR" "$TARGET_HOME/.pi/agent/agents"
+# agents/ held global role overrides that bridged pi-herdr-roles to pi-straw-boss's role pack; it is gone, so its link goes.
+if [[ -L "$TARGET_HOME/.pi/agent/agents" ]] && [[ "$(readlink "$TARGET_HOME/.pi/agent/agents")" == "$REPO_ROOT/agents" ]]; then
+  rm "$TARGET_HOME/.pi/agent/agents"
+  log "Removed retired $TARGET_HOME/.pi/agent/agents"
+fi
 
 install_codebase_memory_mcp
 

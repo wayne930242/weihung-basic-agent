@@ -20,7 +20,7 @@ Usage: bash scripts/uninstall.sh [--home PATH] [--skip-external] [--overlay PATH
 Uninstall flow:
   - restore each managed link from the latest backup directory when a backup exists
   - otherwise remove the repository links in ~/.agents/skills, ~/.pi/agent/rules,
-    and ~/.pi/agent/agents
+    and the retired ~/.pi/agent/agents link an older install left
   - run scripts/pi-target.py uninstall, which removes this repository's pi
     packages and resources and restores the pi settings it changed
 
