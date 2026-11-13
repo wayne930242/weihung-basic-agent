@@ -35,7 +35,7 @@ class PackageTests(unittest.TestCase):
             with mock.patch.dict("os.environ", unset, clear=True):
                 run_script("install.sh", home, "--skip-external")
             installed = json.loads((agent / "settings.json").read_text())["packages"]
-            self.assertEqual([item for item in installed if "aaaav" in item or "anchorloop" in item], ["npm:pi-anchorloop@2.16.2"])
+            self.assertEqual([item for item in installed if "aaaav" in item or "anchorloop" in item], ["npm:pi-anchorloop@2.16.3"])
 
     def test_the_pi_aaaav_package_gives_way_to_pi_anchorloop(self):
         earlier = "npm:pi-aaaav@1.3.4"
@@ -49,7 +49,7 @@ class PackageTests(unittest.TestCase):
             with mock.patch.dict("os.environ", unset, clear=True):
                 run_script("install.sh", home, "--skip-external")
             installed = json.loads((agent / "settings.json").read_text())["packages"]
-            self.assertEqual([item for item in installed if "aaaav" in item or "anchorloop" in item], ["npm:pi-anchorloop@2.16.2"])
+            self.assertEqual([item for item in installed if "aaaav" in item or "anchorloop" in item], ["npm:pi-anchorloop@2.16.3"])
 
     def test_an_aaaav_git_install_the_state_never_recorded_is_removed_too(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -62,7 +62,7 @@ class PackageTests(unittest.TestCase):
             with mock.patch.dict("os.environ", unset, clear=True):
                 run_script("install.sh", home, "--skip-external")
             installed = json.loads((agent / "settings.json").read_text())["packages"]
-            self.assertEqual([item for item in installed if "aaaav" in item or "anchorloop" in item], ["npm:pi-anchorloop@2.16.2"])
+            self.assertEqual([item for item in installed if "aaaav" in item or "anchorloop" in item], ["npm:pi-anchorloop@2.16.3"])
 
     def test_session_hoarder_leaves_a_machine_that_already_installed_it(self):
         hoarder = "npm:@moyai/pi-session-hoarder@0.2.0"
@@ -100,7 +100,7 @@ class PackageTests(unittest.TestCase):
                 self.assertEqual(packages.anchorloop_source(), str(checkout.resolve()))
         unset = {key: value for key, value in os.environ.items() if key != "PI_ANCHORLOOP_ROOT"}
         with mock.patch.dict("os.environ", unset, clear=True):
-            self.assertEqual(packages.anchorloop_source(), "npm:pi-anchorloop@2.16.2")
+            self.assertEqual(packages.anchorloop_source(), "npm:pi-anchorloop@2.16.3")
 
     def test_leaving_a_checkout_override_removes_the_checkout(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -113,13 +113,13 @@ class PackageTests(unittest.TestCase):
             (agent / "settings.json").write_text("{}")
             run_script("install.sh", home, "--skip-external", env={"PI_ANCHORLOOP_ROOT": str(checkout)})
             first = json.loads((agent / "settings.json").read_text())["packages"]
-            self.assertNotIn("npm:pi-anchorloop@2.16.2", first)
+            self.assertNotIn("npm:pi-anchorloop@2.16.3", first)
             self.assertTrue(any("anchorloop" in item for item in first), first)
             unset = {key: value for key, value in os.environ.items() if key != "PI_ANCHORLOOP_ROOT"}
             with mock.patch.dict("os.environ", unset, clear=True):
                 run_script("install.sh", home, "--skip-external")
             second = json.loads((agent / "settings.json").read_text())["packages"]
-            self.assertEqual([item for item in second if "anchorloop" in item], ["npm:pi-anchorloop@2.16.2"])
+            self.assertEqual([item for item in second if "anchorloop" in item], ["npm:pi-anchorloop@2.16.3"])
 
     def test_previous_git_bridge_revision_is_restored(self):
         old = "git:github.com/wayne930242/pi-claude-bridge@old-commit"

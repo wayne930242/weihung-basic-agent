@@ -61,7 +61,7 @@ PACKAGES = [
     "npm:pi-robot-hand@0.8.0",
     "npm:pi-auto-tab-name@0.2.0",
     # show_doc: documents in the browser, answers back as messages; it replaced pi-herdr-doc-review (same tool name).
-    "npm:pi-better-show@0.7.1",
+    "npm:pi-better-show@0.7.2",
     # Straw Boss coordination in Herdr: opt-in main agents per tab, an on-demand tower per workspace, scoped broadcast.
     "npm:pi-straw-boss@0.79.0",
     "npm:@pify/memory@0.14.1",
@@ -117,4 +117,4 @@ UNATTENDED_DROPS = (
 # statechart needs a Java runtime, which the box has not been checked for; add it back once it has.
 UNATTENDED_DROPPED_SKILLS = ("going-to-sleep", "recording-with-obs", "statechart")
 # anchorloop, the workflow skills and extensions; PI_ANCHORLOOP_ROOT swaps in a checkout for testing.
-ANCHORLOOP_PACKAGE = "npm:pi-anchorloop@2.16.2"
+ANCHORLOOP_PACKAGE = "npm:pi-anchorloop@2.16.3"

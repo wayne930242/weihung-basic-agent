@@ -10,7 +10,7 @@ from pathlib import Path
 from support.statechart import make_pin
 
 ROOT = Path(__file__).resolve().parent.parent
-ANCHORLOOP_PACKAGE = "npm:pi-anchorloop@2.16.2"
+ANCHORLOOP_PACKAGE = "npm:pi-anchorloop@2.16.3"
 PINS = (ROOT / "scripts/pi_root/pins.py").read_text()
 
 
