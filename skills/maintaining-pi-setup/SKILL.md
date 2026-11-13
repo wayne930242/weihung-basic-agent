@@ -19,7 +19,7 @@ Bring this setup's source repository (the checkout `scripts/install.sh` runs fro
    - **Completion Criterion**: every hit is fixed, scheduled through a newer pin, or reported with file and line.
 3. **Retarget the types.** Set the devDependency to the installed version, run `npm install --no-package-lock` (the repository tracks no lockfile), then `npx tsc -p .` and the tests that cover the changed extensions.
    - **Completion Criterion**: `tsc` exits 0 against the new types.
-4. **Bump the npm pins.** Run `python3 scripts/pi-pins.py outdated`, then `bump <name>` for each that differs. `pi-herdr-agents` and `pi-herdr-roles` also need `agents/` re-derived and `skills/orchestrate` compared, as `bump` prints.
+4. **Bump the npm pins.** Run `python3 scripts/pi-pins.py outdated`, then `bump <name>` for each that differs. A `pi-herdr-agents` bump also needs the role check `bump` prints (pi-straw-boss ships the roles).
    - **Completion Criterion**: `outdated` reports only the pins deliberately held, each with its reason.
 5. **Align the forks.** `FORK_BRANCHES` in `scripts/pi-pins.py` lists them, and the comments in `scripts/pi_root/pins.py` name the upstream PRs each one carries. For each fork:
    - Check its PRs with `gh pr view <n> -R <upstream>`. When upstream has released all of them, return to the npm release as the `pins.py` comment describes.

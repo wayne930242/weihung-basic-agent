@@ -150,7 +150,7 @@ def plan(ctx: Context) -> None:
     if herdr_root:
         state["herdr_agents"] = herdr_root
         print(f"{HERDR_AGENTS_ROOT_VARIABLE}: using {herdr_root} instead of {HERDR_AGENTS_SOURCE}. "
-              "Roles still come from pi-herdr-roles and the agents/ overrides.", file=sys.stderr)
+              "Roles still come from pi-straw-boss's role pack and the agents/ overrides.", file=sys.stderr)
     else:
         state.pop("herdr_agents", None)
     declared = optional_plugins()

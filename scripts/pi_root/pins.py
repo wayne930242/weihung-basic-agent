@@ -9,10 +9,6 @@ CLAUDE_RULES_SOURCE = "npm:pi-code@1.7.0"
 # Once upstream releases what this setup needs, return to the npm release: set this to npm:pi-herdr-agents@<version>, drop the PINNED_GIT
 # entry and the FORK_BRANCHES entry in scripts/pi-pins.py, and move "npm:pi-herdr-agents" out of RETIRED_SOURCES.
 HERDR_AGENTS_SOURCE = "git:github.com/wayne930242/pi-herdr-agents@76ddee78425d43e99789bc55f084411222c0cbc7"
-# The pi-herdr-agents v3 role pack: planner, /plan, and /skill:plan. Its orchestrate skill is filtered out because
-# skills/orchestrate owns our trimmed version. Pinned by hand (MANUAL_PINS) since a 0.x bump can change the planner.
-HERDR_ROLES_SOURCE = "npm:pi-herdr-roles@0.1.0"
-HERDR_ROLES_PACKAGE = {"source": HERDR_ROLES_SOURCE, "skills": ["!orchestrate"]}
 # Every other revision of a pinned git package, including an unpinned spec, is retired for the current pin.
 PINNED_GIT = {
     BRIDGE_SOURCE: ("git:github.com/wayne930242/pi-claude-bridge@",),
@@ -41,14 +37,15 @@ RETIRED_SOURCES = ("npm:pi-herdr-doc-review", "npm:@victor-software-house/pi-cur
                    # The pi-lens fork pin gave way to the npm release once upstream shipped its change.
                    "git:github.com/wayne930242/pi-lens",
                    # pi-lens ran diagnostics and language servers after every edit and cost too much CPU and memory.
-                   "npm:pi-lens")
+                   "npm:pi-lens",
+                   # pi-straw-boss ships the roles (its roles/ pack, from 0.79.0); /plan and the plan skill left with it.
+                   "npm:pi-herdr-roles")
 # pi-code loads only claude-rules.ts, which reads each project's .claude/rules as Claude Code does;
 # its other extensions duplicate the todo, MCP, subagent, and web packages below.
 CLAUDE_RULES_PACKAGE = {"source": CLAUDE_RULES_SOURCE, "extensions": ["extensions/claude-rules.ts"]}
 PACKAGES = [
     BRIDGE_SOURCE,
     HERDR_AGENTS_SOURCE,
-    HERDR_ROLES_PACKAGE,
     "npm:pi-mcp-adapter@7.0.1",
     "npm:pi-intercom@0.18.1",
     "npm:@juicesharp/rpiv-ask-user-question@2.15.0",
@@ -61,12 +58,12 @@ PACKAGES = [
     "npm:pi-prose-watch@0.1.2",
     "npm:cc-safety-net@2.7.11",
     "npm:pi-codex-image-gen@0.3.1",
-    "npm:pi-robot-hand@0.7.2",
+    "npm:pi-robot-hand@0.8.0",
     "npm:pi-auto-tab-name@0.2.0",
     # show_doc: documents in the browser, answers back as messages; it replaced pi-herdr-doc-review (same tool name).
     "npm:pi-better-show@0.7.1",
     # Straw Boss coordination in Herdr: opt-in main agents per tab, an on-demand tower per workspace, scoped broadcast.
-    "npm:pi-straw-boss@0.78.1",
+    "npm:pi-straw-boss@0.79.0",
     "npm:@pify/memory@0.14.1",
     "npm:pi-loop-monitor@0.2.8",
     # /doctor: profiles main-thread stalls and asks long, strained mains to rotate through a handoff file.

@@ -71,7 +71,7 @@ from pathlib import Path
 
 install = sys.argv[1]
 sys.path.insert(0, str(Path(install).resolve().parent))
-from pi_root.pins import BRIDGE_SOURCE, HERDR_AGENTS_SOURCE, HERDR_ROLES_PACKAGE, PACKAGES
+from pi_root.pins import BRIDGE_SOURCE, HERDR_AGENTS_SOURCE, PACKAGES
 
 
 def run(home, *args):
@@ -97,14 +97,15 @@ with tempfile.TemporaryDirectory() as directory:
     settings = json.loads((home / ".pi/agent/settings.json").read_text())
     assert len(settings["packages"]) == len(PACKAGES) + 2, settings  # the pinned packages, anchorloop, and this package
     assert settings["packages"][0] == BRIDGE_SOURCE, settings
-    assert settings["packages"][1:3] == [HERDR_AGENTS_SOURCE, HERDR_ROLES_PACKAGE], settings
+    assert settings["packages"][1] == HERDR_AGENTS_SOURCE, settings
+    assert not any("pi-herdr-roles" in (p["source"] if isinstance(p, dict) else p) for p in settings["packages"]), settings
     sources = [package["source"] if isinstance(package, dict) else package for package in settings["packages"]]
     registry = [source.removeprefix("npm:") for source in sources if source.startswith("npm:")]
     assert registry and all("@" in name[1:] for name in registry), registry
     assert {"source": "npm:@sherif-fanous/pi-catppuccin@0.3.0", "themes": ["themes/catppuccin-mocha.json"]} in settings["packages"], settings
     assert "npm:@juicesharp/rpiv-todo@2.15.0" in sources and "npm:cc-safety-net@2.7.11" in sources, sources
     assert "npm:pi-codex-image-gen@0.3.1" in sources and not any("pi-web-access" in source for source in sources), sources
-    assert "npm:pi-robot-hand@0.7.2" in sources and not any("pi-secret-drop" in source for source in sources), sources
+    assert "npm:pi-robot-hand@0.8.0" in sources and not any("pi-secret-drop" in source for source in sources), sources
     assert not any("pi-phoenix-otel" in source for source in sources), sources
     assert "npm:@pify/memory@0.14.1" in sources, sources
     assert "npm:pi-loop-monitor@0.2.8" in sources, sources
