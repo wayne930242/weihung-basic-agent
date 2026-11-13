@@ -25,7 +25,7 @@ The installer never overwrites a file you own silently, and it is idempotent: re
 
 - **Skills** in `skills/`: `orchestrate`, `reflecting-to-root`, `maintaining-pi-setup`, `publishing-pi-extensions`, `recording-with-obs`, `going-to-sleep`; plus the pinned [`statechart`](https://github.com/cursor/plugins/tree/main/harness/pstack/claude-code/skills/statechart) skill (TLA+ model checking with TLC; needs Java 11 or later), fetched at a fixed revision.
 - **Rules** in `rules/`: conventions for Git, deployment, dependencies, architecture, UI, Go, Python, shell, TypeScript, and Markdown, plus stream rules that block known command mistakes.
-- **Role overrides** in `agents/` for the `pi-herdr-agents` roles, and **model routing** in `pi/herdr-agents-models.json` (and `pi/herdr-agents-models.unattended.json` for the unattended profile).
+- **Model routing** for the `pi-herdr-agents` roles (pi-straw-boss ships the roles themselves) in `pi/herdr-agents-models.json` (and `pi/herdr-agents-models.unattended.json` for the unattended profile).
 - **Extensions** in `pi/extensions/`: auto thinking level, idle compaction, quota resume, batch guard, monitor hold, and the Playwriter relay.
 - **Instructions**: `pi/AGENTS.md.in` becomes `~/.pi/agent/AGENTS.md`.
 
@@ -73,7 +73,7 @@ The installer does not pull this repository: run `git pull` here before re-insta
 
 ### What an overlay cannot change
 
-An overlay adds; it does not replace. A skill name that exists in both repositories stops the install. Rules (`rules/`), role overrides (`agents/`), model routing (`pi/herdr-agents-models.json`), extensions (`pi/extensions/`), and the base text of `pi/AGENTS.md.in` come only from this repository. To change those, fork it and point your overlay's installer at the fork.
+An overlay adds; it does not replace. A skill name that exists in both repositories stops the install. Rules (`rules/`), model routing (`pi/herdr-agents-models.json`), extensions (`pi/extensions/`), and the base text of `pi/AGENTS.md.in` come only from this repository. To change those, fork it and point your overlay's installer at the fork.
 
 ## Tests
 

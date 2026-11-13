@@ -42,6 +42,13 @@ install_removes_retired_agents_link() {
   ln -s "$REPO_ROOT/agents" "$fake_home/.pi/agent/agents"
   run_install "$fake_home" >/dev/null
   assert_absent "$fake_home/.pi/agent/agents"
+  ln -s "$temp_dir/moved-checkout/agents" "$fake_home/.pi/agent/agents"
+  run_install "$fake_home" >/dev/null
+  assert_absent "$fake_home/.pi/agent/agents"
+  mkdir -p "$temp_dir/user/agents"
+  ln -s "$temp_dir/user/agents" "$fake_home/.pi/agent/agents"
+  run_install "$fake_home" >/dev/null
+  [[ -L "$fake_home/.pi/agent/agents" ]] || fail "expected the user's own agents link kept"
 
   rm -rf "$temp_dir"
 }

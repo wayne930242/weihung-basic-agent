@@ -78,7 +78,8 @@ class HerdrAgentsRoot(unittest.TestCase):
         self.assertEqual(herdr_entries(self.home), [str(local)])
         self.assertEqual(state(self.home)["herdr_agents"], str(local))
         self.assertIn(str(local), result.stderr)
-        self.assertIn("agents/", result.stderr)
+        self.assertIn("role pack", result.stderr)
+        self.assertNotIn("agents/", result.stderr)
         self.assertNotIn("herdr_agents_displaced", state(self.home))
 
     def test_rerun_with_the_override_changes_nothing(self):

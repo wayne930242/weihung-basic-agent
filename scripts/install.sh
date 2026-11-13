@@ -278,7 +278,10 @@ for index in "${!root_skills[@]}"; do
 done
 install_link "$RULES_DIR" "$TARGET_HOME/.pi/agent/rules"
 # agents/ held global role overrides that bridged pi-herdr-roles to pi-straw-boss's role pack; it is gone, so its link goes.
-if [[ -L "$TARGET_HOME/.pi/agent/agents" ]] && [[ "$(readlink "$TARGET_HOME/.pi/agent/agents")" == "$REPO_ROOT/agents" ]]; then
+# A link to an agents/ of this checkout or its overlay, or a dangling one a moved checkout left, is ours; anything else is the user's.
+retired_agents="$(readlink "$TARGET_HOME/.pi/agent/agents" 2>/dev/null || true)"
+if [[ -L "$TARGET_HOME/.pi/agent/agents" && "$retired_agents" == */agents ]] \
+  && { is_managed_target "$retired_agents" || [[ ! -e "$retired_agents" ]]; }; then
   rm "$TARGET_HOME/.pi/agent/agents"
   log "Removed retired $TARGET_HOME/.pi/agent/agents"
 fi
