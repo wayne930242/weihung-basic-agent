@@ -305,6 +305,17 @@ describe("a read that cannot be stored", () => {
     assert.deepEqual(siblings(), ["tower-mode.json"]);
   });
 
+  test("RR4705-F003: a stored pause, a 200 pause that cannot be stored: keeps the file and still claims nothing", { skip }, async () => {
+    store(PAUSED);
+    const bytes = fs.readFileSync(paths.state);
+    respond = json(200, { mode: "pause", setAt: PAUSED.setAt });
+    await unwritable(async () => {
+      const result = await run();
+      assert.deepEqual([result.mode, result.claim, result.read], ["pause", "no", "write"]);
+    });
+    assert.deepEqual(fs.readFileSync(paths.state), bytes);
+  });
+
   test("R4705-F001: a stored run, a 200 pause that cannot be stored, then hq 503: claims nothing", { skip }, async () => {
     store({ mode: "run", setAt: null, readAt: "2026-11-14T01:00:00.000Z" });
     respond = json(200, { mode: "pause", setAt: "2026-11-14T02:00:00.000Z" });

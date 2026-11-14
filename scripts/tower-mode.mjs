@@ -6,7 +6,8 @@
 // - only a 200 whose JSON has mode "run" or "pause" changes the mode; every other answer keeps the last known one;
 // - after a good 200 the read is stored atomically (temp file, then rename) and loaded on the next run;
 // - run is the default only while the state file does not exist; a file that exists but cannot be used claims nothing;
-// - a read that cannot be stored empties the state file (or creates it empty), so the next run claims nothing too.
+// - a read that cannot be stored keeps the file when its mode already equals the answer; otherwise it empties the
+//   state file (or creates it empty), so the next run claims nothing too.
 // Environment overrides, for tests: TOWER_MODE_URL (https, or http to 127.0.0.1 or localhost; anything else is ignored),
 // TOWER_MODE_TOKEN_FILE, TOWER_MODE_STATE_FILE, TOWER_MODE_TIMEOUT_MS.
 
