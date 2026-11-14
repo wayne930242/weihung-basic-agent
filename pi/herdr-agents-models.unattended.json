@@ -6,7 +6,8 @@
     "reviewer": "claude-bridge/claude-opus-5-5",
     "adversarial-reviewer": "claude-bridge/claude-opus-5-5",
     "visual-tester": "claude-bridge/claude-sonnet-5-5",
-    "planner": "claude-bridge/claude-opus-5-5"
+    "planner": "claude-bridge/claude-opus-5-5",
+    "watchdog": "claude-bridge/claude-haiku-5-5"
   },
   "tasks": {
     "coding": [
