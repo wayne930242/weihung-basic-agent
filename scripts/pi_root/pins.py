@@ -5,10 +5,10 @@ QUOTAS_SOURCE = "npm:@latentminds/pi-quotas@0.5.0"
 CLAUDE_RULES_SOURCE = "npm:pi-code@1.7.0"
 # Fork pin of giuseppecrj/pi-herdr-agents: upstream main (v3.9.0, which carries #99) merged with the
 # solutionSpace change of closed PR #87, grouped-workspace placement, the macOS process-identity and cancel-settle
-# fixes, the complex-coding task category, and the fork-only exit hold that pi/extensions/quota-resume.ts and monitor-hold.ts use (branch weihung/v3-integration).
+# fixes, the complex-coding task category, managed worktrees seeding the source's installed project .pi/npm and .pi/git, and the fork-only exit hold that pi/extensions/quota-resume.ts and monitor-hold.ts use (branch weihung/v3-integration).
 # Once upstream releases what this setup needs, return to the npm release: set this to npm:pi-herdr-agents@<version>, drop the PINNED_GIT
 # entry and the FORK_BRANCHES entry in scripts/pi-pins.py, and move "npm:pi-herdr-agents" out of RETIRED_SOURCES.
-HERDR_AGENTS_SOURCE = "git:github.com/wayne930242/pi-herdr-agents@76ddee78425d43e99789bc55f084411222c0cbc7"
+HERDR_AGENTS_SOURCE = "git:github.com/wayne930242/pi-herdr-agents@f16666b7ebd4f908da7cca056d01e6ab619f1c9f"
 # Every other revision of a pinned git package, including an unpinned spec, is retired for the current pin.
 PINNED_GIT = {
     BRIDGE_SOURCE: ("git:github.com/wayne930242/pi-claude-bridge@",),
