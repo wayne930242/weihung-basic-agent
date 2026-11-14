@@ -68,7 +68,7 @@ PACKAGES = [
     "npm:pi-loop-monitor@0.2.8",
     # /doctor: profiles main-thread stalls and asks long, strained mains to rotate through a handoff file.
     "npm:pi-session-doctor@0.1.0",
-    "npm:@narumitw/pi-goal@0.55.1",
+    "npm:@narumitw/pi-goal@0.55.3",
     # Antigravity (agy) Google login: /login antigravity, plus the google_search and generate_image tools.
     "npm:pi-antigravity@0.12.0",
     # Desktop app control through Accessibility (UIA on Windows), kept headless by configs.COMPUTER_USE_SETTINGS.
