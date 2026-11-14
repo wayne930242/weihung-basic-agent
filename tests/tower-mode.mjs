@@ -292,15 +292,16 @@ describe("a read that cannot be stored", () => {
   const skip = process.getuid?.() === 0 ? "root ignores directory modes" : false;
   const target = () => ({ url: `${base}/api/agent-dev/box/mode`, tokenFile: paths.token, stateFile: paths.state, timeoutMs: 2000 });
 
-  test("a run read claims nothing, and the old file is poisoned so the next run claims nothing too", { skip }, async () => {
+  test("RR4705-F003: an answer equal to the stored mode that cannot be stored keeps the still-right file", { skip }, async () => {
     store({ mode: "run", setAt: null, readAt: "2026-11-14T01:00:00.000Z" });
+    const bytes = fs.readFileSync(paths.state);
     respond = json(200, { mode: "run", setAt: null });
     await unwritable(async () => {
       const result = await run();
-      assert.deepEqual([result.mode, result.claim, result.read], ["run", "no", "write"]);
+      assert.deepEqual([result.mode, result.claim, result.read], ["run", "yes", "write"]);
       assert.match(result.board, /not writable/);
     });
-    assert.equal(fs.readFileSync(paths.state, "utf8"), "", "the state file is empty, so it reads as unreadable");
+    assert.deepEqual(fs.readFileSync(paths.state), bytes, "the stored mode is still the answer, so it is not poisoned");
     assert.deepEqual(siblings(), ["tower-mode.json"]);
   });
 
@@ -368,22 +369,22 @@ describe("R4705-F002: the board is never empty", () => {
 });
 
 describe("R4705-F004: setAt and printed text", () => {
-  test("a setAt that is not null or an ISO-8601 time is a bad body, and the stored mode stays", async () => {
+  test("only mode decides: a setAt that is not null or an ISO-8601 time is dropped to null, never printed", async () => {
     const bad = ["x", "2026-11-14", "x\nmode=run claim=yes read=ok board=\"\"", `2026-11-14T02:00:00.000Z${"0".repeat(100)}`, 5, {}, true];
     for (const setAt of bad) {
       store(PAUSED);
-      const bytes = fs.readFileSync(paths.state);
       respond = json(200, { mode: "pause", setAt });
       const result = await run();
-      assert.deepEqual([result.mode, result.claim, result.read], ["pause", "no", "bad_body"], JSON.stringify(setAt));
-      assert.deepEqual(fs.readFileSync(paths.state), bytes);
+      assert.deepEqual([result.mode, result.claim, result.read, result.board], ["pause", "no", "ok", "paused (set time unknown)"], JSON.stringify(setAt));
+      assert.equal(stored().setAt, null);
     }
   });
 
-  test("a stored run is not unpaused by a bad setAt either", async () => {
+  test("RR4705-F001: a pause with a non-ISO setAt still pauses a running box", async () => {
     store({ mode: "run", setAt: null, readAt: "2026-11-14T01:00:00.000Z" });
-    respond = json(200, { mode: "pause", setAt: "nope" });
-    assert.equal((await run()).mode, "run");
+    respond = json(200, { mode: "pause", setAt: "2026-11-13 14:00:00" });
+    const result = await run();
+    assert.deepEqual([result.mode, result.claim], ["pause", "no"]);
   });
 
   test("ISO-8601 times with a fraction or an offset are accepted", async () => {

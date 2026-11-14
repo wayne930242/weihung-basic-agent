@@ -151,8 +151,8 @@ export async function readHq({ url, tokenFile, timeoutMs }) {
     if (body === null || typeof body !== "object" || !MODES.includes(body.mode)) {
       return { ok: false, reason: typeof body === "object" && body !== null && "mode" in body ? "bad_mode" : "bad_body" };
     }
-    const setAt = body.setAt === undefined ? null : body.setAt;
-    if (setAt !== null && !isIsoTime(setAt)) return { ok: false, reason: "bad_body" };
+    // Only mode decides (hq contract); a setAt that is not an ISO time is dropped, never printed.
+    const setAt = isIsoTime(body.setAt) ? body.setAt : null;
     return { ok: true, mode: body.mode, setAt };
   } catch {
     return { ok: false, reason: signal.aborted ? "timeout" : "network" };
@@ -188,6 +188,10 @@ export async function decide({ url, tokenFile, stateFile, timeoutMs, now = new D
     try {
       writeStateAtomic(stateFile, { mode: answer.mode, setAt: answer.setAt, readAt: now }, io);
     } catch {
+      if (stored.kind === "present" && stored.state.mode === answer.mode) {
+        // The stored mode is still the answer: keep the file and act on it.
+        return { mode: answer.mode, claim: answer.mode === "run" ? "yes" : "no", read: "write", board: `mode ${answer.mode} (tower-mode file not writable)` };
+      }
       poisonState(stateFile, io);
       return { mode: answer.mode, claim: "no", read: "write", board: "tower-mode file not writable" };
     }
