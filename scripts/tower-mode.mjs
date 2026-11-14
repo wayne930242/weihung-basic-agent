@@ -1,22 +1,44 @@
 #!/usr/bin/env node
 // The unattended box's pickup mode (MP-4705). Reads hq's mode, keeps the last known one on disk, and prints one line:
-//   mode=run|pause|unknown claim=yes|no read=<ok|http_NNN|bad_body|bad_mode|timeout|network|no_token|file|write> board="<text>"
+//   mode=run|pause|unknown claim=yes|no read=<ok|http_NNN|bad_body|bad_mode|timeout|network|no_token|file|write|error> board="<text>"
 // Exit 0 when claim=yes, 1 when claim=no. The contract is "What the box does with the answer" in moldplan-center
 // apps/infra-dashboard/docs/agent-dev-box-broker.md:
 // - only a 200 whose JSON has mode "run" or "pause" changes the mode; every other answer keeps the last known one;
 // - after a good 200 the read is stored atomically (temp file, then rename) and loaded on the next run;
-// - run is the default only while the state file does not exist; a file that exists but cannot be used claims nothing.
-// Environment overrides, for tests: TOWER_MODE_URL, TOWER_MODE_TOKEN_FILE, TOWER_MODE_STATE_FILE, TOWER_MODE_TIMEOUT_MS.
+// - run is the default only while the state file does not exist; a file that exists but cannot be used claims nothing;
+// - a read that cannot be stored empties the state file (or creates it empty), so the next run claims nothing too.
+// Environment overrides, for tests: TOWER_MODE_URL (https, or http to 127.0.0.1 or localhost; anything else is ignored),
+// TOWER_MODE_TOKEN_FILE, TOWER_MODE_STATE_FILE, TOWER_MODE_TIMEOUT_MS.
 
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const DEFAULT_URL = "https://hq.moldplan.app/api/agent-dev/box/mode";
+export const DEFAULT_URL = "https://hq.moldplan.app/api/agent-dev/box/mode";
 const DEFAULT_TIMEOUT_MS = 5000;
 const MAX_BODY_BYTES = 64 * 1024;
 const MODES = ["run", "pause"];
+const ISO_TIME = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d{1,9})?(Z|[+-]\d\d:\d\d)$/;
+const MAX_TIME_LENGTH = 40;
+
+/** True for an ISO-8601 date-time with a zone, short enough to print. */
+export function isIsoTime(value) {
+  return typeof value === "string" && value.length <= MAX_TIME_LENGTH && ISO_TIME.test(value) && !Number.isNaN(Date.parse(value));
+}
+
+/** TOWER_MODE_URL is a test seam: honored for https, or http to 127.0.0.1 or localhost; anything else is the default. */
+export function resolveUrl(value) {
+  if (!value) return DEFAULT_URL;
+  let parsed;
+  try {
+    parsed = new URL(value);
+  } catch {
+    return DEFAULT_URL;
+  }
+  const local = parsed.protocol === "http:" && (parsed.hostname === "127.0.0.1" || parsed.hostname === "localhost");
+  return parsed.protocol === "https:" || local ? value : DEFAULT_URL;
+}
 
 export function defaultPaths(home = os.homedir()) {
   return {
@@ -46,6 +68,19 @@ export function writeStateAtomic(file, state, io = fs) {
     try { io.rmSync(temp, { force: true }); } catch { /* nothing more to clean */ }
     throw error;
   }
+  // The rename has taken effect; syncing the directory only makes it survive a power loss.
+  try {
+    const directoryDescriptor = io.openSync(directory, "r");
+    try { io.fsyncSync(directoryDescriptor); } finally { io.closeSync(directoryDescriptor); }
+  } catch { /* some filesystems cannot fsync a directory */ }
+}
+
+/** Empty the state file (or create it empty) without needing free space, so later runs read it as unreadable. */
+function poisonState(file, io = fs) {
+  try {
+    io.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
+    io.closeSync(io.openSync(file, "w", 0o600));
+  } catch { /* nothing more can be done; this run claims nothing either way */ }
 }
 
 /** The stored read: absent (never read), or the parsed state, or unreadable (exists but cannot be used). */
@@ -60,8 +95,8 @@ export function loadState(file, io = fs) {
     const value = JSON.parse(text);
     const valid = value !== null && typeof value === "object" && !Array.isArray(value)
       && MODES.includes(value.mode)
-      && (value.setAt === null || typeof value.setAt === "string")
-      && typeof value.readAt === "string";
+      && (value.setAt === null || isIsoTime(value.setAt))
+      && isIsoTime(value.readAt);
     return valid ? { kind: "present", state: value } : { kind: "unreadable" };
   } catch {
     return { kind: "unreadable" };
@@ -116,7 +151,9 @@ export async function readHq({ url, tokenFile, timeoutMs }) {
     if (body === null || typeof body !== "object" || !MODES.includes(body.mode)) {
       return { ok: false, reason: typeof body === "object" && body !== null && "mode" in body ? "bad_mode" : "bad_body" };
     }
-    return { ok: true, mode: body.mode, setAt: typeof body.setAt === "string" ? body.setAt : null };
+    const setAt = body.setAt === undefined ? null : body.setAt;
+    if (setAt !== null && !isIsoTime(setAt)) return { ok: false, reason: "bad_body" };
+    return { ok: true, mode: body.mode, setAt };
   } catch {
     return { ok: false, reason: signal.aborted ? "timeout" : "network" };
   }
@@ -125,7 +162,7 @@ export async function readHq({ url, tokenFile, timeoutMs }) {
 function readUnreadSince(file, now, io = fs) {
   try {
     const since = JSON.parse(io.readFileSync(file, "utf8")).since;
-    if (typeof since === "string" && !Number.isNaN(Date.parse(since))) return since;
+    if (isIsoTime(since)) return since;
   } catch { /* missing or damaged: this read is the first known failure */ }
   try {
     writeStateAtomic(file, { since: now }, io);
@@ -138,43 +175,54 @@ function clearUnreadSince(file, io = fs) {
 }
 
 /** The whole decision for one run. Returns the fields of the printed line. */
-export async function decide({ url, tokenFile, stateFile, timeoutMs, now = new Date().toISOString() }) {
+export async function decide({ url, tokenFile, stateFile, timeoutMs, now = new Date().toISOString(), io = fs }) {
   const unreadFile = `${stateFile}.unread`;
-  const stored = loadState(stateFile);
+  const stored = loadState(stateFile, io);
   if (stored.kind === "unreadable") {
     return { mode: "unknown", claim: "no", read: "file", board: "tower-mode file unreadable" };
   }
   const answer = await readHq({ url, tokenFile, timeoutMs });
   if (answer.ok) {
+    // The read was good whether or not it could be stored, so the failure run is over.
+    clearUnreadSince(unreadFile, io);
     try {
-      writeStateAtomic(stateFile, { mode: answer.mode, setAt: answer.setAt, readAt: now });
+      writeStateAtomic(stateFile, { mode: answer.mode, setAt: answer.setAt, readAt: now }, io);
     } catch {
+      poisonState(stateFile, io);
       return { mode: answer.mode, claim: "no", read: "write", board: "tower-mode file not writable" };
     }
-    clearUnreadSince(unreadFile);
     const claim = answer.mode === "run" ? "yes" : "no";
-    const board = answer.mode === "run" ? "" : answer.setAt ? `paused at ${answer.setAt}` : "paused (set time unknown)";
+    const board = answer.mode === "run" ? "mode run" : answer.setAt ? `paused at ${answer.setAt}` : "paused (set time unknown)";
     return { mode: answer.mode, claim, read: "ok", board };
   }
   const mode = stored.kind === "present" ? stored.state.mode : "run";
-  const since = readUnreadSince(unreadFile, now);
+  const since = readUnreadSince(unreadFile, now, io);
+  const source = stored.kind === "present" ? "cached" : "default";
   return {
     mode,
     claim: mode === "run" ? "yes" : "no",
     read: answer.reason,
-    board: `mode ${mode} (cached, hq unread since ${since})`,
+    board: `mode ${mode} (${source}, hq unread since ${since})`,
   };
 }
 
+const UNPRINTABLE = /[\p{Cc}\p{Zl}\p{Zp}]/gu;
+const printable = (text) => String(text).replace(UNPRINTABLE, " ");
+
 export function formatLine({ mode, claim, read, board }) {
-  return `mode=${mode} claim=${claim} read=${read} board="${board.replaceAll('"', "'")}"`;
+  return `mode=${printable(mode)} claim=${printable(claim)} read=${printable(read)} board="${printable(board).replaceAll('"', "'")}"`;
+}
+
+/** The line for an error nothing foresaw: claims nothing, and still parses. */
+export function failedLine() {
+  return formatLine({ mode: "unknown", claim: "no", read: "error", board: "tower-mode check failed" });
 }
 
 async function main() {
   const defaults = defaultPaths();
   const timeout = Number(process.env.TOWER_MODE_TIMEOUT_MS);
   const result = await decide({
-    url: process.env.TOWER_MODE_URL || DEFAULT_URL,
+    url: resolveUrl(process.env.TOWER_MODE_URL),
     tokenFile: process.env.TOWER_MODE_TOKEN_FILE || defaults.token,
     stateFile: process.env.TOWER_MODE_STATE_FILE || defaults.state,
     timeoutMs: Number.isFinite(timeout) && timeout > 0 ? timeout : DEFAULT_TIMEOUT_MS,
@@ -186,8 +234,7 @@ async function main() {
 const invokedDirectly = process.argv[1] && fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url));
 if (invokedDirectly) {
   main().catch(() => {
-    // Anything unforeseen claims nothing; the line still parses.
-    process.stdout.write(`${formatLine({ mode: "unknown", claim: "no", read: "file", board: "tower-mode check failed" })}\n`);
+    process.stdout.write(`${failedLine()}\n`);
     process.exitCode = 1;
   });
 }

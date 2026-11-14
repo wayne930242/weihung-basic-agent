@@ -29,7 +29,7 @@ Run as many tickets at once as the brief or the tower's standing instruction nam
 
 ### Pickup mode
 
-hq decides whether this box takes new work. Run `tower-mode` before each claim (Ticket loop step 2) and before each new train (a letter that does not exist yet); it prints `mode=<run|pause|unknown> claim=<yes|no> read=<why> board="<text>"`. On `claim=no`, claim no ticket and cut no train; on any other output, or none, treat it as `claim=no`. Put a non-empty `board` on the work board with `board_set` whenever it changes. Tickets already claimed finish, including rework after a fix, and a train already closed with `Box-gated head` goes on through its fixes, seal, export and hand-over, so a pair's other half is never held. Never edit the command's token or state files, and never judge the mode yourself.
+hq decides whether this box takes new work. Run `tower-mode` before each claim (Ticket loop step 2) and before each new train (a letter that does not exist yet); it prints `mode=<run|pause|unknown> claim=<yes|no> read=<why> board="<text>"`. On `claim=no`, claim no ticket and cut no train. If `tower-mode` is missing or prints no valid line, put `tower-mode failed` on the board and claim nothing. Every run, put the line's `board` on the work board with `board_set`, so an old pause or outage text is replaced. Under a pause, tickets already claimed finish, including rework after a fix, and may join a train that is already open; that train may close, gate and hand over (a train closed with `Box-gated head` goes on through its fixes, seal and export), so a pair's other half is never held; no new train is opened. Never edit the command's token or state files, and never judge the mode yourself.
 
 ### Train
 

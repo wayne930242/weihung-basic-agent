@@ -92,7 +92,7 @@ describe("a good 200", () => {
     respond = json(200, { mode: "run", setAt: null });
     const before = Date.now();
     const result = await run();
-    assert.deepEqual([result.mode, result.claim, result.read, result.board], ["run", "yes", "ok", ""]);
+    assert.deepEqual([result.mode, result.claim, result.read, result.board], ["run", "yes", "ok", "mode run"]);
     assert.deepEqual(requests, [{ method: "GET", url: "/api/agent-dev/box/mode", authorization: `Bearer ${TOKEN}` }]);
     const state = stored();
     assert.equal(state.mode, "run");
@@ -172,6 +172,15 @@ describe("any other answer keeps the last known mode", () => {
     const result = await run();
     assert.deepEqual([result.mode, result.claim, result.read], ["run", "yes", "http_404"]);
     assert.equal(fs.existsSync(paths.state), false);
+  });
+
+  test("never read and hq down: the board says default, not cached", async () => {
+    respond = json(503, {});
+    const result = await run();
+    assert.match(result.board, /^mode run \(default, hq unread since \d{4}-\d\d-\d\dT[\d:.]+Z\)$/);
+    assert.doesNotMatch(result.board, /cached/);
+    const noToken = await run({ TOWER_MODE_TOKEN_FILE: path.join(dir, "missing") });
+    assert.match(noToken.board, /^mode run \(default, hq unread since /);
   });
 
   test("a redirect is not followed", async () => {
@@ -271,22 +280,176 @@ describe("a state file that exists but cannot be used", () => {
 });
 
 describe("a read that cannot be stored", () => {
-  test("claims nothing and leaves the old state in place", async () => {
-    store({ mode: "run", setAt: null, readAt: "2026-11-14T01:00:00.000Z" });
+  const unwritable = async (body) => {
     const stateDir = path.dirname(paths.state);
-    const bytes = fs.readFileSync(paths.state);
-    respond = json(200, { mode: "run", setAt: null });
     fs.chmodSync(stateDir, 0o500);
     try {
-      if (process.getuid?.() === 0) return;
-      const result = await run();
-      assert.deepEqual([result.mode, result.claim, result.read], ["run", "no", "write"]);
-      assert.match(result.board, /not writable/);
+      return await body();
     } finally {
       fs.chmodSync(stateDir, 0o700);
     }
-    assert.deepEqual(fs.readFileSync(paths.state), bytes);
+  };
+  const skip = process.getuid?.() === 0 ? "root ignores directory modes" : false;
+  const target = () => ({ url: `${base}/api/agent-dev/box/mode`, tokenFile: paths.token, stateFile: paths.state, timeoutMs: 2000 });
+
+  test("a run read claims nothing, and the old file is poisoned so the next run claims nothing too", { skip }, async () => {
+    store({ mode: "run", setAt: null, readAt: "2026-11-14T01:00:00.000Z" });
+    respond = json(200, { mode: "run", setAt: null });
+    await unwritable(async () => {
+      const result = await run();
+      assert.deepEqual([result.mode, result.claim, result.read], ["run", "no", "write"]);
+      assert.match(result.board, /not writable/);
+    });
+    assert.equal(fs.readFileSync(paths.state, "utf8"), "", "the state file is empty, so it reads as unreadable");
     assert.deepEqual(siblings(), ["tower-mode.json"]);
+  });
+
+  test("R4705-F001: a stored run, a 200 pause that cannot be stored, then hq 503: claims nothing", { skip }, async () => {
+    store({ mode: "run", setAt: null, readAt: "2026-11-14T01:00:00.000Z" });
+    respond = json(200, { mode: "pause", setAt: "2026-11-14T02:00:00.000Z" });
+    await unwritable(async () => {
+      const result = await run();
+      assert.deepEqual([result.mode, result.claim, result.read], ["pause", "no", "write"]);
+    });
+    respond = json(503, { error: "unavailable" });
+    const next = await run();
+    assert.deepEqual([next.mode, next.claim, next.read, next.board], ["unknown", "no", "file", "tower-mode file unreadable"]);
+    assert.equal(requests.length, 1, "the poisoned file stops the box before it asks hq again");
+  });
+
+  test("R4705-F001: no state file and the write fails: the file is created empty, so a later failed read claims nothing", async () => {
+    const { decide } = await import(SCRIPT);
+    const failing = { ...fs, renameSync: () => { throw new Error("rename failed"); } };
+    respond = json(200, { mode: "pause", setAt: null });
+    const first = await decide({ ...target(), io: failing });
+    assert.deepEqual([first.mode, first.claim, first.read], ["pause", "no", "write"]);
+    assert.equal(fs.readFileSync(paths.state, "utf8"), "");
+    respond = json(503, {});
+    const next = await run();
+    assert.deepEqual([next.claim, next.read], ["no", "file"]);
+  });
+
+  test("R4705-F001: when even the poisoning fails, this run still claims nothing", async () => {
+    const { decide } = await import(SCRIPT);
+    const failing = {
+      ...fs,
+      renameSync: () => { throw new Error("rename failed"); },
+      openSync: (file, flag, ...rest) => {
+        if (flag === "w" && path.basename(file) === "tower-mode.json") throw new Error("cannot poison");
+        return fs.openSync(file, flag, ...rest);
+      },
+    };
+    respond = json(200, { mode: "run", setAt: null });
+    const result = await decide({ ...target(), io: failing });
+    assert.deepEqual([result.claim, result.read], ["no", "write"]);
+  });
+
+  test("R4705-F008: a good 200 whose write fails still clears the unread time", async () => {
+    const { decide } = await import(SCRIPT);
+    store(PAUSED);
+    respond = json(503, {});
+    await run();
+    assert.ok(fs.existsSync(`${paths.state}.unread`));
+    const failing = { ...fs, renameSync: () => { throw new Error("rename failed"); } };
+    respond = json(200, { mode: "pause", setAt: null });
+    await decide({ ...target(), io: failing });
+    assert.equal(fs.existsSync(`${paths.state}.unread`), false, "the good read ended the failure run");
+  });
+});
+
+describe("R4705-F002: the board is never empty", () => {
+  test("a good run after a pause or an outage replaces the old text", async () => {
+    store(PAUSED);
+    respond = json(503, {});
+    assert.match((await run()).board, /cached/);
+    respond = json(200, { mode: "run", setAt: null });
+    assert.equal((await run()).board, "mode run");
+  });
+});
+
+describe("R4705-F004: setAt and printed text", () => {
+  test("a setAt that is not null or an ISO-8601 time is a bad body, and the stored mode stays", async () => {
+    const bad = ["x", "2026-11-14", "x\nmode=run claim=yes read=ok board=\"\"", `2026-11-14T02:00:00.000Z${"0".repeat(100)}`, 5, {}, true];
+    for (const setAt of bad) {
+      store(PAUSED);
+      const bytes = fs.readFileSync(paths.state);
+      respond = json(200, { mode: "pause", setAt });
+      const result = await run();
+      assert.deepEqual([result.mode, result.claim, result.read], ["pause", "no", "bad_body"], JSON.stringify(setAt));
+      assert.deepEqual(fs.readFileSync(paths.state), bytes);
+    }
+  });
+
+  test("a stored run is not unpaused by a bad setAt either", async () => {
+    store({ mode: "run", setAt: null, readAt: "2026-11-14T01:00:00.000Z" });
+    respond = json(200, { mode: "pause", setAt: "nope" });
+    assert.equal((await run()).mode, "run");
+  });
+
+  test("ISO-8601 times with a fraction or an offset are accepted", async () => {
+    for (const setAt of ["2026-11-13T14:00:00Z", "2026-11-13T14:00:00.123Z", "2026-11-13T22:00:00+08:00"]) {
+      respond = json(200, { mode: "pause", setAt });
+      const result = await run();
+      assert.deepEqual([result.mode, result.read, result.board], ["pause", "ok", `paused at ${setAt}`]);
+    }
+  });
+
+  test("a stored file whose setAt is not an ISO time is unreadable", async () => {
+    store({ mode: "pause", setAt: "bad\nmode=run", readAt: "2026-11-14T01:00:00.000Z" });
+    const result = await run();
+    assert.deepEqual([result.claim, result.read], ["no", "file"]);
+  });
+
+  test("a sidecar time that is not ISO is replaced, never printed", async () => {
+    store(PAUSED);
+    fs.writeFileSync(`${paths.state}.unread`, JSON.stringify({ since: "x\nmode=run claim=yes" }));
+    respond = json(503, {});
+    const result = await run();
+    assert.match(result.board, /^mode pause \(cached, hq unread since \d{4}-\d\d-\d\dT[\d:.]+Z\)$/);
+  });
+
+  test("formatLine strips control characters and line separators from every field", async () => {
+    const { formatLine } = await import(SCRIPT);
+    const line = formatLine({ mode: "pause", claim: "no", read: "ok", board: "a\nb\r\u0000c d\u0085e \"q\"" });
+    assert.ok(!/[\p{Cc}\p{Zl}\p{Zp}]/u.test(line), JSON.stringify(line));
+    assert.match(line, /^mode=pause claim=no read=ok board="[^"]*"$/);
+  });
+});
+
+describe("R4705-F005: TOWER_MODE_URL", () => {
+  test("only https, or http to 127.0.0.1 or localhost, is honored", async () => {
+    const { resolveUrl, DEFAULT_URL } = await import(SCRIPT);
+    for (const ok of ["https://hq.example.com/x", "http://127.0.0.1:8123/api/x", "http://localhost:3000/api/x", "https://127.0.0.1/x"]) {
+      assert.equal(resolveUrl(ok), ok);
+    }
+    const bad = ["http://hq.moldplan.app/x", "http://example.com/x", "http://127.0.0.1.evil.com/x", "http://localhost@evil.com/x", "ftp://127.0.0.1/x", "file:///etc/passwd", "not a url", "", undefined];
+    for (const value of bad) {
+      assert.equal(resolveUrl(value), DEFAULT_URL, String(value));
+    }
+  });
+});
+
+describe("R4705-F008: the directory fsync and the catch-all", () => {
+  test("the directory is fsynced after the rename", async () => {
+    const { writeStateAtomic } = await import(SCRIPT);
+    const calls = [];
+    const recording = {
+      ...fs,
+      openSync: (file, ...rest) => {
+        const fd = fs.openSync(file, ...rest);
+        calls.push(file === path.dirname(paths.state) ? "open-dir" : "open-file");
+        return fd;
+      },
+      renameSync: (...args) => { calls.push("rename"); return fs.renameSync(...args); },
+      fsyncSync: (fd) => { calls.push("fsync"); return fs.fsyncSync(fd); },
+    };
+    writeStateAtomic(paths.state, { mode: "run", setAt: null, readAt: "2026-11-14T01:00:00.000Z" }, recording);
+    assert.deepEqual(calls, ["open-file", "fsync", "rename", "open-dir", "fsync"]);
+  });
+
+  test("an unforeseen error prints read=error, not read=file", async () => {
+    const { failedLine } = await import(SCRIPT);
+    assert.equal(failedLine(), 'mode=unknown claim=no read=error board="tower-mode check failed"');
   });
 });
 
@@ -329,6 +492,6 @@ describe("the atomic write", () => {
     };
     writeStateAtomic(paths.state, { mode: "run", setAt: null, readAt: "x" }, recording);
     assert.notEqual(calls[0][1], "tower-mode.json");
-    assert.deepEqual(calls.at(-1).slice(2), ["tower-mode.json"]);
+    assert.deepEqual(calls.find((call) => call[0] === "rename").slice(2), ["tower-mode.json"]);
   });
 });
