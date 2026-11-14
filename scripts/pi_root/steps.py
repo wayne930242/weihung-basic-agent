@@ -4,7 +4,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import NamedTuple
 
-from . import configs, instructions, packages, unattended
+from . import configs, instructions, packages, tower_mode, unattended
 from .context import Context
 from .jsonfile import read_json
 from .paths import MARKER, overlay_root
@@ -29,6 +29,7 @@ STEPS = (
     Step("overlay-models", configs.apply_overlay_models, configs.restore_overlay_models),
     Step("overlay-trust", configs.apply_overlay_trust, configs.restore_overlay_trust),
     Step("compaction", configs.apply_compaction, configs.restore_compaction),
+    Step("tower-mode", tower_mode.apply, tower_mode.restore),
     # Last to apply and first to restore: pi packages, the tools they need, and the resources ported beside them.
     Step("packages", packages.apply, packages.restore),
 )
