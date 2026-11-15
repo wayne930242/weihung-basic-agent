@@ -39,7 +39,7 @@ function harness() {
     on: (event, handler) => handlers.set(event, handler),
     events: { emit: (channel, data) => bus.emit(channel, data), on: (channel, handler) => bus.on(channel, handler) },
     registerCommand: (name, command) => commands.set(name, command),
-    sendUserMessage: (message) => sent.push(message),
+    sendMessage: (message, options) => { assert.equal(options?.triggerTurn, true); sent.push(message.content); },
   };
   const deps = {
     now: () => state.now,

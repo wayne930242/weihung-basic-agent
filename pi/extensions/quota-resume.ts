@@ -109,7 +109,8 @@ export default function quotaResume(pi: ExtensionAPI, deps: QuotaWaitDeps = defa
   const resume = (): void => {
     const ctx = wait?.ctx;
     stopWait();
-    if (ctx?.isIdle()) pi.sendUserMessage(RESUME_PROMPT);
+    // A custom message keeps the session's thinking level: auto-thinking classifies every sendUserMessage as a new request.
+    if (ctx?.isIdle()) pi.sendMessage({ customType: "quota-resume", content: RESUME_PROMPT, display: true }, { triggerTurn: true });
   };
 
   const check = (): void => {

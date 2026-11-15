@@ -21,12 +21,12 @@ Bring this setup's source repository (the checkout `scripts/install.sh` runs fro
    - **Completion Criterion**: `tsc` exits 0 against the new types.
 4. **Bump the npm pins.** Run `python3 scripts/pi-pins.py outdated`, then `bump <name>` for each that differs. A `pi-herdr-agents` bump also needs the role check `bump` prints (pi-straw-boss ships the roles).
    - **Completion Criterion**: `outdated` reports only the pins deliberately held, each with its reason.
-5. **Align the forks.** `FORK_BRANCHES` in `scripts/pi-pins.py` lists them, and the comments in `scripts/pi_root/pins.py` name the upstream PRs each one carries. For each fork:
+5. **Align the forks.** `FORK_BRANCHES` in `scripts/pi-pins.py` lists them, and the package table in `docs/reference.md` names the upstream PRs each one carries. For each fork:
    - Check its PRs with `gh pr view <n> -R <upstream>`. When upstream has released all of them, return to the npm release as the `pins.py` comment describes.
    - Measure drift with `gh api repos/<fork>/compare/<upstream-owner>:main...<fork-branch> --jq '{ahead:.ahead_by,behind:.behind_by}'`. When `behind` is not 0, ask the user whether to merge or rebase; a rebase needs a force push, which requires their explicit confirmation.
    - Merge in a temporary `git worktree` from the local clone, because existing clones hold other work in progress. Resolve conflicts by carrying the fork's own changes to wherever upstream moved that content.
    - Run the fork's tests before and after the merge in the same directory and compare the failing test names. A worktree under `$TMPDIR` fails path assertions because `/var` resolves to `/private/var`, so only new failures count, and a new failure that passes when rerun on its own is a flake.
-   - Push the fork branch normally, delete the temporary worktree and branch with `git branch -d`, then run `python3 scripts/pi-pins.py bump <fork name>` and update the fork notes in `pins.py` and `README.md`.
+   - Push the fork branch normally, delete the temporary worktree and branch with `git branch -d`, then run `python3 scripts/pi-pins.py bump <fork name>` and update the fork notes in `pins.py` and `docs/reference.md`.
    - **Completion Criterion**: each fork shows `behind: 0`, or the user chose to hold it.
 6. **Check the scheduled update.** Read the tail of `~/.local/state/weihung-agent-root/pi-autoupdate.log`. Repeated `Skipped:` lines mean `auto` has not run since the first of them; remove the cause, such as untracked machine-local state that belongs in `.gitignore`.
    - **Completion Criterion**: nothing in the repository blocks the next `auto` run.

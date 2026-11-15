@@ -95,7 +95,7 @@ A long-lived main (a standing session, or a coordinator that runs for days) rota
 
 ## User rules
 
-Read the matching rule in `~/.pi/agent/rules/` before its work: `dependencies.md` (packages and libraries), `clean-architecture.md` (design and refactoring), `ui-design.md` (UI), `browser.md` (browser automation), `presenting.md` (explanations and reports), and the language files `go.md`, `python.md`, `shell.md`, `typescript.md`, and `markdown.md`.
+Read the matching rule in `~/.pi/agent/rules/` before its work: `dependencies.md` (packages and libraries), `clean-architecture.md` (design and refactoring), `ui-design.md` (UI), `presenting.md` (explanations and reports), and the language files `go.md`, `python.md`, `shell.md`, `typescript.md`, and `markdown.md`. `browser.md` does not apply here: it covers Playwriter in a person's Chrome, which this computer does not have. Browser checks run through `agent-browser` as Ticket loop step 3 says.
 
 ## Model and dispatch
 
