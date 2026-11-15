@@ -2,7 +2,7 @@
 
 BRIDGE_SOURCE = "git:github.com/wayne930242/pi-claude-bridge@bc72fc32372572ef265cbd52066955462735aed1"
 QUOTAS_SOURCE = "npm:@latentminds/pi-quotas@0.5.0"
-CLAUDE_RULES_SOURCE = "npm:pi-code@1.7.0"
+CLAUDE_RULES_SOURCE = "npm:pi-code@1.8.0"
 # Fork pin of giuseppecrj/pi-herdr-agents: upstream main (v3.9.0, which carries #99) merged with the
 # solutionSpace change of closed PR #87, grouped-workspace placement, the macOS process-identity and cancel-settle
 # fixes, the complex-coding task category, managed worktrees seeding the source's installed project .pi/npm and .pi/git, and the fork-only exit hold that pi/extensions/quota-resume.ts and monitor-hold.ts use (branch weihung/v3-integration).
@@ -53,7 +53,7 @@ PACKAGES = [
     "npm:@juicesharp/rpiv-ask-user-question@2.15.0",
     "npm:@juicesharp/rpiv-todo@2.15.0",
     THEME_PACKAGE,
-    "npm:pi-open-tui@0.4.5",
+    "npm:pi-open-tui@0.4.6",
     QUOTAS_SOURCE,
     "npm:pi-jev-compaction@1.0.0",
     # prose_watch: an AI-tone check (Jev) on the prose files a writing task arms.
@@ -72,7 +72,7 @@ PACKAGES = [
     "npm:pi-session-doctor@0.1.0",
     "npm:@narumitw/pi-goal@0.55.3",
     # Antigravity (agy) Google login: /login antigravity, plus the google_search and generate_image tools.
-    "npm:pi-antigravity@0.12.0",
+    "npm:pi-antigravity@0.14.0",
     CLAUDE_RULES_PACKAGE,
 ]
 # The Herdr plugins in pi-straw-boss, each installed with `herdr plugin install` at its tag: plugin id, repository path, tag,

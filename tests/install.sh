@@ -130,7 +130,7 @@ with tempfile.TemporaryDirectory() as directory:
     assert "npm:@pify/memory@0.14.1" in sources, sources
     assert "npm:pi-loop-monitor@0.2.8" in sources, sources
     assert "npm:@narumitw/pi-goal@0.55.3" in sources, sources
-    assert {"source": "npm:pi-code@1.7.0", "extensions": ["extensions/claude-rules.ts"]} in settings["packages"], settings
+    assert {"source": "npm:pi-code@1.8.0", "extensions": ["extensions/claude-rules.ts"]} in settings["packages"], settings
     assert not any("pi-todo" in source or "pi-curated-themes" in source for source in sources), sources
     assert not {"defaultProvider", "defaultModel", "defaultThinkingLevel", "enabledModels"} & set(settings), settings
     assert settings["theme"] == "catppuccin-mocha", settings
@@ -140,7 +140,7 @@ with tempfile.TemporaryDirectory() as directory:
     assert settings["terminal"]["showTerminalProgress"] is True, settings
     assert settings["terminal"]["images"] == "kitty", settings
     assert settings["compaction"] == {"modelOverrides": {"claude-bridge/claude-opus-5-5": {"reserveTokens": 500000}, "claude-bridge/claude-sonnet-5-5": {"reserveTokens": 500000}}}, settings
-    assert "powerline" not in settings and "npm:pi-open-tui@0.4.5" in settings["packages"], settings
+    assert "powerline" not in settings and "npm:pi-open-tui@0.4.6" in settings["packages"], settings
     mcp = json.loads((home / ".pi/agent/mcp-adapter.json").read_text())
     assert mcp["settings"] == {"hostConfigDiscovery": "on", "namespaceProxyTools": False}, mcp
     assert mcp["mcpServers"]["codebase-memory-mcp"] == {"command": str(home.resolve() / ".local/bin/codebase-memory-mcp")}, mcp
