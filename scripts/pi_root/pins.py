@@ -39,7 +39,9 @@ RETIRED_SOURCES = ("npm:pi-herdr-doc-review", "npm:@victor-software-house/pi-cur
                    # pi-lens ran diagnostics and language servers after every edit and cost too much CPU and memory.
                    "npm:pi-lens",
                    # pi-straw-boss ships the roles (its roles/ pack, from 0.79.0); /plan and the plan skill left with it.
-                   "npm:pi-herdr-roles")
+                   "npm:pi-herdr-roles",
+                   # The agent-desktop CLI (AGENT_DESKTOP) took over desktop app control; its tools no longer sit in every prompt.
+                   "npm:@injaneity/pi-computer-use")
 # pi-code loads only claude-rules.ts, which reads each project's .claude/rules as Claude Code does;
 # its other extensions duplicate the todo, MCP, subagent, and web packages below.
 CLAUDE_RULES_PACKAGE = {"source": CLAUDE_RULES_SOURCE, "extensions": ["extensions/claude-rules.ts"]}
@@ -71,8 +73,6 @@ PACKAGES = [
     "npm:@narumitw/pi-goal@0.55.3",
     # Antigravity (agy) Google login: /login antigravity, plus the google_search and generate_image tools.
     "npm:pi-antigravity@0.12.0",
-    # Desktop app control through Accessibility (UIA on Windows), kept headless by configs.COMPUTER_USE_SETTINGS.
-    "npm:@injaneity/pi-computer-use@0.5.1",
     CLAUDE_RULES_PACKAGE,
 ]
 # The Herdr plugins in pi-straw-boss, each installed with `herdr plugin install` at its tag: plugin id, repository path, tag,
@@ -85,6 +85,9 @@ HERDR_PLUGINS = (
 )
 # The Playwriter CLI drives the user's own Chrome through its extension; playwriter-relay.ts starts its relay.
 PLAYWRITER = "playwriter@0.11.0"
+# The agent-desktop CLI controls desktop apps through the accessibility tree (AX, UIA, AT-SPI). Ref actions are headless
+# by default: no pointer move, no focus change. skills/agent-desktop points agents at the guides the binary carries.
+AGENT_DESKTOP = "agent-desktop@1.3.1"
 # team-toon-tack: the ttt CLI, the managing-linear-tasks skill and the /ttt-* prompts (resources.py). Pinned like every other
 # package, since an unattended computer runs it in the account that holds a person's Linear key.
 TEAM_TOON_TACK = "team-toon-tack@3.16.0"
@@ -103,7 +106,6 @@ STATECHART = {
 # computer, a desktop, or an interactive login. Names carry no version, so a pin bump never touches them.
 UNATTENDED_DROPS = (
     "npm:cc-safety-net",
-    "npm:@injaneity/pi-computer-use",
     "npm:pi-codex-image-gen",
     "npm:pi-robot-hand",
     "npm:pi-antigravity",
@@ -115,6 +117,7 @@ UNATTENDED_DROPS = (
     "npm:@juicesharp/rpiv-ask-user-question",
 )
 # statechart needs a Java runtime, which the box has not been checked for; add it back once it has.
-UNATTENDED_DROPPED_SKILLS = ("going-to-sleep", "recording-with-obs", "statechart")
+# agent-desktop needs a desktop session, which the box's agents never drive.
+UNATTENDED_DROPPED_SKILLS = ("agent-desktop", "going-to-sleep", "recording-with-obs", "statechart")
 # anchorloop, the workflow skills and extensions; PI_ANCHORLOOP_ROOT swaps in a checkout for testing.
 ANCHORLOOP_PACKAGE = "npm:pi-anchorloop@2.16.5"

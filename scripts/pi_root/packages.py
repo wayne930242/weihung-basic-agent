@@ -17,6 +17,7 @@ from .paths import (
     overlay_root,
 )
 from .pins import (
+    AGENT_DESKTOP,
     ANCHORLOOP_PACKAGE,
     HERDR_AGENTS_SOURCE,
     HERDR_PLUGINS,
@@ -166,6 +167,16 @@ def plan(ctx: Context) -> None:
     state.setdefault("integration_installed", not ctx.first_install)
 
 
+# Global npm CLIs the default profile installs, each with the state key that records whether the user had it before install.
+GLOBAL_CLIS = ((PLAYWRITER, "playwriter_preinstalled"), (AGENT_DESKTOP, "agent_desktop_preinstalled"))
+
+
+def npm_name(spec: str) -> str:
+    """The package name of an npm spec such as `name@1.2.3` or `@scope/name@1.2.3`."""
+    at = spec.find("@", 1)
+    return spec[:at] if at > 0 else spec
+
+
 # herdr web ui was the remote control until it was retired; an install that added the plugin removes it once.
 HERDR_WEB_UI_ID = "devswha.herdr-web-ui"
 
@@ -217,12 +228,13 @@ def apply(ctx: Context) -> None:
     if not ctx.skip_external:
         external.require("herdr", "install herdr first; the pi integration, the Straw Boss plugins and the agents all need it")
         external.run(["npm", "install", "-g", "@earendil-works/pi-coding-agent@latest"], home)
-        if not headless and "playwriter_preinstalled" not in state:
-            listed = subprocess.run(["npm", "ls", "-g", "--depth=0", "playwriter"], capture_output=True, check=False)
-            state["playwriter_preinstalled"] = listed.returncode == 0
-            ctx.save()
         if not headless:
-            external.run(["npm", "install", "-g", PLAYWRITER], home)
+            for spec, preinstalled in GLOBAL_CLIS:
+                if preinstalled not in state:
+                    listed = subprocess.run(["npm", "ls", "-g", "--depth=0", npm_name(spec)], capture_output=True, check=False)
+                    state[preinstalled] = listed.returncode == 0
+                    ctx.save()
+                external.run(["npm", "install", "-g", spec], home)
         external.run(["herdr", "integration", "install", "pi"], home)
         state["integration_installed"] = True
         ctx.save()
@@ -306,8 +318,10 @@ def restore(ctx: Context) -> None:
         for plugin_id, _, _, preinstalled in HERDR_PLUGINS:
             if not state.get(preinstalled, True) and plugin_line(home, plugin_id):
                 external.run(["herdr", "plugin", "uninstall", plugin_id], home)
-        if not state.get("playwriter_preinstalled", True):
-            external.run(["npm", "uninstall", "-g", "playwriter"], home)
+        # A CLI the user had before install stays; one install added goes.
+        for spec, preinstalled in GLOBAL_CLIS:
+            if not state.get(preinstalled, True):
+                external.run(["npm", "uninstall", "-g", npm_name(spec)], home)
     settings = read_json(settings_path)
     # A package the user declared before install keeps the spec they wrote, not the pinned one.
     prior = {package_id(value, agent_dir): value for value in previous_packages}

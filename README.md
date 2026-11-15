@@ -23,7 +23,7 @@ The installer never overwrites a file you own silently, and it is idempotent: re
 
 ## What you get
 
-- **Skills** in `skills/`: `orchestrate`, `reflecting-to-root`, `maintaining-pi-setup`, `publishing-pi-extensions`, `recording-with-obs`, `going-to-sleep`; plus the pinned [`statechart`](https://github.com/cursor/plugins/tree/main/harness/pstack/claude-code/skills/statechart) skill (TLA+ model checking with TLC; needs Java 11 or later), fetched at a fixed revision.
+- **Skills** in `skills/`: `orchestrate`, `agent-desktop`, `reflecting-to-root`, `maintaining-pi-setup`, `publishing-pi-extensions`, `recording-with-obs`, `going-to-sleep`; plus the pinned [`statechart`](https://github.com/cursor/plugins/tree/main/harness/pstack/claude-code/skills/statechart) skill (TLA+ model checking with TLC; needs Java 11 or later), fetched at a fixed revision.
 - **Rules** in `rules/`: conventions for Git, deployment, dependencies, architecture, UI, Go, Python, shell, TypeScript, and Markdown, plus stream rules that block known command mistakes.
 - **Model routing** for the `pi-herdr-agents` roles (pi-straw-boss ships the roles themselves) in `pi/herdr-agents-models.json` (and `pi/herdr-agents-models.unattended.json` for the unattended profile).
 - **Extensions** in `pi/extensions/`: auto thinking level, idle compaction, quota resume, batch guard, monitor hold, and the Playwriter relay.

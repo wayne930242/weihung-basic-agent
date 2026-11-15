@@ -32,8 +32,7 @@ BUILTIN_MCP_OFF = "-builtin:mcp"
 HERDR_STATUS = {"enabled": True}
 # pi-open-tui footer segments kept off to keep the footer to what gets read; `/open-tui` still owns every other setting.
 OPEN_TUI_HIDDEN_SEGMENTS = ("runtime", "cost")
-# pi-computer-use stays in the background: no raw input, focus change, or cursor takeover, so it never fights the user
-# for the machine; `/computer-use` shows the active config, and a project .pi/computer-use.json can still override it.
+# The key an earlier install set in pi-computer-use's config (retired for agent-desktop); retire_computer_use gives it back.
 COMPUTER_USE_SETTINGS = {"headless": True}
 
 
@@ -344,17 +343,13 @@ def restore_open_tui(ctx: Context) -> None:
         path.unlink()
 
 
-def apply_computer_use(ctx: Context) -> None:
-    if unattended.is_unattended(ctx.profile):
-        return
+def retire_computer_use(ctx: Context) -> None:
+    """pi-computer-use is retired: give back its config file as it was before an earlier install set `headless`."""
     state = ctx.state
-    path = ctx.home / COMPUTER_USE_CONFIG
-    config = read_json(path)
-    state.setdefault("previous_computer_use_file_present", path.exists())
-    remember_keys(state, "computer_use", config, COMPUTER_USE_SETTINGS)
-    config.update(deepcopy(COMPUTER_USE_SETTINGS))
-    write_json(path, config)
-    record_keys(state, "computer_use", config, COMPUTER_USE_SETTINGS)
+    if "installed_computer_use" in state:
+        restore_computer_use(ctx)
+    for key in ("previous_computer_use", "previous_computer_use_present", "installed_computer_use", "previous_computer_use_file_present"):
+        state.pop(key, None)
 
 
 def restore_computer_use(ctx: Context) -> None:

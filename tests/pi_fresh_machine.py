@@ -21,6 +21,7 @@ def pinned(pattern: str) -> tuple[str, ...]:
 
 
 STRAW_BOSS = pinned(r'"(npm:pi-straw-boss@[^"]+)"')[0]
+AGENT_DESKTOP = pinned(r'AGENT_DESKTOP = "([^"]+)"')[0]
 # Each Herdr plugin as (id, repository path, tag).
 HERDR_PLUGINS = [match[:3] for match in re.findall(r'\("(wayne930242\.[^"]+)", "([^"]+)", "([^"]+)", "([^"]+)"\)', PINS)]
 assert [plugin_id for plugin_id, _, _ in HERDR_PLUGINS] == ["wayne930242.straw-boss", "wayne930242.straw-boss-reaper"], HERDR_PLUGINS
@@ -109,6 +110,7 @@ esac
     assert f"install {STRAW_BOSS}" in calls.read_text().splitlines()
     assert STRAW_BOSS in json.loads((agent / "settings.json").read_text())["packages"]
     assert "install -g playwriter@0.11.0" in npm_calls.read_text().splitlines()
+    assert f"install -g {AGENT_DESKTOP}" in npm_calls.read_text().splitlines()
     # Each Herdr plugin is installed at its pinned tag, once: a second install finds them there.
     plugin_installs = [f"plugin install {repo} --ref {ref} --yes" for _, repo, ref in HERDR_PLUGINS]
     assert [line for line in herdr_calls.read_text().splitlines() if line.startswith("plugin ") and line != "plugin list"] == plugin_installs
@@ -136,6 +138,7 @@ esac
     result = run("uninstall.sh", home, env)
     assert f"could not run pi remove for {plugin.resolve()}" in result.stderr, result.stderr
     assert "uninstall -g playwriter" in npm_calls.read_text().splitlines()
+    assert "uninstall -g agent-desktop" in npm_calls.read_text().splitlines()
     assert f"remove {ANCHORLOOP_PACKAGE}" in calls.read_text().splitlines()
     assert f"remove {STRAW_BOSS}" in calls.read_text().splitlines()
 

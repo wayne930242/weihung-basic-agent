@@ -157,7 +157,7 @@ class StepTests(unittest.TestCase):
             text = (home / ".pi/agent/AGENTS.md").read_text()
             self.assertEqual(text, (ROOT / "pi/AGENTS.unattended.md.in").read_text().rstrip() + "\n")
             self.assertIn("tower_send", text)
-            self.assertFalse((home / ".pi/agent/computer-use.json").exists(), "the computer-use config step is skipped")
+            self.assertFalse((home / ".agents/skills/agent-desktop").exists(), "no desktop skill on an unattended computer")
 
             run_script("install.sh", home, "--skip-external", "--no-overlay")
             self.assertEqual(json.loads(marker.read_text())["profile"], "unattended", "a bare run keeps the profile")
