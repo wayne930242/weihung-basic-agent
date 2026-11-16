@@ -23,6 +23,7 @@ STEPS = (
     Step("mcp-adapter", configs.apply_mcp, configs.restore_mcp),
     Step("pi-lens", configs.retire_lens, configs.restore_lens),
     Step("open-tui", configs.apply_open_tui, configs.restore_open_tui),
+    Step("claude-bridge", configs.apply_claude_bridge, configs.restore_claude_bridge),
     Step("computer-use", configs.retire_computer_use, configs.restore_computer_use),
     Step("ui", configs.apply_ui, configs.restore_ui),
     Step("herdr-models", configs.apply_herdr_models, configs.restore_herdr_models),

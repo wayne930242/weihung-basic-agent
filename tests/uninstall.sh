@@ -41,6 +41,7 @@ fresh_install_uninstall_removes_managed_files() {
   [[ ! -e "$fake_home/.pi/agent/mcp-adapter.json" ]] || fail "expected managed mcp-adapter.json removed"
   [[ ! -e "$fake_home/.pi-lens/config.json" ]] || fail "expected managed pi-lens config removed"
   [[ ! -e "$fake_home/.pi/agent/open-tui.json" ]] || fail "expected managed open-tui config removed"
+  [[ ! -e "$fake_home/.pi/agent/claude-bridge.json" ]] || fail "expected managed claude-bridge config removed"
   [[ -z "$(find "$fake_home/.agents/skills" -type l -lname "$REPO_ROOT/*")" ]] || fail "expected repository skill links removed"
   [[ "$(readlink "$fake_home/.agents/skills/user-skill")" == "$user_skill" ]] || fail "expected user skill link kept"
 

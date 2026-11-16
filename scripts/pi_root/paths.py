@@ -20,6 +20,7 @@ HERDR_MODELS_UNATTENDED = ROOT / "pi/herdr-agents-models.unattended.json"
 RETIRED_ROLES_DIR = Path(".pi/agent/herdr-agents/roles")
 LENS_CONFIG = Path(".pi-lens/config.json")
 OPEN_TUI_CONFIG = Path(".pi/agent/open-tui.json")
+CLAUDE_BRIDGE_CONFIG = Path(".pi/agent/claude-bridge.json")
 COMPUTER_USE_CONFIG = Path(".pi/agent/extensions/pi-computer-use.json")
 TTT_PREFIX = Path(".local/share/weihung-agent-root/team-toon-tack")
 # pi-skills ships bare skill directories without a pi manifest; its README installs it as a clone under the skills root.

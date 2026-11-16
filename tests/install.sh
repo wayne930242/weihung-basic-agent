@@ -149,6 +149,8 @@ with tempfile.TemporaryDirectory() as directory:
     assert not any("pi-lens" in str(package) for package in settings["packages"]), settings
     open_tui = json.loads((home / ".pi/agent/open-tui.json").read_text())
     assert open_tui == {"footerSegments": {"runtime": False, "cost": False}}, open_tui
+    bridge = json.loads((home / ".pi/agent/claude-bridge.json").read_text())
+    assert bridge == {"provider": {"systemPromptPreset": False}}, bridge
     config = json.loads((home / ".pi/agent/herdr-agents/config.json").read_text())
     repo_models = json.loads((Path(install).resolve().parents[1] / "pi/herdr-agents-models.json").read_text())
     assert config == {"status": {"enabled": True}, "panes": {"mode": "split", "direction": "right"}, "models": repo_models}, config
@@ -260,6 +262,9 @@ with tempfile.TemporaryDirectory() as directory:
     open_tui_path = agent / "open-tui.json"
     original_open_tui = {"cursorStyle": "bar", "footerSegments": {"cwd": True, "cost": True}}
     open_tui_path.write_text(json.dumps(original_open_tui))
+    bridge_path = agent / "claude-bridge.json"
+    original_bridge = {"startupNoticeShown": "2026-09-25", "provider": {"reportApiCost": True, "systemPromptPreset": True}}
+    bridge_path.write_text(json.dumps(original_bridge))
     config = agent / "herdr-agents/config.json"
     config.parent.mkdir(parents=True, exist_ok=True)
     original_models = {"default": "user/model", "agents": {"scout": "user/scout"}}
@@ -276,6 +281,8 @@ with tempfile.TemporaryDirectory() as directory:
     assert json.loads(lens_path.read_text()) == original_lens, "pi-lens is retired: its config is left as the user had it"
     installed_open_tui = json.loads(open_tui_path.read_text())
     assert installed_open_tui == {"cursorStyle": "bar", "footerSegments": {"cwd": True, "cost": False, "runtime": False}}, installed_open_tui
+    installed_bridge = json.loads(bridge_path.read_text())
+    assert installed_bridge == {"startupNoticeShown": "2026-09-25", "provider": {"reportApiCost": True, "systemPromptPreset": False}}, installed_bridge
     repo_models = json.loads((Path(install).resolve().parents[1] / "pi/herdr-agents-models.json").read_text())
     assert json.loads(config.read_text())["models"] == repo_models, "--force replaces the user's herdr-agents models"
     assert json.loads((agent / "settings.json").read_text())["enabledModels"] == ["user/model"], "pi's model settings are the user's"
@@ -292,6 +299,7 @@ with tempfile.TemporaryDirectory() as directory:
     assert json.loads((agent / "mcp.json").read_text()) == pi_mcp
     assert json.loads(lens_path.read_text()) == original_lens
     assert json.loads(open_tui_path.read_text()) == original_open_tui
+    assert json.loads(bridge_path.read_text()) == original_bridge
     assert settings["terminal"] == {"showImages": False}, settings
     assert settings["powerline"] == {"welcome": False}, settings
     assert settings["compaction"] == {"keepRecentTokens": 30000, "modelOverrides": {"user/big": {"reserveTokens": 1}}}, settings

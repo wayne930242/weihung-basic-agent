@@ -1,4 +1,4 @@
-"""The small managed settings: UI, terminal, panes, herdr-agents models, built-in MCP, mcp-adapter, open-tui, computer use, compaction."""
+"""The small managed settings: UI, terminal, panes, herdr-agents models, built-in MCP, mcp-adapter, open-tui, claude-bridge, computer use, compaction."""
 
 import hashlib
 import os
@@ -9,7 +9,7 @@ from .context import Context, State
 from .jsonfile import read_json, write_json
 from .managed import record_keys, remember_keys, restore_keys, restore_nested, restore_value
 from . import unattended
-from .paths import COMPUTER_USE_CONFIG, HERDR_MODELS, HERDR_MODELS_UNATTENDED, LENS_CONFIG, OPEN_TUI_CONFIG, RETIRED_ROLES_DIR, overlay_root
+from .paths import CLAUDE_BRIDGE_CONFIG, COMPUTER_USE_CONFIG, HERDR_MODELS, HERDR_MODELS_UNATTENDED, LENS_CONFIG, OPEN_TUI_CONFIG, RETIRED_ROLES_DIR, overlay_root
 
 # pi's native compaction fires at contextWindow - reserveTokens: 500K for the 1M Opus and Sonnet, a
 # ceiling for a long running turn; idle-compaction.ts compacts at 300K between turns.
@@ -362,6 +362,37 @@ def restore_computer_use(ctx: Context) -> None:
     if config or state.get("previous_computer_use_file_present", True):
         write_json(path, config)
     else:
+        path.unlink()
+
+
+# pi-claude-bridge sends Claude Code's system prompt preset ahead of pi's own unless provider.systemPromptPreset is false;
+# pi's prompt alone is the whole system prompt on every machine and profile (the boss's decision, 2026-11-16).
+CLAUDE_BRIDGE_PROVIDER = {"systemPromptPreset": False}
+
+
+def apply_claude_bridge(ctx: Context) -> None:
+    state = ctx.state
+    path = ctx.home / CLAUDE_BRIDGE_CONFIG
+    config = read_json(path)
+    state.setdefault("previous_claude_bridge_present", path.exists())
+    provider = config.setdefault("provider", {})
+    state.setdefault("previous_claude_bridge_provider", {key: provider[key] for key in CLAUDE_BRIDGE_PROVIDER if key in provider})
+    provider.update(CLAUDE_BRIDGE_PROVIDER)
+    write_json(path, config)
+    state["installed_claude_bridge_provider"] = deepcopy(CLAUDE_BRIDGE_PROVIDER)
+
+
+def restore_claude_bridge(ctx: Context) -> None:
+    state = ctx.state
+    path = ctx.home / CLAUDE_BRIDGE_CONFIG
+    if "installed_claude_bridge_provider" not in state:
+        return
+    config = read_json(path)
+    restore_nested(config, "provider", state["installed_claude_bridge_provider"],
+                   state.get("previous_claude_bridge_provider"), tuple(CLAUDE_BRIDGE_PROVIDER))
+    if config or state.get("previous_claude_bridge_present", True):
+        write_json(path, config)
+    elif path.exists():
         path.unlink()
 
 
