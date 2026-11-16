@@ -63,8 +63,8 @@ name | agent kind | role | model | worktree
 ```
 
 Use `agent: "reviewer"`, `fork: false`, `interactive: false`, ordinary-pane
-`cwd`, a `solutionSpace`, an exact `model` only when author-family exclusion
-requires one, and an explicit restricted `tools`
+`cwd`, a `solutionSpace`, an exact `model` only when author-family exclusion or a
+cross-family verifier requires one, and an explicit restricted `tools`
 string when the resolved role permits it. Do not create worktrees for
 review-only children.
 

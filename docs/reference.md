@@ -110,7 +110,7 @@ Other keys in these files stay as the user wrote them.
 
 `~/.pi/agent/AGENTS.md` is generated, not linked: edit [pi/AGENTS.md.in](pi/AGENTS.md.in) and re-run the installer. It covers language, work routing through skills, dispatch in Herdr, code discovery through LSP, ast-grep, and codebase-memory, and verification. It names the `pi-herdr-agents` roles but no model: models live in pi and `pi-herdr-agents` configuration.
 
-The files in [rules/](rules/) (git safety, deployment, dependencies, clean architecture, UI design, and Go, Python, shell, TypeScript, and Markdown conventions) are not loaded into every session. The instructions list each file with the work it covers, and pi reads the matching file from `~/.pi/agent/rules/` before that work. A new rule file needs its entry in that list.
+The files in [rules/](rules/) (deployment, dependencies, clean architecture, UI design, browser automation, presenting, Mac system dialogs, session rotation, and Go, Python, shell, TypeScript, and Markdown conventions) are not loaded into every session. The instructions list each file with the work it covers, and pi reads the matching file from `~/.pi/agent/rules/` before that work. A new rule file needs its entry in that list.
 
 ## Models
 
