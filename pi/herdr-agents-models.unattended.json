@@ -30,6 +30,9 @@
     ],
     "architecture": [
       "claude-bridge/claude-opus-5-5"
+    ],
+    "hard-research": [
+      "claude-bridge/claude-opus-5-5"
     ]
   }
 }

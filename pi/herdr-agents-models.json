@@ -3,8 +3,8 @@
   "agents": {
     "scout": "claude-bridge/claude-sonnet-5-5",
     "worker": "claude-bridge/claude-sonnet-5-5",
-    "reviewer": "claude-bridge/claude-fable-5-2",
-    "adversarial-reviewer": "claude-bridge/claude-fable-5-2",
+    "reviewer": "claude-bridge/claude-opus-5-5",
+    "adversarial-reviewer": "claude-bridge/claude-opus-5-5",
     "visual-tester": "claude-bridge/claude-sonnet-5-5",
     "planner": "claude-bridge/claude-opus-5-5",
     "watchdog": "claude-bridge/claude-haiku-5-5"
@@ -14,22 +14,25 @@
       "claude-bridge/claude-sonnet-5-5"
     ],
     "complex-coding": [
-      "claude-bridge/claude-fable-5-2",
       "claude-bridge/claude-opus-5-5"
     ],
     "review": [
-      "claude-bridge/claude-fable-5-2"
+      "claude-bridge/claude-opus-5-5"
     ],
     "recon": [
       "claude-bridge/claude-sonnet-5-5"
     ],
     "docs": [
-      "claude-bridge/claude-haiku-5-5"
+      "antigravity/gemini-4-hydrogen"
     ],
     "qa": [
       "claude-bridge/claude-sonnet-5-5"
     ],
     "architecture": [
+      "claude-bridge/claude-opus-5-5"
+    ],
+    "hard-research": [
+      "claude-bridge/claude-fable-5-2",
       "claude-bridge/claude-opus-5-5"
     ]
   }
