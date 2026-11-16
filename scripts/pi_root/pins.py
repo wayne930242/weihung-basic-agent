@@ -10,21 +10,27 @@ CLAUDE_RULES_SOURCE = "npm:pi-code@1.9.0"
 # Once upstream releases what this setup needs, return to the npm release: set this to npm:pi-herdr-agents@<version>, drop the PINNED_GIT
 # entry and the FORK_BRANCHES entry in scripts/pi-pins.py, and move "npm:pi-herdr-agents" out of RETIRED_SOURCES.
 HERDR_AGENTS_SOURCE = "git:github.com/wayne930242/pi-herdr-agents@1a56edea0e103f4b2470f149bbed0eaf3a46eaa3"
+# Fork pin of Rahularya01/pi-antigravity: v0.14.0 merged with open PR #153, which carries pi's system prompt in the first
+# user turn; on consumer endpoints a prompt in systemInstruction draws a false 429 RESOURCE_EXHAUSTED on every model (#148,
+# #152) (branch weihung-integration). Once upstream releases the fix, return to npm: set this to npm:pi-antigravity@<version>,
+# drop the PINNED_GIT and FORK_BRANCHES entries, and move "npm:pi-antigravity" out of RETIRED_SOURCES.
+ANTIGRAVITY_SOURCE = "git:github.com/wayne930242/pi-antigravity@fe9c0b630e86c941c736b9cc43e88aa104848676"
 # Every other revision of a pinned git package, including an unpinned spec, is retired for the current pin.
 PINNED_GIT = {
     BRIDGE_SOURCE: ("git:github.com/wayne930242/pi-claude-bridge@",),
     HERDR_AGENTS_SOURCE: ("git:github.com/wayne930242/pi-herdr-agents",),
+    ANTIGRAVITY_SOURCE: ("git:github.com/wayne930242/pi-antigravity",),
 }
 # Versioned specs keep every machine on the same release; `pi update` skips them, so bump them here.
 # Catppuccin Mocha with only official palette colors, matching Herdr, Ghostty, and SketchyBar; the filter loads Mocha alone.
 THEME_PACKAGE = {"source": "npm:@sherif-fanous/pi-catppuccin@0.3.0", "themes": ["themes/catppuccin-mocha.json"]}
 # Registry packages this setup installed before and now drops; install removes them from settings.
 # pi-curated-themes shipped a catppuccin-mocha with off-palette accents; pi-secret-drop is now part of pi-robot-hand;
-# the npm pi-herdr-agents release is replaced by the fork pin above, and pi must never load both.
+# the npm pi-antigravity and pi-herdr-agents releases are replaced by the fork pins above, and pi must never load both.
 # Straw Boss on pi moved from the straw-boss git repository to the pi-straw-boss npm package; pi-web-access is no longer used;
 # pi-herdr-doc-review gave way to pi-better-show, which registers the same show_doc and so must never load beside it;
 # pi-ask-user gave way to rpiv-ask-user-question, whose answer channel lets pi-straw-boss answer from the browser.
-RETIRED_SOURCES = ("npm:pi-herdr-doc-review", "npm:@victor-software-house/pi-curated-themes", "npm:pi-secret-drop", "npm:pi-herdr-agents",
+RETIRED_SOURCES = ("npm:pi-antigravity", "npm:pi-herdr-doc-review", "npm:@victor-software-house/pi-curated-themes", "npm:pi-secret-drop", "npm:pi-herdr-agents",
                    "git:github.com/wayne930242/straw-boss", "npm:pi-web-access", "npm:pi-ask-user",
                    "git:github.com/wayne930242/pi-quotas",
                    # It kept a full gzip copy of the session on every checkpoint with no retention: 192 GB in a month.
@@ -73,7 +79,7 @@ PACKAGES = [
     "npm:pi-session-doctor@0.1.0",
     "npm:@narumitw/pi-goal@0.55.3",
     # Antigravity (agy) Google login: /login antigravity, plus the google_search and generate_image tools.
-    "npm:pi-antigravity@0.14.0",
+    ANTIGRAVITY_SOURCE,
     CLAUDE_RULES_PACKAGE,
 ]
 # The Herdr plugins in pi-straw-boss, each installed with `herdr plugin install` at its tag: plugin id, repository path, tag,
@@ -109,7 +115,8 @@ UNATTENDED_DROPS = (
     "npm:cc-safety-net",
     "npm:pi-codex-image-gen",
     "npm:pi-robot-hand",
-    "npm:pi-antigravity",
+    # a git pin is identified by its whole source, so the drop names the constant
+    ANTIGRAVITY_SOURCE,
     "npm:pi-open-tui",
     "npm:pi-better-show",
     "npm:pi-auto-tab-name",
