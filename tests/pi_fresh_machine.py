@@ -109,7 +109,7 @@ esac
     assert ANCHORLOOP_PACKAGE in json.loads((agent / "settings.json").read_text())["packages"]
     assert f"install {STRAW_BOSS}" in calls.read_text().splitlines()
     assert STRAW_BOSS in json.loads((agent / "settings.json").read_text())["packages"]
-    assert "install -g playwriter@0.11.0" in npm_calls.read_text().splitlines()
+    assert "install -g playwriter@0.12.0" in npm_calls.read_text().splitlines()
     assert f"install -g {AGENT_DESKTOP}" in npm_calls.read_text().splitlines()
     # Each Herdr plugin is installed at its pinned tag, once: a second install finds them there.
     plugin_installs = [f"plugin install {repo} --ref {ref} --yes" for _, repo, ref in HERDR_PLUGINS]

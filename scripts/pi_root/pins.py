@@ -65,7 +65,7 @@ PACKAGES = [
     "npm:pi-jev-compaction@1.0.0",
     # prose_watch: an AI-tone check (Jev) on the prose files a writing task arms.
     "npm:pi-prose-watch@0.1.2",
-    "npm:cc-safety-net@2.7.13",
+    "npm:cc-safety-net@2.7.14",
     "npm:pi-codex-image-gen@0.3.2",
     "npm:pi-robot-hand@0.8.0",
     "npm:pi-auto-tab-name@0.2.0",
@@ -91,7 +91,7 @@ HERDR_PLUGINS = (
     ("wayne930242.straw-boss-reaper", "wayne930242/pi-straw-boss/herdr-reaper", "v0.58.3", "reaper_plugin_preinstalled"),
 )
 # The Playwriter CLI drives the user's own Chrome through its extension; playwriter-relay.ts starts its relay.
-PLAYWRITER = "playwriter@0.11.0"
+PLAYWRITER = "playwriter@0.12.0"
 # The agent-desktop CLI controls desktop apps through the accessibility tree (AX, UIA, AT-SPI). Ref actions are headless
 # by default: no pointer move, no focus change. skills/agent-desktop points agents at the guides the binary carries.
 AGENT_DESKTOP = "agent-desktop@1.3.1"
