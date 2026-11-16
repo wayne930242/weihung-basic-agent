@@ -34,10 +34,10 @@ drift makes the review `INCOMPLETE`.
 
 Launch one fresh discovery reviewer for routine scope, and at least two fresh
 discovery reviewers with distinct lenses for high-risk scope, in ordinary panes
-with public `subagent()` calls. Set an exact authenticated `provider/model-id` and supported
-`thinking` value on every child; never inherit or guess either value. Curated
-task shortlists can guide non-review roles, but reviewers must use an exact ID,
-not `task:review`, when author-family exclusion is required. Exclude
+with public `subagent()` calls. Reviewers follow the role's model routing and
+get a `solutionSpace` instead of a `thinking` value. When author-family
+exclusion is required, set an exact authenticated `provider/model-id` instead of
+the role's model or `task:review`. Exclude
 known author families when policy requires it. Different IDs in the same family
 are not independent review. Prefer a synthesis model family unused by discovery
 and disclose permitted reuse.
@@ -63,7 +63,8 @@ name | agent kind | role | model | worktree
 ```
 
 Use `agent: "reviewer"`, `fork: false`, `interactive: false`, ordinary-pane
-`cwd`, exact `model`, exact `thinking`, and an explicit restricted `tools`
+`cwd`, a `solutionSpace`, an exact `model` only when author-family exclusion
+requires one, and an explicit restricted `tools`
 string when the resolved role permits it. Do not create worktrees for
 review-only children.
 
