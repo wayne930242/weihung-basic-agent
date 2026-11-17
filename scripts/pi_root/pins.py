@@ -2,7 +2,7 @@
 
 BRIDGE_SOURCE = "git:github.com/wayne930242/pi-claude-bridge@e3e93981c50e40244dddbddf1a9918f036e26b70"
 QUOTAS_SOURCE = "npm:@latentminds/pi-quotas@0.5.0"
-CLAUDE_RULES_SOURCE = "npm:pi-code@1.9.0"
+CLAUDE_RULES_SOURCE = "npm:pi-code@1.10.1"
 # Fork pin of giuseppecrj/pi-herdr-agents: upstream main (v3.11.0) merged with the
 # solutionSpace change of closed PR #87, grouped-workspace placement, the macOS process-identity and cancel-settle
 # fixes, the complex-coding task category, managed worktrees seeding the source's installed project .pi/npm and .pi/git, and the fork-only exit hold that pi/extensions/quota-resume.ts and monitor-hold.ts use, and a routing guideline that names
@@ -65,7 +65,7 @@ PACKAGES = [
     "npm:pi-jev-compaction@1.0.0",
     # prose_watch: an AI-tone check (Jev) on the prose files a writing task arms.
     "npm:pi-prose-watch@0.1.2",
-    "npm:cc-safety-net@2.7.14",
+    "npm:cc-safety-net@2.7.15",
     "npm:pi-codex-image-gen@0.3.2",
     "npm:pi-robot-hand@0.8.0",
     "npm:pi-auto-tab-name@0.2.0",
