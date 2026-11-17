@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
-import { createAutoThinking, preprocessPrompt } from "../pi/extensions/auto-thinking.ts";
+import { createAutoThinking, preprocessPrompt, typesafeApiKey } from "../pi/extensions/auto-thinking.ts";
 
 function harness(classify, { isSubagent = false, solutionSpace } = {}) {
   const handlers = new Map();
@@ -111,4 +114,24 @@ test("prompt cleanup strips code, tags, hashes and bounds length", () => {
   const cleaned = preprocessPrompt("fix bug in 0123456789abcdef0123 <ctx>noise</ctx>\n```\ncode\n```\nplease");
   assert.equal(cleaned, "fix bug in 0123456 \n \nplease");
   assert.ok(preprocessPrompt("x".repeat(10_000)).length <= 2000);
+});
+
+function jevEnvFile(text) {
+  const configHome = mkdtempSync(join(tmpdir(), "auto-thinking-"));
+  mkdirSync(join(configHome, "pi-jev-compaction"));
+  writeFileSync(join(configHome, "pi-jev-compaction", "env"), text);
+  return configHome;
+}
+
+test("the API key comes from the environment before pi-jev-compaction's env file", () => {
+  const configHome = jevEnvFile("TYPESAFE_API_KEY=from-file\n");
+  assert.equal(typesafeApiKey({ TYPESAFE_API_KEY: "from-env", XDG_CONFIG_HOME: configHome }), "from-env");
+  assert.equal(typesafeApiKey({ XDG_CONFIG_HOME: configHome }), "from-file");
+});
+
+test("the env file key may be quoted or exported, and other lines are ignored", () => {
+  assert.equal(typesafeApiKey({ XDG_CONFIG_HOME: jevEnvFile("# key\nOTHER=x\nTYPESAFE_API_KEY=\"q v\"\n") }), "q v");
+  assert.equal(typesafeApiKey({ XDG_CONFIG_HOME: jevEnvFile("export TYPESAFE_API_KEY='s'\n") }), "s");
+  assert.equal(typesafeApiKey({ XDG_CONFIG_HOME: jevEnvFile("OTHER=x\n") }), undefined);
+  assert.equal(typesafeApiKey({ XDG_CONFIG_HOME: join(tmpdir(), "no-such-auto-thinking-dir") }), undefined);
 });
