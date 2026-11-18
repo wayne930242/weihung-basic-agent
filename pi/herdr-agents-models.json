@@ -23,7 +23,7 @@
       "claude-bridge/claude-sonnet-5-5"
     ],
     "docs": [
-      "antigravity/gemini-4-hydrogen"
+      "openai/gpt-6.2-sol"
     ],
     "qa": [
       "claude-bridge/claude-sonnet-5-5"
