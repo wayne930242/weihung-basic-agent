@@ -1,6 +1,6 @@
 """Every pinned package source; `scripts/pi-pins.py` rewrites the versions in this file, so it imports nothing."""
 
-BRIDGE_SOURCE = "git:github.com/wayne930242/pi-claude-bridge@2187f5531f190967466003845fdafdea7af753ad"
+BRIDGE_SOURCE = "git:github.com/wayne930242/pi-claude-bridge@8fab18860a1db8d67105a46db6d375961efdb049"
 QUOTAS_SOURCE = "npm:@latentminds/pi-quotas@0.5.0"
 CLAUDE_RULES_SOURCE = "npm:pi-code@1.10.1"
 # Fork pin of giuseppecrj/pi-herdr-agents: upstream main (v3.11.0) merged with the
@@ -9,7 +9,7 @@ CLAUDE_RULES_SOURCE = "npm:pi-code@1.10.1"
 # solutionSpace as a reason to omit thinking on a task: launch (branch weihung/v3-integration).
 # Once upstream releases what this setup needs, return to the npm release: set this to npm:pi-herdr-agents@<version>, drop the PINNED_GIT
 # entry and the FORK_BRANCHES entry in scripts/pi-pins.py, and move "npm:pi-herdr-agents" out of RETIRED_SOURCES.
-HERDR_AGENTS_SOURCE = "git:github.com/wayne930242/pi-herdr-agents@1a56edea0e103f4b2470f149bbed0eaf3a46eaa3"
+HERDR_AGENTS_SOURCE = "git:github.com/wayne930242/pi-herdr-agents@798f07a3db01e58f78e2e43e62d253c8ecee0b49"
 # Fork pin of Rahularya01/pi-antigravity: v0.14.0 merged with open PR #153, which carries pi's system prompt in the first
 # user turn; on consumer endpoints a prompt in systemInstruction draws a false 429 RESOURCE_EXHAUSTED on every model (#148,
 # #152) (branch weihung-integration). Once upstream releases the fix, return to npm: set this to npm:pi-antigravity@<version>,
@@ -72,7 +72,7 @@ PACKAGES = [
     # show_doc: documents in the browser, answers back as messages; it replaced pi-herdr-doc-review (same tool name).
     "npm:pi-better-show@0.7.2",
     # Straw Boss coordination in Herdr: opt-in main agents per tab, an on-demand tower per workspace, scoped broadcast.
-    "npm:pi-straw-boss@0.80.10",
+    "npm:pi-straw-boss@0.80.12",
     "npm:@pify/memory@0.14.1",
     "npm:pi-loop-monitor@0.2.8",
     # /doctor: profiles main-thread stalls and asks long, strained mains to rotate through a handoff file.
