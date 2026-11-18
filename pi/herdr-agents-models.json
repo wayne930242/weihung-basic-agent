@@ -23,7 +23,7 @@
       "claude-bridge/claude-sonnet-5-5"
     ],
     "docs": [
-      "openai/gpt-6.2-sol"
+      "openai-codex/gpt-6.2-sol"
     ],
     "qa": [
       "claude-bridge/claude-sonnet-5-5"
