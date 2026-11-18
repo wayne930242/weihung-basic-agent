@@ -84,7 +84,7 @@ PACKAGES = [
 ]
 # The Herdr plugins in pi-straw-boss, each installed with `herdr plugin install` at its tag: plugin id, repository path, tag,
 # and the state key that records whether the user had it before install. They change less often than the pi package:
-# bump a tag when that folder changes. herdr-plugin is the sidebar's net view (prefix+alt+n); herdr-reaper closes the
+# scripts/pi-pins.py moves a tag to the newest release only when that folder differs there. herdr-plugin is the sidebar's net view (prefix+alt+n); herdr-reaper closes the
 # panes agents leave in worktree workspaces, removes their clean checkouts, and keeps pinned workspaces (prefix+P).
 HERDR_PLUGINS = (
     ("wayne930242.straw-boss", "wayne930242/pi-straw-boss/herdr-plugin", "v0.50.0", "straw_boss_plugin_preinstalled"),

@@ -340,6 +340,40 @@ class PackageTests(unittest.TestCase):
         spec.loader.exec_module(module)
         self.assertIn("team-toon-tack", [pin.name for pin in module.collect_pins()])
 
+    def test_a_herdr_plugin_pin_moves_only_when_its_folder_changed(self):
+        import importlib.util
+        import subprocess
+        spec = importlib.util.spec_from_file_location("pi_pins", Path(__file__).resolve().parents[1] / "scripts/pi-pins.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        self.assertIn(("herdr", "wayne930242/pi-straw-boss/herdr-reaper"),
+                      [(pin.kind, pin.name) for pin in module.collect_pins()])
+        with tempfile.TemporaryDirectory() as directory:
+            origin = Path(directory) / "owner/repo"
+            (origin / "plugin").mkdir(parents=True)
+
+            def git(*args: str) -> None:
+                subprocess.run(["git", "-C", str(origin), *args], check=True, capture_output=True)
+
+            git("init", "-q")
+
+            def release(path: str, text: str, tag: str) -> None:
+                (origin / path).write_text(text)
+                git("add", path)
+                git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", tag)
+                git("tag", "-a", tag, "-m", tag)
+
+            release("plugin/run.sh", "one", "v0.9.0")
+            release("other.txt", "elsewhere", "v0.10.0")
+            pin = module.Pin("herdr", "owner/repo/plugin", "v0.9.0")
+            with mock.patch.object(module, "plugin_remote", lambda repository: str(Path(directory) / repository)):
+                self.assertEqual(module.latest(pin), "v0.9.0")
+                release("plugin/run.sh", "two", "v0.11.0")
+                release("other.txt", "again", "v0.12.0")
+                module._clones.clear()
+                self.assertEqual(module.latest(pin), "v0.12.0")
+        self.assertEqual(pin.quoted("v0.12.0"), '"owner/repo/plugin", "v0.12.0"')
+
     def test_the_update_schedule_refuses_outside_macos(self):
         import importlib.util
         spec = importlib.util.spec_from_file_location("pi_pins", Path(__file__).resolve().parents[1] / "scripts/pi-pins.py")

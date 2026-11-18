@@ -2,6 +2,7 @@
 """List and bump the exact versions pinned in scripts/pi_root/pins.py, and keep them current on a schedule."""
 
 import argparse
+import atexit
 import importlib.util
 import json
 import os
@@ -10,6 +11,8 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from importlib.machinery import SourceFileLoader
@@ -24,6 +27,9 @@ QUOTING_FILES = (TARGET, ROOT / "docs/reference.md", *sorted((ROOT / "tests").gl
 NPM_PIN = re.compile(r"^(npm:(?:@[^/@]+/)?[^/@]+)@(.+)$")
 GIT_PIN = re.compile(r"^(git:[^@]+)@([0-9a-f]{7,40})$")
 PLAIN_NPM_PIN = re.compile(r"^([^/@:]+)@(.+)$")
+# Herdr plugins are installed from a folder of a GitHub repository at a release tag.
+GITHUB = "https://github.com"
+RELEASE_TAG = re.compile(r"^v\d+\.\d+\.\d+$")
 MAIN_BRANCH = "main"
 # npm pins `auto` leaves alone: a pi-herdr-agents bump means checking the role discovery pi-straw-boss's role pack registers on.
 # pi-straw-boss stays auto although it ships the roles (its role pack, since 0.79.0): its release flow runs `/boss roles-check`
@@ -52,13 +58,17 @@ SYSTEM_PATH = ("/usr/bin", "/bin", "/usr/sbin", "/sbin")
 
 
 class Pin(NamedTuple):
-    kind: str  # "npm" or "git"
-    prefix: str  # the text before "@<version>" exactly as the source files quote it
+    kind: str  # "npm", "git", or "herdr" (a Herdr plugin: <owner>/<repo>/<folder> at a release tag)
+    prefix: str  # the source without its version, exactly as the source files quote it
     current: str
 
     @property
     def name(self) -> str:
         return self.prefix.removeprefix("npm:").removeprefix("git:")
+
+    def quoted(self, version: str) -> str:
+        """The pin at `version` as the source files spell it."""
+        return f'"{self.prefix}", "{version}"' if self.kind == "herdr" else f"{self.prefix}@{version}"
 
 
 class FreshSourceLoader(SourceFileLoader):
@@ -90,6 +100,8 @@ def collect_pins() -> list[Pin]:
     for plain in (target.PLAYWRITER, target.AGENT_DESKTOP, target.TEAM_TOON_TACK):
         if match := PLAIN_NPM_PIN.match(plain):
             pins.append(Pin("npm", match[1], match[2]))
+    for _, repository_path, ref, _ in target.HERDR_PLUGINS:
+        pins.append(Pin("herdr", repository_path, ref))
     return pins
 
 
@@ -100,9 +112,45 @@ def run(command: list[str]) -> str:
     return result.stdout.strip()
 
 
+_clones: dict[str, Path] = {}
+_clone_lock = threading.Lock()
+
+
+def plugin_remote(repository: str) -> str:
+    return f"{GITHUB}/{repository}"
+
+
+def plugin_clone(repository: str) -> Path:
+    """A blobless bare clone of a plugin's repository (commits, trees and tags, no file contents), made once per run."""
+    with _clone_lock:
+        if repository not in _clones:
+            directory = Path(tempfile.mkdtemp(prefix="pi-pins-plugin-"))
+            atexit.register(shutil.rmtree, directory, True)
+            run(["git", "clone", "--quiet", "--bare", "--filter=blob:none", plugin_remote(repository), str(directory)])
+            _clones[repository] = directory
+        return _clones[repository]
+
+
+def latest_plugin_tag(pin: Pin) -> str:
+    """The newest release tag when the plugin's folder differs there from the pinned tag, else the pinned tag:
+    the repository tags far more often than the plugin changes, and each new tag reinstalls the plugin."""
+    owner, repository, folder = pin.prefix.split("/", 2)
+    clone = str(plugin_clone(f"{owner}/{repository}"))
+    tags = [tag for tag in run(["git", "-C", clone, "tag", "--sort=-v:refname"]).splitlines() if RELEASE_TAG.match(tag)]
+    if not tags:
+        raise ValueError(f"{owner}/{repository} has no release tag")
+
+    def tree(tag: str) -> str:
+        return run(["git", "-C", clone, "rev-parse", f"{tag}:{folder}"])
+
+    return pin.current if tree(tags[0]) == tree(pin.current) else tags[0]
+
+
 def latest(pin: Pin) -> str:
     if pin.kind == "npm":
         return run(["npm", "view", pin.name, "version"])
+    if pin.kind == "herdr":
+        return latest_plugin_tag(pin)
     ref = f"refs/heads/{FORK_BRANCHES[pin.name]}" if pin.name in FORK_BRANCHES else "HEAD"
     heads = run(["git", "ls-remote", f"https://{pin.name}", ref])
     if not heads:
@@ -126,14 +174,14 @@ def outdated() -> None:
     for pin, newest in zip(pins, latest_all(pins), strict=True):
         status = "ok" if newest == pin.current else "differs"
         behind += status != "ok"
-        suffix = f" (git: {FORK_BRANCHES.get(pin.name, 'remote HEAD')})" if pin.kind == "git" else ""
+        suffix = {"git": f" (git: {FORK_BRANCHES.get(pin.name, 'remote HEAD')})", "herdr": " (herdr plugin)"}.get(pin.kind, "")
         print(f"{pin.name:<{width}}  {short(pin, pin.current):<9} {short(pin, newest):<9} {status}{suffix}")
     print(f"\n{behind} of {len(pins)} pins differ from the registry.")
 
 
 def select(pins: list[Pin], names: list[str]) -> list[Pin]:
     if not names:
-        return [pin for pin in pins if pin.kind == "npm"]
+        return [pin for pin in pins if pin.kind != "git"]
     known = {pin.name: pin for pin in pins}
     unknown = [name for name in names if name not in known]
     if unknown:
@@ -157,9 +205,9 @@ def bump(names: list[str]) -> None:
     for pin, newest in zip(chosen, latest_all(chosen), strict=True):
         if newest == pin.current:
             continue
-        touched = rewrite(f"{pin.prefix}@{pin.current}", f"{pin.prefix}@{newest}")
+        touched = rewrite(pin.quoted(pin.current), pin.quoted(newest))
         if not touched:
-            raise ValueError(f"{pin.prefix}@{pin.current} is not quoted in any pinned file")
+            raise ValueError(f"{pin.quoted(pin.current)} is not quoted in any pinned file")
         bumped.append(pin.name)
         print(f"{pin.name}: {short(pin, pin.current)} -> {short(pin, newest)} ({', '.join(p.name for p in touched)})")
     if not bumped:
@@ -289,7 +337,7 @@ def auto() -> None:
         notify(f"Skipped: {reason}.")
         return
     state = load_state()
-    candidates = [pin for pin in collect_pins() if pin.kind == "npm" and pin.name not in MANUAL_PINS]
+    candidates = [pin for pin in collect_pins() if pin.kind != "git" and pin.name not in MANUAL_PINS]
     newest = dict(zip((pin.name for pin in candidates), latest_all(candidates), strict=True))
     due = [pin.name for pin in candidates if newest[pin.name] != pin.current and state["rejected"].get(pin.name) != newest[pin.name]]
     if not due:
@@ -377,10 +425,10 @@ def unschedule() -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="action", required=True)
-    commands.add_parser("outdated", help="compare every pin with its registry or remote HEAD")
-    bump_parser = commands.add_parser("bump", help="rewrite pins to the latest release; npm pins only unless named")
+    commands.add_parser("outdated", help="compare every pin with its registry, remote HEAD, or newest tag that changed the plugin")
+    bump_parser = commands.add_parser("bump", help="rewrite pins to the latest release; npm and Herdr plugin pins only unless named")
     bump_parser.add_argument("names", nargs="*", help="pinned package names, as `outdated` prints them")
-    commands.add_parser("auto", help="bump every npm pin to its latest release, keep it only if tests, install and a pi load pass")
+    commands.add_parser("auto", help="bump every npm and Herdr plugin pin to its latest release, keep it only if tests, install and a pi load pass")
     commands.add_parser("schedule", help="run `auto` daily through launchd")
     commands.add_parser("unschedule", help="remove the launchd schedule")
     args = parser.parse_args()
