@@ -2,7 +2,7 @@
   "default": "claude-bridge/claude-opus-5-5",
   "agents": {
     "scout": "claude-bridge/claude-sonnet-5-5",
-    "worker": "claude-bridge/claude-sonnet-5-5",
+    "worker": "openai-codex/gpt-6.2-sol",
     "reviewer": "claude-bridge/claude-opus-5-5",
     "adversarial-reviewer": "claude-bridge/claude-opus-5-5",
     "visual-tester": "claude-bridge/claude-sonnet-5-5",
@@ -11,7 +11,7 @@
   },
   "tasks": {
     "coding": [
-      "claude-bridge/claude-sonnet-5-5"
+      "openai-codex/gpt-6.2-sol"
     ],
     "complex-coding": [
       "claude-bridge/claude-opus-5-5"
