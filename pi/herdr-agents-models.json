@@ -4,7 +4,7 @@
     "scout": "antigravity/gemini-4-hydrogen",
     "worker": "openai-codex/gpt-6.2-sol",
     "reviewer": "claude-bridge/claude-opus-5-5",
-    "adversarial-reviewer": "antigravity/gemini-4-neon",
+    "adversarial-reviewer": "antigravity/gemini-4-hydrogen",
     "visual-tester": "claude-bridge/claude-sonnet-5-5",
     "planner": "claude-bridge/claude-opus-5-5",
     "watchdog": "claude-bridge/claude-haiku-5-5"
@@ -18,7 +18,7 @@
     ],
     "review": [
       "claude-bridge/claude-opus-5-5",
-      "antigravity/gemini-4-neon"
+      "antigravity/gemini-4-hydrogen"
     ],
     "recon": [
       "antigravity/gemini-4-hydrogen",
