@@ -43,14 +43,19 @@ class Fork(NamedTuple):
     upstream: str  # <owner>/<repo> the fork tracks
     prs: tuple[int, ...]  # upstream PRs the fork carries until upstream releases them (docs/reference.md names each)
     kept: tuple[int, ...] = ()  # PRs upstream closed unmerged that the fork keeps carrying on purpose
+    pinned_by: str | None = None  # a fork pin whose package.json pins this fork as a git dependency, instead of pins.py
+    track_tag: bool = False  # compare with upstream's newest release tag (a dependency consumed by release), not its default branch
 
 
 FORKS = {
     "github.com/wayne930242/pi-claude-bridge": Fork("weihung-integration", "elidickinson/pi-claude-bridge", (123, 131, 133, 225, 226)),
     "github.com/wayne930242/pi-herdr-agents": Fork("weihung/v3-integration", "giuseppecrj/pi-herdr-agents", (87,), kept=(87,)),
     "github.com/wayne930242/pi-antigravity": Fork("weihung-integration", "Rahularya01/pi-antigravity", (153,)),
+    # The pi-herdr-agents engine since upstream moved it into @nubl/maestro; the herdr fork's package.json pins this fork.
+    "github.com/wayne930242/maestro": Fork("weihung-integration", "nublai/maestro", (),
+                                          pinned_by="github.com/wayne930242/pi-herdr-agents", track_tag=True),
 }
-FORK_BRANCHES = {name: fork.branch for name, fork in FORKS.items()}
+FORK_BRANCHES = {name: fork.branch for name, fork in FORKS.items() if not fork.pinned_by}
 STATE_DIR = Path.home() / ".local/state/weihung-agent-root"
 STATE_FILE = STATE_DIR / "pi-autoupdate.json"
 LOG_FILE = STATE_DIR / "pi-autoupdate.log"
@@ -191,8 +196,16 @@ def gh_api(path: str, jq: str) -> str:
     return run(["gh", "api", path, "--jq", jq])
 
 
-def fork_pin(name: str) -> str:
-    """The commit pins.py pins the fork to; BRIDGE_SOURCE is not in PACKAGES, so read the sources directly."""
+def fork_pin(name: str, fork: Fork) -> str:
+    """The commit the fork is pinned to: in pins.py, or in the package.json of the fork pin that depends on it."""
+    if fork.pinned_by:
+        parent = fork.pinned_by.removeprefix("github.com/")
+        manifest = gh_api(f"repos/{parent}/contents/package.json?ref={fork_pin(fork.pinned_by, FORKS[fork.pinned_by])}",
+                          ".content | @base64d")
+        match = re.search(rf"{re.escape(name.removeprefix('github.com/'))}(?:\.git)?#([0-9a-f]{{7,40}})", manifest)
+        if not match:
+            raise ValueError(f"{fork.pinned_by}'s package.json does not pin {name}")
+        return match[1]
     match = re.search(rf"git:{re.escape(name)}@([0-9a-f]{{7,40}})", TARGET.read_text())
     if not match:
         raise ValueError(f"{name} has no git pin in {TARGET}")
@@ -219,21 +232,25 @@ def pr_state(repository: str, number: int, tag: str | None) -> str:
 def fork_report(name: str, fork: Fork) -> tuple[list[str], list[str]]:
     """Lines describing one fork against its upstream, and the actions they call for."""
     fork_repository = name.removeprefix("github.com/")
-    default = gh_api(f"repos/{fork.upstream}", ".default_branch")
+    tag = newest_tag(fork.upstream)
+    if fork.track_tag and not tag:
+        raise ValueError(f"{fork.upstream} has no release tag to track")
+    base = tag if fork.track_tag else gh_api(f"repos/{fork.upstream}", ".default_branch")
     owner = fork.upstream.split("/")[0]
     branch = fork.branch.replace("/", "%2F")
-    ahead, behind = gh_api(f"repos/{fork_repository}/compare/{owner}:{default}...{branch}",
+    ahead, behind = gh_api(f"repos/{fork_repository}/compare/{owner}:{base}...{branch}",
                            '"\\(.ahead_by) \\(.behind_by)"').split()
     head = gh_api(f"repos/{fork_repository}/branches/{branch}", ".commit.sha")
-    pinned = fork_pin(name)
-    tag = newest_tag(fork.upstream)
+    pinned = fork_pin(name, fork)
     states = {number: pr_state(fork.upstream, number, tag) for number in fork.prs}
-    lines = [f"{fork_repository} ({fork.branch}) vs {fork.upstream}:{default}, newest tag {tag or 'none'}",
+    lines = [f"{fork_repository} ({fork.branch}) vs {fork.upstream}:{base}, newest tag {tag or 'none'}"
+             + (f", pinned by {fork.pinned_by.removeprefix('github.com/')}" if fork.pinned_by else ""),
              f"  pin {pinned[:7]}, branch head {head[:7]}; {ahead} ahead, {behind} behind upstream"]
     lines += [f"  #{number}: {state}{' (kept on purpose)' if number in fork.kept else ''}" for number, state in states.items()]
     actions = []
     if not head.startswith(pinned):
-        actions.append(f"pin lags the fork branch: `bump {name}`")
+        actions.append(f"pin lags the fork branch: update {fork.pinned_by}'s package.json, then bump it" if fork.pinned_by
+                       else f"pin lags the fork branch: `bump {name}`")
     if behind != "0":
         actions.append(f"{behind} upstream commits missing: merge (or rebase, which needs a force push)")
     closed = [f"#{number}" for number, state in states.items() if state == "closed" and number not in fork.kept]

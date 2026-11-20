@@ -379,9 +379,10 @@ class PackageTests(unittest.TestCase):
         spec = importlib.util.spec_from_file_location("pi_pins", Path(__file__).resolve().parents[1] / "scripts/pi-pins.py")
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-        self.assertEqual(set(module.FORK_BRANCHES), set(module.FORKS))
-        for name in module.FORKS:
-            self.assertRegex(module.fork_pin(name), r"^[0-9a-f]{40}$")
+        self.assertEqual(set(module.FORK_BRANCHES), {name for name, fork in module.FORKS.items() if not fork.pinned_by})
+        for name, fork in module.FORKS.items():
+            if not fork.pinned_by:
+                self.assertRegex(module.fork_pin(name, fork), r"^[0-9a-f]{40}$")
         pinned = "a" * 40
 
         def fake(head, behind, states):
@@ -403,7 +404,7 @@ class PackageTests(unittest.TestCase):
 
         def report(fork, head, behind, states):
             with mock.patch.object(module, "gh_api", fake(head, behind, states)), \
-                 mock.patch.object(module, "fork_pin", lambda _name: pinned):
+                 mock.patch.object(module, "fork_pin", lambda _name, _fork: pinned):
                 return module.fork_report("github.com/me/fork", fork)
 
         lines, actions = report(module.Fork("x/y", "up/stream", (1, 2)), pinned, "0",

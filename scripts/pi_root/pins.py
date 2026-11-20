@@ -3,13 +3,15 @@
 BRIDGE_SOURCE = "git:github.com/wayne930242/pi-claude-bridge@96bab40077a04e7a589f91dc945af2698cdd5498"
 QUOTAS_SOURCE = "npm:@latentminds/pi-quotas@0.5.0"
 CLAUDE_RULES_SOURCE = "npm:pi-code@1.10.1"
-# Fork pin of giuseppecrj/pi-herdr-agents: upstream main (v3.11.0) merged with the
-# solutionSpace change of closed PR #87, grouped-workspace placement, the macOS process-identity and cancel-settle
+# Fork pin of giuseppecrj/pi-herdr-agents: upstream main (v3.12.1, engine moved into @nubl/maestro) with its maestro
+# dependency pinned to the wayne930242/maestro fork (branch weihung-integration on v0.1.2), which carries the
+# solutionSpace change of closed PR #87, grouped-workspace placement (in the herdr fork itself), the macOS process-identity and cancel-settle
 # fixes, the complex-coding task category, managed worktrees seeding the source's installed project .pi/npm and .pi/git, and the fork-only exit hold that pi/extensions/quota-resume.ts and monitor-hold.ts use, and a routing guideline that names
-# solutionSpace as a reason to omit thinking on a task: launch (branch weihung/v3-integration).
+# solutionSpace as a reason to omit thinking on a task: launch (branch weihung/v3-integration). An engine change goes to the
+# maestro fork, rebuilt dist/ committed (`npm run check:dist`), then the herdr fork's package.json pin, then this pin.
 # Once upstream releases what this setup needs, return to the npm release: set this to npm:pi-herdr-agents@<version>, drop the PINNED_GIT
-# entry and the FORK_BRANCHES entry in scripts/pi-pins.py, and move "npm:pi-herdr-agents" out of RETIRED_SOURCES.
-HERDR_AGENTS_SOURCE = "git:github.com/wayne930242/pi-herdr-agents@798f07a3db01e58f78e2e43e62d253c8ecee0b49"
+# entry and both FORKS entries (pi-herdr-agents, maestro) in scripts/pi-pins.py, and move "npm:pi-herdr-agents" out of RETIRED_SOURCES.
+HERDR_AGENTS_SOURCE = "git:github.com/wayne930242/pi-herdr-agents@a045a17ab8da1ddd36018db3def3cb04265fb129"
 # Fork pin of Rahularya01/pi-antigravity: v0.14.0 merged with open PR #153, which carries pi's system prompt in the first
 # user turn; on consumer endpoints a prompt in systemInstruction draws a false 429 RESOURCE_EXHAUSTED on every model (#148,
 # #152) (branch weihung-integration). Once upstream releases the fix, return to npm: set this to npm:pi-antigravity@<version>,
