@@ -52,7 +52,7 @@ FORKS = {
     "github.com/wayne930242/pi-herdr-agents": Fork("weihung/v3-integration", "giuseppecrj/pi-herdr-agents", (87,), kept=(87,)),
     "github.com/wayne930242/pi-antigravity": Fork("weihung-integration", "Rahularya01/pi-antigravity", (153,)),
     # The pi-herdr-agents engine since upstream moved it into @nubl/maestro; the herdr fork's package.json pins this fork.
-    "github.com/wayne930242/maestro": Fork("weihung-integration", "nublai/maestro", (),
+    "github.com/wayne930242/maestro": Fork("weihung-integration", "nublai/maestro", (14, 15, 16, 17, 18),
                                           pinned_by="github.com/wayne930242/pi-herdr-agents", track_tag=True),
 }
 FORK_BRANCHES = {name: fork.branch for name, fork in FORKS.items() if not fork.pinned_by}

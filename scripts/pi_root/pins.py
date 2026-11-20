@@ -11,7 +11,7 @@ CLAUDE_RULES_SOURCE = "npm:pi-code@1.10.1"
 # maestro fork, rebuilt dist/ committed (`npm run check:dist`), then the herdr fork's package.json pin, then this pin.
 # Once upstream releases what this setup needs, return to the npm release: set this to npm:pi-herdr-agents@<version>, drop the PINNED_GIT
 # entry and both FORKS entries (pi-herdr-agents, maestro) in scripts/pi-pins.py, and move "npm:pi-herdr-agents" out of RETIRED_SOURCES.
-HERDR_AGENTS_SOURCE = "git:github.com/wayne930242/pi-herdr-agents@a045a17ab8da1ddd36018db3def3cb04265fb129"
+HERDR_AGENTS_SOURCE = "git:github.com/wayne930242/pi-herdr-agents@fe793e862d688263f53539f38921ab603417e0d0"
 # Fork pin of Rahularya01/pi-antigravity: v0.14.0 merged with open PR #153, which carries pi's system prompt in the first
 # user turn; on consumer endpoints a prompt in systemInstruction draws a false 429 RESOURCE_EXHAUSTED on every model (#148,
 # #152) (branch weihung-integration). Once upstream releases the fix, return to npm: set this to npm:pi-antigravity@<version>,
