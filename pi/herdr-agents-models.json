@@ -1,37 +1,35 @@
 {
-  "default": "claude-bridge/claude-opus-5-5",
+  "default": "antigravity/gemini-4-hydrogen",
   "agents": {
     "scout": "antigravity/gemini-4-hydrogen",
-    "worker": "openai-codex/gpt-6.2-sol",
-    "reviewer": "claude-bridge/claude-opus-5-5",
-    "adversarial-reviewer": "antigravity/gemini-4-neon",
-    "visual-tester": "claude-bridge/claude-sonnet-5-5",
-    "planner": "claude-bridge/claude-opus-5-5",
-    "watchdog": "claude-bridge/claude-haiku-5-5"
+    "worker": "antigravity/gemini-4-hydrogen",
+    "reviewer": "antigravity/gemini-4-hydrogen",
+    "adversarial-reviewer": "antigravity/gemini-4-hydrogen",
+    "visual-tester": "antigravity/gemini-4-hydrogen",
+    "planner": "antigravity/gemini-4-hydrogen",
+    "watchdog": "antigravity/gemini-4-hydrogen"
   },
   "tasks": {
     "coding": [
-      "openai-codex/gpt-6.2-sol"
+      "antigravity/gemini-4-hydrogen"
     ],
     "complex-coding": [
-      "claude-bridge/claude-opus-5-5"
+      "antigravity/gemini-4-hydrogen"
     ],
     "review": [
-      "claude-bridge/claude-opus-5-5",
-      "antigravity/gemini-4-neon"
+      "antigravity/gemini-4-hydrogen"
     ],
     "recon": [
-      "antigravity/gemini-4-hydrogen",
-      "claude-bridge/claude-sonnet-5-5"
+      "antigravity/gemini-4-hydrogen"
     ],
     "docs": [
-      "openai-codex/gpt-6.2-sol"
+      "antigravity/gemini-4-hydrogen"
     ],
     "qa": [
-      "claude-bridge/claude-sonnet-5-5"
+      "antigravity/gemini-4-hydrogen"
     ],
     "architecture": [
-      "claude-bridge/claude-opus-5-5"
+      "antigravity/gemini-4-hydrogen"
     ]
   }
 }
