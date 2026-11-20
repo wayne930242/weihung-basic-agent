@@ -123,7 +123,7 @@ with tempfile.TemporaryDirectory() as directory:
     registry = [source.removeprefix("npm:") for source in sources if source.startswith("npm:")]
     assert registry and all("@" in name[1:] for name in registry), registry
     assert {"source": "npm:@sherif-fanous/pi-catppuccin@0.3.0", "themes": ["themes/catppuccin-mocha.json"]} in settings["packages"], settings
-    assert "npm:@juicesharp/rpiv-todo@2.15.0" in sources and "npm:cc-safety-net@2.8.0" in sources, sources
+    assert "npm:@juicesharp/rpiv-todo@2.15.0" in sources and "npm:cc-safety-net@2.8.1" in sources, sources
     assert "npm:pi-codex-image-gen@0.3.2" in sources and not any("pi-web-access" in source for source in sources), sources
     assert "npm:pi-robot-hand@0.8.0" in sources and not any("pi-secret-drop" in source for source in sources), sources
     assert not any("pi-phoenix-otel" in source for source in sources), sources
@@ -140,7 +140,7 @@ with tempfile.TemporaryDirectory() as directory:
     assert settings["terminal"]["showTerminalProgress"] is True, settings
     assert settings["terminal"]["images"] == "kitty", settings
     assert settings["compaction"] == {"modelOverrides": {"claude-bridge/claude-opus-5-5": {"reserveTokens": 500000}, "claude-bridge/claude-sonnet-5-5": {"reserveTokens": 500000}}}, settings
-    assert "powerline" not in settings and "npm:pi-open-tui@0.4.6" in settings["packages"], settings
+    assert "powerline" not in settings and "npm:pi-open-tui@0.4.7" in settings["packages"], settings
     mcp = json.loads((home / ".pi/agent/mcp-adapter.json").read_text())
     assert mcp["settings"] == {"hostConfigDiscovery": "on", "namespaceProxyTools": False}, mcp
     assert mcp["mcpServers"]["codebase-memory-mcp"] == {"command": str(home.resolve() / ".local/bin/codebase-memory-mcp")}, mcp
