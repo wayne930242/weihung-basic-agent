@@ -65,7 +65,7 @@ PACKAGES = [
     "npm:pi-jev-compaction@1.0.0",
     # prose_watch: an AI-tone check (Jev) on the prose files a writing task arms.
     "npm:pi-prose-watch@0.1.2",
-    "npm:cc-safety-net@2.7.15",
+    "npm:cc-safety-net@2.8.0",
     "npm:pi-codex-image-gen@0.3.2",
     "npm:pi-robot-hand@0.8.1",
     "npm:pi-auto-tab-name@0.2.0",
