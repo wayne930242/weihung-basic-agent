@@ -36,13 +36,21 @@ MAIN_BRANCH = "main"
 # (the boss's decision, 2026-11-13).
 MANUAL_PINS = {"pi-herdr-agents"}
 # Fork pins follow an integration or PR branch instead of the remote HEAD, so `outdated` and a named `bump` never move
-# them to the default branch. pi-herdr-agents is a fork pin until upstream releases giuseppecrj/pi-herdr-agents#84 and #87;
-# then it returns to the npm release (and `auto` keeps leaving it alone through MANUAL_PINS).
-FORK_BRANCHES = {
-    "github.com/wayne930242/pi-claude-bridge": "weihung-integration",
-    "github.com/wayne930242/pi-herdr-agents": "weihung/v3-integration",
-    "github.com/wayne930242/pi-antigravity": "weihung-integration",
+# them to the default branch. `forks` checks each against its upstream; once upstream releases what a fork carries, the pin
+# returns to the npm release (pi-herdr-agents then stays out of `auto` through MANUAL_PINS).
+class Fork(NamedTuple):
+    branch: str  # the fork branch the pin follows
+    upstream: str  # <owner>/<repo> the fork tracks
+    prs: tuple[int, ...]  # upstream PRs the fork carries until upstream releases them (docs/reference.md names each)
+    kept: tuple[int, ...] = ()  # PRs upstream closed unmerged that the fork keeps carrying on purpose
+
+
+FORKS = {
+    "github.com/wayne930242/pi-claude-bridge": Fork("weihung-integration", "elidickinson/pi-claude-bridge", (123, 125, 131, 133, 225, 226)),
+    "github.com/wayne930242/pi-herdr-agents": Fork("weihung/v3-integration", "giuseppecrj/pi-herdr-agents", (87,), kept=(87,)),
+    "github.com/wayne930242/pi-antigravity": Fork("weihung-integration", "Rahularya01/pi-antigravity", (153,)),
 }
+FORK_BRANCHES = {name: fork.branch for name, fork in FORKS.items()}
 STATE_DIR = Path.home() / ".local/state/weihung-agent-root"
 STATE_FILE = STATE_DIR / "pi-autoupdate.json"
 LOG_FILE = STATE_DIR / "pi-autoupdate.log"
@@ -177,6 +185,76 @@ def outdated() -> None:
         suffix = {"git": f" (git: {FORK_BRANCHES.get(pin.name, 'remote HEAD')})", "herdr": " (herdr plugin)"}.get(pin.kind, "")
         print(f"{pin.name:<{width}}  {short(pin, pin.current):<9} {short(pin, newest):<9} {status}{suffix}")
     print(f"\n{behind} of {len(pins)} pins differ from the registry.")
+
+
+def gh_api(path: str, jq: str) -> str:
+    return run(["gh", "api", path, "--jq", jq])
+
+
+def fork_pin(name: str) -> str:
+    """The commit pins.py pins the fork to; BRIDGE_SOURCE is not in PACKAGES, so read the sources directly."""
+    match = re.search(rf"git:{re.escape(name)}@([0-9a-f]{{7,40}})", TARGET.read_text())
+    if not match:
+        raise ValueError(f"{name} has no git pin in {TARGET}")
+    return match[1]
+
+
+def newest_tag(repository: str) -> str | None:
+    tags = [tag for tag in gh_api(f"repos/{repository}/tags?per_page=100", ".[].name").splitlines() if RELEASE_TAG.match(tag)]
+    return max(tags, key=lambda tag: tuple(int(part) for part in tag[1:].split(".")), default=None)
+
+
+def contains(repository: str, ref: str, commit: str) -> bool:
+    return gh_api(f"repos/{repository}/compare/{ref}...{commit}", ".status") in ("behind", "identical")
+
+
+def pr_state(repository: str, number: int, tag: str | None) -> str:
+    state, merge_commit = gh_api(f"repos/{repository}/pulls/{number}",
+                                 '(if .merged_at then "merged" else .state end) + " " + (.merge_commit_sha // "-")').split()
+    if state == "merged":
+        return f"released in {tag}" if tag and contains(repository, tag, merge_commit) else "merged, unreleased"
+    return state
+
+
+def fork_report(name: str, fork: Fork) -> tuple[list[str], list[str]]:
+    """Lines describing one fork against its upstream, and the actions they call for."""
+    fork_repository = name.removeprefix("github.com/")
+    default = gh_api(f"repos/{fork.upstream}", ".default_branch")
+    owner = fork.upstream.split("/")[0]
+    branch = fork.branch.replace("/", "%2F")
+    ahead, behind = gh_api(f"repos/{fork_repository}/compare/{owner}:{default}...{branch}",
+                           '"\\(.ahead_by) \\(.behind_by)"').split()
+    head = gh_api(f"repos/{fork_repository}/branches/{branch}", ".commit.sha")
+    pinned = fork_pin(name)
+    tag = newest_tag(fork.upstream)
+    states = {number: pr_state(fork.upstream, number, tag) for number in fork.prs}
+    lines = [f"{fork_repository} ({fork.branch}) vs {fork.upstream}:{default}, newest tag {tag or 'none'}",
+             f"  pin {pinned[:7]}, branch head {head[:7]}; {ahead} ahead, {behind} behind upstream"]
+    lines += [f"  #{number}: {state}{' (kept on purpose)' if number in fork.kept else ''}" for number, state in states.items()]
+    actions = []
+    if not head.startswith(pinned):
+        actions.append(f"pin lags the fork branch: `bump {name}`")
+    if behind != "0":
+        actions.append(f"{behind} upstream commits missing: merge (or rebase, which needs a force push)")
+    closed = [f"#{number}" for number, state in states.items() if state == "closed" and number not in fork.kept]
+    if closed:
+        actions.append(f"closed without merging: {', '.join(closed)}; drop it, or keep carrying it (add to `kept`)")
+    if fork.prs and not fork.kept and all(state.startswith("released") for state in states.values()):
+        actions.append("upstream released every carried PR: return to the npm release (see pins.py)")
+    return lines, actions
+
+
+def forks() -> int:
+    """Report every fork's drift from upstream and the state of the PRs it carries; 1 when any needs action."""
+    with ThreadPoolExecutor(max_workers=len(FORKS)) as pool:
+        reports = list(pool.map(lambda item: fork_report(*item), FORKS.items()))
+    pending = 0
+    for lines, actions in reports:
+        print("\n".join(lines))
+        print("\n".join(f"  -> {action}" for action in actions) if actions else "  ok")
+        pending += bool(actions)
+    print(f"\n{pending} of {len(FORKS)} forks need action.")
+    return 1 if pending else 0
 
 
 def select(pins: list[Pin], names: list[str]) -> list[Pin]:
@@ -429,11 +507,19 @@ def main() -> None:
     bump_parser = commands.add_parser("bump", help="rewrite pins to the latest release; npm and Herdr plugin pins only unless named")
     bump_parser.add_argument("names", nargs="*", help="pinned package names, as `outdated` prints them")
     commands.add_parser("auto", help="bump every npm and Herdr plugin pin to its latest release, keep it only if tests, install and a pi load pass")
+    commands.add_parser("forks", help="compare every fork pin with its upstream: drift, carried PRs, and what to do; exit 1 when any needs action")
+    commands.add_parser("check", help="`outdated`, then `forks`")
     commands.add_parser("schedule", help="run `auto` daily through launchd")
     commands.add_parser("unschedule", help="remove the launchd schedule")
     args = parser.parse_args()
     if args.action == "outdated":
         outdated()
+    elif args.action == "forks":
+        sys.exit(forks())
+    elif args.action == "check":
+        outdated()
+        print()
+        sys.exit(forks())
     elif args.action == "auto":
         try:
             auto()

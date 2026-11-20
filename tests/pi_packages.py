@@ -374,6 +374,53 @@ class PackageTests(unittest.TestCase):
                 self.assertEqual(module.latest(pin), "v0.12.0")
         self.assertEqual(pin.quoted("v0.12.0"), '"owner/repo/plugin", "v0.12.0"')
 
+    def test_the_fork_report_names_drift_closed_prs_and_a_return_to_npm(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("pi_pins", Path(__file__).resolve().parents[1] / "scripts/pi-pins.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        self.assertEqual(set(module.FORK_BRANCHES), set(module.FORKS))
+        for name in module.FORKS:
+            self.assertRegex(module.fork_pin(name), r"^[0-9a-f]{40}$")
+        pinned = "a" * 40
+
+        def fake(head, behind, states):
+            def gh_api(path, _jq):
+                if path == "repos/up/stream":
+                    return "main"
+                if path.startswith("repos/me/fork/compare/"):
+                    return f"3 {behind}"
+                if path.startswith("repos/me/fork/branches/"):
+                    return head
+                if path.startswith("repos/up/stream/tags"):
+                    return "v1.2.0\nv1.10.0\nnightly"
+                if path.startswith("repos/up/stream/pulls/"):
+                    return states[int(path.rsplit("/", 1)[1])]
+                if path.startswith("repos/up/stream/compare/v1.10.0..."):
+                    return "behind" if path.endswith("...released") else "ahead"
+                raise AssertionError(path)
+            return gh_api
+
+        def report(fork, head, behind, states):
+            with mock.patch.object(module, "gh_api", fake(head, behind, states)), \
+                 mock.patch.object(module, "fork_pin", lambda _name: pinned):
+                return module.fork_report("github.com/me/fork", fork)
+
+        lines, actions = report(module.Fork("x/y", "up/stream", (1, 2)), pinned, "0",
+                                {1: "open -", 2: "merged unreleased"})
+        self.assertIn("newest tag v1.10.0", lines[0])
+        self.assertIn("  #2: merged, unreleased", lines)
+        self.assertEqual(actions, [])
+        _, actions = report(module.Fork("x/y", "up/stream", (1, 2), kept=(2,)), "b" * 40, "4",
+                            {1: "closed -", 2: "closed -"})
+        self.assertEqual(len(actions), 3)
+        self.assertIn("bump github.com/me/fork", actions[0])
+        self.assertIn("4 upstream commits missing", actions[1])
+        self.assertIn("#1;", actions[2])
+        self.assertNotIn("#2", actions[2])
+        _, actions = report(module.Fork("x/y", "up/stream", (1,)), pinned, "0", {1: "merged released"})
+        self.assertEqual(actions, ["upstream released every carried PR: return to the npm release (see pins.py)"])
+
     def test_the_update_schedule_refuses_outside_macos(self):
         import importlib.util
         spec = importlib.util.spec_from_file_location("pi_pins", Path(__file__).resolve().parents[1] / "scripts/pi-pins.py")
