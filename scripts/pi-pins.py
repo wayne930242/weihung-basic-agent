@@ -46,7 +46,7 @@ class Fork(NamedTuple):
 
 
 FORKS = {
-    "github.com/wayne930242/pi-claude-bridge": Fork("weihung-integration", "elidickinson/pi-claude-bridge", (123, 125, 131, 133, 225, 226)),
+    "github.com/wayne930242/pi-claude-bridge": Fork("weihung-integration", "elidickinson/pi-claude-bridge", (123, 131, 133, 225, 226)),
     "github.com/wayne930242/pi-herdr-agents": Fork("weihung/v3-integration", "giuseppecrj/pi-herdr-agents", (87,), kept=(87,)),
     "github.com/wayne930242/pi-antigravity": Fork("weihung-integration", "Rahularya01/pi-antigravity", (153,)),
 }
