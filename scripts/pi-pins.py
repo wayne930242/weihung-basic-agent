@@ -48,8 +48,9 @@ class Fork(NamedTuple):
 
 
 FORKS = {
-    # #123 (reviewer/judge one-shots on the isolated path) closed as superseded by #262, which dropped prompt capture; the
-    # fork re-keyed it on pi's system messages, because a foreign one-shot mid-turn must still not ride the main lane.
+    # #123 (reviewer/judge one-shots on the isolated path) closed as superseded by #262: on upstream 0.13.0 such a call
+    # gets a fresh tool-less query and no error (rerun 2026-11-20). The fork still carries its tested route, re-keyed on
+    # pi's system messages, until the next fork rebase drops it; nothing breaks without it.
     "github.com/wayne930242/pi-claude-bridge": Fork("weihung-integration", "elidickinson/pi-claude-bridge", (123, 131, 133, 225, 226), kept=(123,)),
     "github.com/wayne930242/pi-herdr-agents": Fork("weihung/v3-integration", "giuseppecrj/pi-herdr-agents", (87,), kept=(87,)),
     # The pi-herdr-agents engine since upstream moved it into @nubl/maestro; the herdr fork's package.json pins this fork.
