@@ -457,6 +457,23 @@ class PackageTests(unittest.TestCase):
         self.assertIn(("attempt", ["pi-code"]), tried, "the other pins still move")
         self.assertEqual(next(state for kind, state in tried if kind == "state"), {"rejected": {}}, "a held pin is not rejected")
         self.assertTrue(any(kind == "notify" and "Held pi-straw-boss@2.0.0" in message for kind, message in tried))
+        # A train that starts while the tests run: attempt holds sb at the install, and auto must not report it updated (EIR-F001).
+        tried.clear()
+        late = lambda names, _failing: (tried.append(("attempt", names)), "Held pi-straw-boss@2.0.0: train mc/fe2 x is live")[1] if "pi-straw-boss" in names else None
+        with mock.patch.object(module, "skip_reason", lambda: None), \
+             mock.patch.object(module, "collect_pins", lambda: pins), \
+             mock.patch.object(module, "latest_all", lambda chosen: ["2.0.0" for _ in chosen]), \
+             mock.patch.object(module, "load_state", lambda: {"rejected": {}}), \
+             mock.patch.object(module, "save_state", lambda state: tried.append(("state", state))), \
+             mock.patch.object(module, "failing_tests", lambda: set()), \
+             mock.patch.object(module, "notify", lambda message: tried.append(("notify", message))), \
+             mock.patch.object(module, "attempt", late), \
+             mock.patch.object(module, "train_hold", lambda: None):
+            module.auto()
+        note = next(message for kind, message in tried if kind == "notify")
+        self.assertIn("Updated 1: pi-code.", note)
+        self.assertIn("Held pi-straw-boss@2.0.0", note)
+        self.assertEqual(next(state for kind, state in tried if kind == "state"), {"rejected": {}})
 
     def test_the_update_schedule_refuses_outside_macos(self):
         import importlib.util

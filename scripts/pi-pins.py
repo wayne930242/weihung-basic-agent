@@ -394,14 +394,15 @@ def notify(message: str) -> None:
     subprocess.run(["osascript", "-e", script], capture_output=True)
 
 
-def attempt(names: list[str], known_failing: set[str]) -> None:
-    """Bump the named pins, verify, install and commit; on failure restore the previous pins and reinstall them."""
+def attempt(names: list[str], known_failing: set[str]) -> str | None:
+    """Bump the named pins, verify, install and commit; on failure restore the previous pins and reinstall them.
+    Returns why pi-straw-boss was held back at the install (a train started while the tests ran), else None."""
     before = {pin.name: pin.current for pin in collect_pins()}
     bump(names)
     changed = git("diff", "--name-only").splitlines()
     if not changed:
         return
-    installed = False
+    installed, late = False, None
     try:
         for command in test_commands():
             if command[-1] not in known_failing:
@@ -410,10 +411,11 @@ def attempt(names: list[str], known_failing: set[str]) -> None:
             # A train started while the tests ran: put the sb pin back, so the install leaves the server alone.
             sb = next(pin for pin in collect_pins() if pin.name == SB_PIN)
             rewrite(sb.quoted(bumped[SB_PIN]), sb.quoted(before[SB_PIN]))
-            print(f"Held {SB_PIN}@{bumped[SB_PIN]}: {reason}.")
+            late = f"Held {SB_PIN}@{bumped[SB_PIN]}: {reason}; the next run tries it again."
+            print(late)
             changed = git("diff", "--name-only").splitlines()
             if not changed:
-                return
+                return late
         installed = True
         step("install", ["bash", str(ROOT / "scripts/install.sh")])
         smoke()
@@ -430,6 +432,7 @@ def attempt(names: list[str], known_failing: set[str]) -> None:
     subject = f"chore(pi): bump {moved[0]} to {after[moved[0]]}" if len(moved) == 1 else "chore(pi): bump pinned packages"
     git("add", *changed)
     git("commit", "-m", subject, "-m", "\n".join(f"{name} {before[name]} -> {after[name]}" for name in moved))
+    return late
 
 
 def train_hold() -> str | None:
@@ -483,8 +486,9 @@ def auto() -> None:
     updated: list[str] = []
     failures: dict[str, str] = {}
     try:
-        attempt(due, known_failing)
-        updated = due
+        if late := attempt(due, known_failing):
+            held = late
+        updated = [name for name in due if not (late and name == SB_PIN)]
     except StepFailed as error:
         print(error)
         if len(due) == 1:
@@ -493,8 +497,10 @@ def auto() -> None:
             print("Retrying each pin on its own to isolate the failure.")
             for name in due:
                 try:
-                    attempt([name], known_failing)
-                    updated.append(name)
+                    if late := attempt([name], known_failing):
+                        held = late
+                    else:
+                        updated.append(name)
                 except StepFailed as single:
                     failures[name] = str(single)
     for name, error in failures.items():
