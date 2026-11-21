@@ -48,9 +48,10 @@ class Fork(NamedTuple):
 
 
 FORKS = {
-    "github.com/wayne930242/pi-claude-bridge": Fork("weihung-integration", "elidickinson/pi-claude-bridge", (123, 131, 133, 225, 226)),
+    # #123 (reviewer/judge one-shots on the isolated path) closed as superseded by #262, which dropped prompt capture; the
+    # fork re-keyed it on pi's system messages, because a foreign one-shot mid-turn must still not ride the main lane.
+    "github.com/wayne930242/pi-claude-bridge": Fork("weihung-integration", "elidickinson/pi-claude-bridge", (123, 131, 133, 225, 226), kept=(123,)),
     "github.com/wayne930242/pi-herdr-agents": Fork("weihung/v3-integration", "giuseppecrj/pi-herdr-agents", (87,), kept=(87,)),
-    "github.com/wayne930242/pi-antigravity": Fork("weihung-integration", "Rahularya01/pi-antigravity", (153,)),
     # The pi-herdr-agents engine since upstream moved it into @nubl/maestro; the herdr fork's package.json pins this fork.
     "github.com/wayne930242/maestro": Fork("weihung-integration", "nublai/maestro", (14, 15, 16, 17, 18),
                                           pinned_by="github.com/wayne930242/pi-herdr-agents", track_tag=True),
