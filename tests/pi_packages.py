@@ -422,6 +422,42 @@ class PackageTests(unittest.TestCase):
         _, actions = report(module.Fork("x/y", "up/stream", (1,)), pinned, "0", {1: "merged released"})
         self.assertEqual(actions, ["upstream released every carried PR: return to the npm release (see pins.py)"])
 
+    def test_auto_holds_pi_straw_boss_while_a_train_runs(self):
+        # Installing a new pi-straw-boss restarts the sb server, which drops a live train's records (2026-11-21 07:42Z).
+        import importlib.util
+        import subprocess
+        spec = importlib.util.spec_from_file_location("pi_pins", Path(__file__).resolve().parents[1] / "scripts/pi-pins.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        with tempfile.TemporaryDirectory() as directory:
+            cli = Path(directory) / "cli.mjs"
+            with mock.patch.object(module, "SB_CLI", Path(directory) / "missing.mjs"):
+                self.assertIsNone(module.train_hold(), "no sb installed: no server, nothing to hold")
+            cli.write_text("")
+            done = lambda out, code=0: subprocess.CompletedProcess([], code, out, "boom")
+            with mock.patch.object(module, "SB_CLI", cli):
+                with mock.patch.object(module.subprocess, "run", lambda *a, **k: done('{"trains":[]}')):
+                    self.assertIsNone(module.train_hold())
+                with mock.patch.object(module.subprocess, "run", lambda *a, **k: done('{"trains":[{"project":"mc","app":"fe2","code":"2026-11-21-x"}]}')):
+                    self.assertRegex(module.train_hold(), r"train mc/fe2 2026-11-21-x is live")
+                with mock.patch.object(module.subprocess, "run", lambda *a, **k: done("", 1)):
+                    self.assertRegex(module.train_hold(), r"train status could not be read")
+        pins = [module.Pin("npm", "npm:pi-straw-boss", "1.0.0"), module.Pin("npm", "npm:pi-code", "1.0.0")]
+        tried = []
+        with mock.patch.object(module, "skip_reason", lambda: None), \
+             mock.patch.object(module, "collect_pins", lambda: pins), \
+             mock.patch.object(module, "latest_all", lambda chosen: ["2.0.0" for _ in chosen]), \
+             mock.patch.object(module, "load_state", lambda: {"rejected": {}}), \
+             mock.patch.object(module, "save_state", lambda state: tried.append(("state", state))), \
+             mock.patch.object(module, "failing_tests", lambda: set()), \
+             mock.patch.object(module, "notify", lambda message: tried.append(("notify", message))), \
+             mock.patch.object(module, "attempt", lambda names, _failing: tried.append(("attempt", names))), \
+             mock.patch.object(module, "train_hold", lambda: "train mc/fe2 2026-11-21-x is live"):
+            module.auto()
+        self.assertIn(("attempt", ["pi-code"]), tried, "the other pins still move")
+        self.assertEqual(next(state for kind, state in tried if kind == "state"), {"rejected": {}}, "a held pin is not rejected")
+        self.assertTrue(any(kind == "notify" and "Held pi-straw-boss@2.0.0" in message for kind, message in tried))
+
     def test_the_update_schedule_refuses_outside_macos(self):
         import importlib.util
         spec = importlib.util.spec_from_file_location("pi_pins", Path(__file__).resolve().parents[1] / "scripts/pi-pins.py")

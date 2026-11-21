@@ -35,6 +35,11 @@ MAIN_BRANCH = "main"
 # pi-straw-boss stays auto although it ships the roles (its role pack, since 0.79.0): its release flow runs `/boss roles-check`
 # (the boss's decision, 2026-11-13).
 MANUAL_PINS = {"pi-herdr-agents"}
+# Installing a new pi-straw-boss restarts the sb server (every session auto-upgrades), which drops a live train's in-memory
+# records (2026-11-21 07:42Z): `auto` holds it, without rejecting it, while `train status` shows a live train or cannot be read,
+# checked before the run and again right before the install (the boss's decision, 2026-11-21).
+SB_PIN = "pi-straw-boss"
+SB_CLI = Path.home() / ".pi/agent/npm/node_modules/pi-straw-boss/dist/server/cli.mjs"
 # Fork pins follow an integration or PR branch instead of the remote HEAD, so `outdated` and a named `bump` never move
 # them to the default branch. `forks` checks each against its upstream; once upstream releases what a fork carries, the pin
 # returns to the npm release (pi-herdr-agents then stays out of `auto` through MANUAL_PINS).
@@ -401,6 +406,14 @@ def attempt(names: list[str], known_failing: set[str]) -> None:
         for command in test_commands():
             if command[-1] not in known_failing:
                 step("tests", command)
+        if SB_PIN in names and before[SB_PIN] != (bumped := {pin.name: pin.current for pin in collect_pins()})[SB_PIN] and (reason := train_hold()):
+            # A train started while the tests ran: put the sb pin back, so the install leaves the server alone.
+            sb = next(pin for pin in collect_pins() if pin.name == SB_PIN)
+            rewrite(sb.quoted(bumped[SB_PIN]), sb.quoted(before[SB_PIN]))
+            print(f"Held {SB_PIN}@{bumped[SB_PIN]}: {reason}.")
+            changed = git("diff", "--name-only").splitlines()
+            if not changed:
+                return
         installed = True
         step("install", ["bash", str(ROOT / "scripts/install.sh")])
         smoke()
@@ -417,6 +430,23 @@ def attempt(names: list[str], known_failing: set[str]) -> None:
     subject = f"chore(pi): bump {moved[0]} to {after[moved[0]]}" if len(moved) == 1 else "chore(pi): bump pinned packages"
     git("add", *changed)
     git("commit", "-m", subject, "-m", "\n".join(f"{name} {before[name]} -> {after[name]}" for name in moved))
+
+
+def train_hold() -> str | None:
+    """Why a new pi-straw-boss must not be installed now, or None when no train runs (or no sb is installed to run one)."""
+    if not SB_CLI.exists():
+        return None
+    result = subprocess.run(["node", str(SB_CLI), "train", "status", "--state", "live", "--json"], capture_output=True, text=True)
+    try:
+        trains = json.loads(result.stdout)["trains"] if result.returncode == 0 else None
+    except (ValueError, KeyError, TypeError):
+        trains = None
+    if not isinstance(trains, list):
+        return f"train status could not be read ({(result.stderr or result.stdout).strip()[:120] or f'exit {result.returncode}'})"
+    if trains:
+        names = ", ".join(f"{t.get('project')}/{t.get('app')} {t.get('code')}" for t in trains[:3] if isinstance(t, dict))
+        return f"train {names} is live" if len(trains) == 1 else f"{len(trains)} trains are live ({names})"
+    return None
 
 
 def skip_reason() -> str | None:
@@ -437,7 +467,14 @@ def auto() -> None:
     candidates = [pin for pin in collect_pins() if pin.kind != "git" and pin.name not in MANUAL_PINS]
     newest = dict(zip((pin.name for pin in candidates), latest_all(candidates), strict=True))
     due = [pin.name for pin in candidates if newest[pin.name] != pin.current and state["rejected"].get(pin.name) != newest[pin.name]]
+    held = None
+    if SB_PIN in due and (reason := train_hold()):
+        due.remove(SB_PIN)
+        held = f"Held {SB_PIN}@{newest[SB_PIN]}: {reason}; the next run tries it again."
+        print(held)
     if not due:
+        if held:
+            notify(held)
         print("Every pin is current or already rejected at its latest version.")
         return
     known_failing = failing_tests()
@@ -466,7 +503,7 @@ def auto() -> None:
     save_state(state)
     parts = [f"Updated {len(updated)}: {', '.join(updated)}." if updated else None,
              "Rejected: " + ", ".join(f"{name}@{newest[name]} ({error.splitlines()[0]})" for name, error in failures.items()) + "." if failures else None,
-             f"{len(known_failing)} test file(s) were already failing." if known_failing else None]
+             f"{len(known_failing)} test file(s) were already failing." if known_failing else None, held]
     notify(" ".join(part for part in parts if part))
 
 
