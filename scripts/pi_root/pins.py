@@ -99,7 +99,7 @@ PLAYWRITER = "playwriter@0.12.0"
 AGENT_DESKTOP = "agent-desktop@1.3.1"
 # team-toon-tack: the ttt CLI, the managing-linear-tasks skill and the /ttt-* prompts (resources.py). Pinned like every other
 # package, since an unattended computer runs it in the account that holds a person's Linear key.
-TEAM_TOON_TACK = "team-toon-tack@3.16.0"
+TEAM_TOON_TACK = "team-toon-tack@3.17.0"
 # The statechart skill (MIT, Lauren Tan's pstack in cursor/plugins) and the TLC jar it runs, both fetched at a fixed
 # revision or checksum (scripts/pi_root/resources.py). The skill's own runner would install Java and the jar through mise;
 # the installer fetches the jar itself and the installed wrapper points the runner at it, so mise is not needed.
