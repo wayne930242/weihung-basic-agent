@@ -19,6 +19,8 @@ type Level = "low" | "medium" | "high" | "xhigh";
 
 export const CLASSIFY_TIMEOUT_MS = 4000;
 const STATUS_KEY = "auto-thinking";
+const TYPESAFE_BASE_URL = "https://api.typesafe.ai";
+const TIMEOUT_MESSAGE = "TypeSafe classification timed out";
 
 // Question copied from oh-my-pi prompts/judge/auto-thinking.json (`level`, without `max`).
 export const LEVEL_QUESTION = {
@@ -85,34 +87,74 @@ export function preprocessPrompt(message: string): string {
 /** The turn to classify: the user's request, or a delegator's solution-space description. */
 export type DifficultyInput = { request: string } | { solutionSpace: string };
 
-export type Classifier = (input: DifficultyInput, signal: AbortSignal) => Promise<Level>;
+export type Classifier = (input: DifficultyInput, signal: AbortSignal, ctx: ExtensionContext) => Promise<Level>;
+
+async function lookupTypeSafeKey(ctx: ExtensionContext, signal: AbortSignal): Promise<string | undefined> {
+	let onAbort!: () => void;
+	const deadline = new Promise<never>((_resolve, reject) => {
+		onAbort = () => reject(new Error(TIMEOUT_MESSAGE));
+		signal.addEventListener("abort", onAbort, { once: true });
+	});
+	// The registry has no cancellation argument. Observe late rejections without waiting for them.
+	const lookup = Promise.resolve().then(() => {
+		signal.throwIfAborted();
+		return ctx.modelRegistry.getApiKeyForProvider("typesafe");
+	});
+	try {
+		return await Promise.race([deadline, lookup]);
+	} catch {
+		throw new Error(signal.aborted ? TIMEOUT_MESSAGE : "TypeSafe credential lookup failed");
+	} finally {
+		signal.removeEventListener("abort", onAbort);
+	}
+}
 
 /**
  * One TypeSafe System One request, the call `@typesafe-ai/sdk` makes for `client.systemOne`.
  * Called through fetch because pi does not install dependencies for local packages.
  */
 export function jevClassifier(): Classifier {
-	return async (input, signal) => {
+	return async (input, signal, ctx) => {
 		const [state, question] =
 			"solutionSpace" in input
 				? [{ solution_space: input.solutionSpace }, SOLUTION_SPACE_QUESTION]
 				: [{ request: input.request }, LEVEL_QUESTION];
-		const apiKey = process.env.TYPESAFE_API_KEY;
-		if (!apiKey) throw new Error("TYPESAFE_API_KEY is not set");
-		const baseUrl = (process.env.TYPESAFE_BASE_URL ?? "https://api.typesafe.ai").replace(/\/+$/, "");
-		const response = await fetch(`${baseUrl}/v1/systemone`, {
-			method: "POST",
-			headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json", Accept: "application/json" },
-			body: JSON.stringify({
-				state,
-				questions: { level: question },
-				model: process.env.TYPESAFE_DEFAULT_MODEL ?? "jev-latest",
-			}),
-			signal,
-		});
-		if (!response.ok) throw new Error(`TypeSafe ${response.status}: ${(await response.text()).slice(0, 200)}`);
-		const choice = ((await response.json()) as { answers?: { level?: { choice?: string } } }).answers?.level?.choice;
-		if (!choice || !(choice in LEVEL_QUESTION.criteria)) throw new Error(`unexpected TypeSafe answer: ${choice}`);
+		const envKey = process.env.TYPESAFE_API_KEY;
+		const baseUrl = (process.env.TYPESAFE_BASE_URL ?? TYPESAFE_BASE_URL).replace(/\/+$/, "");
+		if (!envKey && baseUrl !== TYPESAFE_BASE_URL) {
+			throw new Error("A custom TYPESAFE_BASE_URL requires an explicit TYPESAFE_API_KEY");
+		}
+		const apiKey = envKey || await lookupTypeSafeKey(ctx, signal);
+		if (signal.aborted) throw new Error(TIMEOUT_MESSAGE);
+		if (!apiKey) throw new Error("No TypeSafe credential configured");
+		let response: Response;
+		try {
+			response = await fetch(`${baseUrl}/v1/systemone`, {
+				method: "POST",
+				redirect: "error",
+				headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json", Accept: "application/json" },
+				body: JSON.stringify({
+					state,
+					questions: { level: question },
+					model: process.env.TYPESAFE_DEFAULT_MODEL ?? "jev-latest",
+				}),
+				signal,
+			});
+		} catch {
+			throw new Error(signal.aborted ? TIMEOUT_MESSAGE : "TypeSafe request failed");
+		}
+		if (!response.ok) throw new Error(`TypeSafe HTTP ${response.status}`);
+		// Response bodies and parser errors can echo request details; report only fixed messages.
+		let result: { answers?: { level?: { choice?: unknown } } } | null;
+		try {
+			result = await response.json();
+		} catch {
+			throw new Error("Invalid TypeSafe response");
+		}
+		const choice = result?.answers?.level?.choice;
+		if (typeof choice !== "string" || !Object.hasOwn(LEVEL_QUESTION.criteria, choice)) {
+			throw new Error("Unexpected TypeSafe answer");
+		}
 		return choice as Level;
 	};
 }
@@ -130,7 +172,7 @@ function registerChild(pi: ExtensionAPI, classify: Classifier, solutionSpace: st
 		classified = true;
 		const signal = AbortSignal.timeout(CLASSIFY_TIMEOUT_MS);
 		try {
-			const level = await classify({ solutionSpace: preprocessPrompt(solutionSpace) }, signal);
+			const level = await classify({ solutionSpace: preprocessPrompt(solutionSpace) }, signal, ctx);
 			pi.setThinkingLevel(level);
 			ctx.ui.setStatus(STATUS_KEY, `auto:${pi.getThinkingLevel()}`);
 		} catch (error) {
@@ -172,7 +214,7 @@ export function createAutoThinking(classify: Classifier, child: ChildContext) {
 			const controller = new AbortController();
 			const timer = setTimeout(() => controller.abort(), CLASSIFY_TIMEOUT_MS);
 			try {
-				apply(ctx, await classify({ request: preprocessPrompt(event.prompt) }, controller.signal), "");
+				apply(ctx, await classify({ request: preprocessPrompt(event.prompt) }, controller.signal, ctx), "");
 			} catch (error) {
 				const reason = error instanceof Error ? error.message : String(error);
 				if (lastResolved) apply(ctx, lastResolved, " (kept)");
