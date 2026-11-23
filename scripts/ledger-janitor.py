@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """Plan or apply conservative cleanup of local worktrees and scratch files."""
 
+from __future__ import annotations
+
 import argparse
+from collections.abc import Iterator
 from datetime import datetime
 from itertools import chain
 import json
@@ -11,39 +14,41 @@ import stat
 import subprocess
 import tempfile
 import time
+from typing import Any
 
 DAY = 86400
+Row = dict[str, Any]
 
 
-def run(*argv, cwd=None):
+def run(*argv: str, cwd: Path | None = None) -> subprocess.CompletedProcess[bytes]:
     return subprocess.run(argv, cwd=cwd, capture_output=True, timeout=60,
                           env={**os.environ, "GIT_OPTIONAL_LOCKS": "0"})
 
 
-def git(path, *argv):
+def git(path: Path, *argv: str) -> subprocess.CompletedProcess[bytes]:
     return run("git", *argv, cwd=path)
 
 
-def text(result):
+def text(result: subprocess.CompletedProcess[bytes]) -> str:
     return os.fsdecode(result.stdout).strip()
 
 
-def raise_walk_error(error):
+def raise_walk_error(error: OSError) -> None:
     raise error
 
 
-def files_under(root):
+def files_under(root: Path) -> Iterator[Path]:
     for directory, dirs, files in os.walk(root, onerror=raise_walk_error):
         for name in [*dirs, *files]:
             yield Path(directory) / name
 
 
-def folders(root):
+def folders(root: Path) -> Iterator[Path]:
     if root.exists() and not root.is_symlink():
         yield from (path for path in sorted(root.iterdir()) if not path.is_symlink() and path.is_dir())
 
 
-def default_ref(path):
+def default_ref(path: Path) -> str | None:
     remote = git(path, "symbolic-ref", "-q", "refs/remotes/origin/HEAD")
     if remote.returncode == 0:
         return text(remote)
@@ -54,7 +59,7 @@ def default_ref(path):
     return refs[0] if len(refs) == 1 else None
 
 
-def panes():
+def panes() -> list[Row]:
     try:
         result = run("herdr", "pane", "list")
         return json.loads(result.stdout)["result"]["panes"] if result.returncode == 0 else []
@@ -62,11 +67,11 @@ def panes():
         return []
 
 
-def inside(path, root):
+def inside(path: Path, root: Path) -> bool:
     return path == root or root in path.parents
 
 
-def worktree_reason(path, pane_rows, now):
+def worktree_reason(path: Path, pane_rows: list[Row], now: float) -> str | None:
     if not stat.S_ISREG((path / ".git").lstat().st_mode):
         return "not a linked worktree"
     top = git(path, "rev-parse", "--show-toplevel")
@@ -103,11 +108,11 @@ def worktree_reason(path, pane_rows, now):
     return None
 
 
-def row(repo, path, reason, owner_hint=None, **extra):
+def row(repo: str | None, path: Path, reason: str, owner_hint: str | None = None, **extra: Any) -> Row:
     return dict(repo=repo, path=str(path), reason=reason, owner_hint=owner_hint, **extra)
 
 
-def worktrees(root, now, apply, actions, left):
+def worktrees(root: Path, now: float, apply: bool, actions: list[Row], left: list[Row]) -> None:
     pane_rows = panes()
     seen = set()
     for pane in pane_rows:
@@ -148,7 +153,7 @@ def worktrees(root, now, apply, actions, left):
                 left.append(row(repo.name, path, f"worktree check or action failed: {error}", owner))
 
 
-def references(agent, names, now):
+def references(agent: Path, names: set[str], now: float) -> set[str]:
     aliases = {(alias, name) for name in names
                for alias in (os.fsencode(name), json.dumps(name)[1:-1].encode())}
     if not aliases:
@@ -181,7 +186,8 @@ def references(agent, names, now):
     return found
 
 
-def scratch_files(projects, agent, now, apply, actions, left):
+def scratch_files(projects: Path, agent: Path, now: float, apply: bool,
+                  actions: list[Row], left: list[Row]) -> None:
     candidates = []
     for repo in folders(projects):
         scratch = repo / "scratch"
@@ -231,7 +237,7 @@ def scratch_files(projects, agent, now, apply, actions, left):
             left.append(row(repo.name, path, f"archive blocked: {error}"))
 
 
-def report(result):
+def report(result: Row) -> str:
     lines = [f"# Ledger janitor ({result['mode']})", ""]
     for key in ("actions", "left"):
         lines.extend([f"## {key.title()} ({len(result[key])})", ""])
@@ -242,7 +248,7 @@ def report(result):
     return "\n".join(lines)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--dry-run", action="store_true", help="show the plan without changing files (default)")

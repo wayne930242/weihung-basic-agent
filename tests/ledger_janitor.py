@@ -15,7 +15,7 @@ SCRIPT = Path(__file__).resolve().parents[1] / "scripts/ledger-janitor.py"
 
 @unittest.skipUnless(shutil.which("lsof"), "requires lsof")
 class JanitorTests(unittest.TestCase):
-    def test_plan_and_apply(self):
+    def test_plan_and_apply(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             home = Path(directory).resolve()
             env = {**os.environ, "HOME": str(home), "GIT_CONFIG_NOSYSTEM": "1"}
@@ -31,10 +31,10 @@ class JanitorTests(unittest.TestCase):
             repo = home / "projects/example"
             repo.mkdir(parents=True)
 
-            def git(*args, cwd=repo):
+            def git(*args: str, cwd: Path = repo) -> str:
                 return subprocess.check_output(["git", *args], cwd=cwd, env=env, text=True)
 
-            def run(*args):
+            def run(*args: str) -> dict:
                 return json.loads(subprocess.check_output(
                     [sys.executable, str(SCRIPT), "--json", *args], env=env, text=True, cwd=home))
 

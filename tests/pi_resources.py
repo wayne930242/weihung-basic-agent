@@ -13,7 +13,7 @@ from pi_root import jsonfile, paths, resources
 
 
 class ResourceTests(unittest.TestCase):
-    def test_ledger_janitor_installs_an_executable_and_uninstalls(self):
+    def test_ledger_janitor_installs_an_executable_and_uninstalls(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             home = Path(directory)
             state = {}
