@@ -80,7 +80,13 @@ def managed_resource(home: Path, state: State, destination: Path, source: Path |
     write_json(home / MARKER, state)
 
 
+def install_ledger_janitor(home: Path, state: State, force: bool) -> None:
+    source = Path(__file__).resolve().parents[1] / "ledger-janitor.py"
+    managed_resource(home, state, home / ".local/bin/ledger-janitor", source, force, link=True)
+
+
 def install_ported_resources(home: Path, state: State, force: bool) -> None:
+    install_ledger_janitor(home, state, force)
     install_ttt(home, state, force)
     install_pi_skills(home, state, force)
     install_statechart(home, state, force)

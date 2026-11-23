@@ -13,6 +13,17 @@ from pi_root import jsonfile, paths, resources
 
 
 class ResourceTests(unittest.TestCase):
+    def test_ledger_janitor_installs_an_executable_and_uninstalls(self):
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            state = {}
+            resources.install_ledger_janitor(home, state, False)
+            cli = home / ".local/bin/ledger-janitor"
+            self.assertTrue(cli.is_symlink())
+            self.assertTrue(cli.resolve().stat().st_mode & 0o100)
+            resources.uninstall_ported_resources(home, state)
+            self.assertFalse(cli.is_symlink())
+
     def test_backup_survives_a_failed_link_and_is_restored(self):
         with tempfile.TemporaryDirectory() as directory:
             home = Path(directory)
