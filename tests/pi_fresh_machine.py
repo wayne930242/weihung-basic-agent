@@ -106,7 +106,9 @@ esac
     assert not (agent / "alpha.json").exists()
     assert "beta not found" in result.stderr, result.stderr
     assert f"install {ANCHORLOOP_PACKAGE}" in calls.read_text().splitlines()
-    assert ANCHORLOOP_PACKAGE in json.loads((agent / "settings.json").read_text())["packages"]
+    installed = json.loads((agent / "settings.json").read_text())["packages"]
+    assert {"source": ANCHORLOOP_PACKAGE, "extensions": ["-pi/ttsr.ts"]} in installed
+    assert ANCHORLOOP_PACKAGE not in installed
     assert f"install {STRAW_BOSS}" in calls.read_text().splitlines()
     assert STRAW_BOSS in json.loads((agent / "settings.json").read_text())["packages"]
     assert "install -g playwriter@0.12.0" in npm_calls.read_text().splitlines()

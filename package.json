@@ -11,7 +11,8 @@
       "./pi/extensions/last-reply.ts",
       "./pi/extensions/monitor-hold.ts",
       "./pi/extensions/playwriter-relay.ts",
-      "./pi/extensions/quota-resume.ts"
+      "./pi/extensions/quota-resume.ts",
+      "./pi/extensions/ttsr.ts"
     ]
   },
   "devDependencies": {

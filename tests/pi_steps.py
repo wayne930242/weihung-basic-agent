@@ -41,7 +41,7 @@ class StepTests(unittest.TestCase):
             for rule in (ROOT / "rules").glob("*.md"):
                 text = rule.read_text()
                 if text.startswith("---"):
-                    # Stream rules are enforced by anchorloop's TTSR extension, not read from the index.
+                    # Basic's TTSR extension enforces stream rules directly from their files.
                     self.assertIn("\ncondition:", text.split("\n---", 1)[0], rule.name)
                     continue
                 self.assertIn(f"`{rule.name}`", instructions)

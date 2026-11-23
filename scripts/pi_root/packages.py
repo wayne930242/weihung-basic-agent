@@ -134,6 +134,16 @@ def local_packages(state: State) -> list[Package]:
     return [state.get("anchorloop", ANCHORLOOP_PACKAGE), LOCAL_PACKAGE, *(state[key] for key in plugin_keys(state) if state.get(key))]
 
 
+def without_upstream_ttsr(package: Package) -> Package:
+    """Load TTSR only from basic, including when anchorloop still ships its own copy."""
+    entry = package if isinstance(package, dict) else {"source": package}
+    extensions = entry.get("extensions")
+    exclusion = "-pi/ttsr.ts"
+    if extensions == [] or (extensions and exclusion in extensions):
+        return entry
+    return {**entry, "extensions": [*(extensions or []), exclusion]}
+
+
 def plan(ctx: Context) -> None:
     """Record which package sources this run uses and what settings held before the first install."""
     state = ctx.state
@@ -285,6 +295,8 @@ def apply(ctx: Context) -> None:
     declared = [source if package_source(source).startswith(("npm:", "git:")) else
                 next((value for value in current if package_id(value, agent_dir) == package_id(source, agent_dir)), source)
                 for source in owned]
+    anchorloop_id = package_id(state["anchorloop"], agent_dir)
+    declared = [without_upstream_ttsr(value) if package_id(value, agent_dir) == anchorloop_id else value for value in declared]
     gone_ids = {package_id(value, agent_dir) for value in ctx.gone_plugins}
     settings["packages"] = [value for value in unique_packages(unmanaged + declared, agent_dir)
                             if package_id(value, agent_dir) not in gone_ids]

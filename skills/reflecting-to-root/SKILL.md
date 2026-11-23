@@ -24,7 +24,7 @@ repeated one is the strongest evidence.
   code/configuration.
 
 Choose the most enforceable surface that fits, because nothing fails when an
-agent skips prose: a stream rule for a mistake visible in one command (its
+agent skips prose: a stream rule enforced by basic's TTSR extension for a mistake visible in one command (its
 `blocks` fixture is the recorded mistake, which `tests/stream-rules.mjs` proves
 the rule stops), a script or test for a checkable fact, then a prose instruction, agent,
 skill, or project documentation for judgment calls. Update an existing source of

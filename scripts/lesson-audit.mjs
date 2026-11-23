@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 // Pairs each failure or correction lesson in pi memory with the stream rule that enforces it,
-// and lists the lessons that still live only as prose. Rules load through anchorloop's own TTSR
+// and lists the lessons that still live only as prose. Rules load through basic's own TTSR
 // parser, so this sees them exactly as the running extension does.
 //
 // Usage: node scripts/lesson-audit.mjs [--memory <dir>] [--rules <dir>]
 
-import { copyFileSync, existsSync, mkdtempSync, readdirSync, readFileSync } from "node:fs";
-import { homedir, tmpdir } from "node:os";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import * as ttsr from "../pi/extensions/ttsr.ts";
 
 const ROOT = resolve(fileURLToPath(import.meta.url), "../..");
 const LESSON_CATEGORIES = new Set(["failure", "correction"]);
@@ -18,22 +19,8 @@ function agentDir() {
   return value ? value.replace(/^~(?=$|\/)/, homedir()) : join(homedir(), ".pi", "agent");
 }
 
-/** anchorloop's ttsr.ts: the checkout PI_ANCHORLOOP_ROOT names, as the installer uses, else the installed package. */
-export function ttsrPath() {
-  const override = process.env.PI_ANCHORLOOP_ROOT;
-  const root = override ? resolve(override.replace(/^~(?=$|\/)/, homedir())) : join(agentDir(), "npm/node_modules/pi-anchorloop");
-  const path = join(root, "pi/ttsr.ts");
-  if (!existsSync(path)) throw new Error(`anchorloop ttsr.ts not found at ${path}; install anchorloop or set PI_ANCHORLOOP_ROOT to a checkout`);
-  return path;
-}
-
 /** Every stream rule in `dir`, built by TTSR, with its `blocks` and `allows` fixtures. */
-export async function loadStreamRules(dir = join(ROOT, "rules")) {
-  // Node refuses to strip types under node_modules, where the installed package lives; ttsr.ts has only type imports,
-  // so a copy outside it loads the same code.
-  const copy = join(mkdtempSync(join(tmpdir(), "ttsr-")), "ttsr.ts");
-  copyFileSync(ttsrPath(), copy);
-  const ttsr = await import(pathToFileURL(copy).href);
+export function loadStreamRules(dir = join(ROOT, "rules")) {
   const rules = [];
   for (const file of readdirSync(dir).filter((name) => name.endsWith(".md")).sort()) {
     const path = join(dir, file);
@@ -45,12 +32,7 @@ export async function loadStreamRules(dir = join(ROOT, "rules")) {
     const list = (key) => [parsed.data[key] ?? []].flat();
     rules.push({ name: file.replace(/\.md$/, ""), rule, warnings, blocks: list("blocks"), allows: list("allows"), lessons: list("lesson") });
   }
-  return { ttsr, rules };
-}
-
-/** True when TTSR would stop `command` as a bash call under this rule. */
-export function blocksBash(ttsr, rule, command) {
-  return new ttsr.TtsrManager([rule]).check(command, { source: "tool", toolName: "bash", filePaths: [] }).length > 0;
+  return rules;
 }
 
 /** `- [failure] text` and `- HH:MM [correction] text` entries from MEMORY.md and the daily logs. */
@@ -93,9 +75,9 @@ function clip(text, width) {
   return text.length > width ? `${text.slice(0, width - 1)}…` : text;
 }
 
-async function main(argv) {
+function main(argv) {
   const option = (flag) => { const index = argv.indexOf(flag); return index >= 0 ? argv[index + 1] : undefined; };
-  const { rules } = await loadStreamRules(option("--rules"));
+  const rules = loadStreamRules(option("--rules"));
   const lessons = readLessons(option("--memory"));
   const { covered, mentions, prose } = audit(rules, lessons);
   console.log("Stream rule | blocks/allows fixtures | lessons it enforces (`lesson` keys) | prose lessons that mention it");
@@ -110,4 +92,4 @@ async function main(argv) {
   for (const lesson of prose) console.log(`- [${lesson.category}] ${clip(lesson.text, 140)}`);
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) await main(process.argv.slice(2));
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main(process.argv.slice(2));
