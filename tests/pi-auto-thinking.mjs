@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
-import { createAutoThinking, preprocessPrompt } from "../pi/extensions/auto-thinking.ts";
+import { createAutoThinking, jevClassifier, preprocessPrompt, typesafeApiKey } from "../pi/extensions/auto-thinking.ts";
 
 function harness(classify, { isSubagent = false, solutionSpace } = {}) {
   const handlers = new Map();
@@ -48,14 +51,14 @@ test("failure keeps the last classified level and warns", async () => {
   h.state.level = "low";
   await h.prompt("rename a constant");
   assert.equal(h.state.level, "high");
-  assert.match(h.state.notices.at(-1).message, /kept high: timeout/);
+  assert.match(h.state.notices.at(-1).message, /kept high: TypeSafe classification failed/);
 });
 
 test("failure before any classification leaves the level unchanged", async () => {
   const h = harness(async () => { throw new Error("no key"); });
   await h.prompt("anything");
   assert.equal(h.state.level, "medium");
-  assert.match(h.state.notices.at(-1).message, /level unchanged: no key/);
+  assert.match(h.state.notices.at(-1).message, /level unchanged: TypeSafe classification failed/);
 });
 
 test("a run started by a custom message keeps the level without classifying", async () => {
@@ -104,7 +107,7 @@ test("a failed solution space classification keeps the dispatcher's level", asyn
   const h = harness(async () => { throw new Error("no key"); }, { isSubagent: true, solutionSpace: "Open cause." });
   await h.prompt("task");
   assert.equal(h.state.level, "medium");
-  assert.match(h.state.notices.at(-1).message, /level unchanged: no key/);
+  assert.match(h.state.notices.at(-1).message, /level unchanged: TypeSafe classification failed/);
 });
 
 test("prompt cleanup strips code, tags, hashes and bounds length", () => {
@@ -112,3 +115,122 @@ test("prompt cleanup strips code, tags, hashes and bounds length", () => {
   assert.equal(cleaned, "fix bug in 0123456 \n \nplease");
   assert.ok(preprocessPrompt("x".repeat(10_000)).length <= 2000);
 });
+
+function jevEnvFile(text) {
+  const configHome = mkdtempSync(join(tmpdir(), "auto-thinking-"));
+  mkdirSync(join(configHome, "pi-jev-compaction"));
+  writeFileSync(join(configHome, "pi-jev-compaction", "env"), text);
+  return configHome;
+}
+
+test("the API key comes from the environment before pi-jev-compaction's env file", () => {
+  const configHome = jevEnvFile("TYPESAFE_API_KEY=from-file\n");
+  assert.equal(typesafeApiKey({ TYPESAFE_API_KEY: "from-env", XDG_CONFIG_HOME: configHome }), "from-env");
+  assert.equal(typesafeApiKey({ XDG_CONFIG_HOME: configHome }), "from-file");
+});
+
+test("the env file key may be quoted or exported, and other lines are ignored", () => {
+  assert.equal(typesafeApiKey({ XDG_CONFIG_HOME: jevEnvFile("# key\nOTHER=x\nTYPESAFE_API_KEY=\"q v\"\n") }), "q v");
+  assert.equal(typesafeApiKey({ XDG_CONFIG_HOME: jevEnvFile("export TYPESAFE_API_KEY='s'\n") }), "s");
+  assert.equal(typesafeApiKey({ XDG_CONFIG_HOME: jevEnvFile("OTHER=x\n") }), undefined);
+  assert.equal(typesafeApiKey({ XDG_CONFIG_HOME: join(tmpdir(), "no-such-auto-thinking-dir") }), undefined);
+});
+
+const fakeKey = "fixture-key";
+const fakePrompt = "fixture prompt must not appear in warnings";
+const official = "https://api.typesafe.ai";
+const custom = "https://custom.invalid";
+const conflict = /TYPESAFE_BASE_URL requires an explicit TYPESAFE_API_KEY/;
+
+function mockJev(t, baseUrl, apiKey, fetchStub) {
+  const config = { TYPESAFE_BASE_URL: baseUrl, TYPESAFE_API_KEY: apiKey,
+    XDG_CONFIG_HOME: jevEnvFile(`TYPESAFE_API_KEY=${fakeKey}\n`) };
+  for (const [key, value] of Object.entries(config)) {
+    const previous = process.env[key];
+    const set = (entry) => { if (entry === undefined) delete process.env[key]; else process.env[key] = entry; };
+    t.after(() => set(previous));
+    set(value);
+  }
+  return t.mock.method(globalThis, "fetch", fetchStub);
+}
+
+const workingResponse = () => Response.json({ answers: { level: { choice: "high" } } });
+const mainHarness = () => harness(jevClassifier());
+const childHarness = () => harness(jevClassifier(), { isSubagent: true, solutionSpace: fakePrompt });
+
+test("endpoint conflict is rejected before looking up the file path", () => {
+  let lookedUpPath = false;
+  const env = { TYPESAFE_BASE_URL: custom,
+    get XDG_CONFIG_HOME() { lookedUpPath = true; return tmpdir(); } };
+  assert.throws(() => typesafeApiKey(env), conflict);
+  assert.equal(lookedUpPath, false);
+});
+
+test("a file key with a custom endpoint makes no fetch from either handler", async (t) => {
+  const fetch = mockJev(t, custom, undefined, workingResponse);
+  const handlers = [mainHarness(), childHarness()];
+  for (const h of handlers) await h.prompt(fakePrompt);
+  assert.equal(fetch.mock.callCount(), 0);
+  for (const h of handlers) {
+    assert.equal(h.state.level, "medium");
+    assert.match(h.state.notices[0].message, conflict);
+  }
+});
+
+for (const [label, baseUrl, apiKey, expectedUrl, expectedKey] of [
+  ["default official endpoint with file key", undefined, undefined, official, fakeKey],
+  ["explicit official endpoint with trailing slashes and file key", `${official}//`, undefined, official, fakeKey],
+  ["custom endpoint with explicit env key", custom, "fixture-env-key", custom, "fixture-env-key"],
+]) {
+  test(label, async (t) => {
+    const fetch = mockJev(t, baseUrl, apiKey, workingResponse);
+    const h = mainHarness();
+    await h.prompt(fakePrompt);
+    assert.equal(fetch.mock.callCount(), 1);
+    const [url, init] = fetch.mock.calls[0].arguments;
+    assert.equal(url, `${expectedUrl}/v1/systemone`);
+    assert.equal(init.headers.Authorization, `Bearer ${expectedKey}`);
+    assert.equal(h.state.level, "high");
+    assert.equal(h.state.notices.length, 0);
+  });
+}
+
+for (const [label, baseUrl, apiKey, makeHarness] of [
+  ["official file-key", undefined, undefined, mainHarness],
+  ["custom env-key", custom, "fixture-env-key", childHarness],
+]) {
+  test(`${label} request rejects redirects`, async (t) => {
+    const fetch = mockJev(t, baseUrl, apiKey, (_url, init) => {
+      if (init.redirect === "error") throw new TypeError("redirect mode is set to error");
+      return workingResponse();
+    });
+    const h = makeHarness();
+    await h.prompt(fakePrompt);
+    assert.equal(fetch.mock.calls[0].arguments[1].redirect, "error");
+    assert.equal(h.state.level, "medium");
+  });
+}
+
+const echoed = `${fakeKey} ${fakePrompt}`;
+for (const [label, fetchStub, reason] of [
+  ["transport exception", () => { throw new TypeError(echoed); }, "TypeSafe request failed"],
+  ["HTTP error body", () => new Response(echoed, { status: 401 }), "TypeSafe HTTP 401"],
+  ["JSON parsing error", () => new Response(echoed), "Invalid TypeSafe response"],
+  ["unexpected choice", () => Response.json({ answers: { level: { choice: echoed } } }), "Unexpected TypeSafe answer"],
+  ["inherited choice", () => Response.json({ answers: { level: { choice: "constructor" } } }), "Unexpected TypeSafe answer"],
+]) {
+  test(`both warnings sanitize ${label}`, async (t) => {
+    const fetch = mockJev(t, undefined, undefined, fetchStub);
+    const handlers = [mainHarness(), childHarness()];
+    for (const h of handlers) await h.prompt(fakePrompt);
+    assert.equal(fetch.mock.callCount(), 2);
+    for (const h of handlers) {
+      assert.equal(h.state.level, "medium");
+      assert.equal(h.state.notices.length, 1);
+      const [{ message, level }] = h.state.notices;
+      assert.equal(level, "warning");
+      assert.equal(message.split(": ").at(-1), reason);
+      assert.ok(!message.includes(fakeKey) && !message.includes(fakePrompt));
+    }
+  });
+}

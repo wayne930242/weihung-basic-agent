@@ -13,12 +13,27 @@
  * it keeps the level its dispatcher chose.
  */
 
+import { readFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 
 type Level = "low" | "medium" | "high" | "xhigh";
 
 export const CLASSIFY_TIMEOUT_MS = 4000;
 const STATUS_KEY = "auto-thinking";
+const TYPESAFE_BASE_URL = "https://api.typesafe.ai";
+
+// Only locally authored diagnostics may reach either handler's warning.
+class ClassificationError extends Error {}
+
+function classificationWarning(error: unknown): string {
+	return error instanceof ClassificationError ? error.message : "TypeSafe classification failed";
+}
+
+function typesafeBaseUrl(env: NodeJS.ProcessEnv): string {
+	return (env.TYPESAFE_BASE_URL ?? TYPESAFE_BASE_URL).replace(/\/+$/, "");
+}
 
 // Question copied from oh-my-pi prompts/judge/auto-thinking.json (`level`, without `max`).
 export const LEVEL_QUESTION = {
@@ -82,6 +97,33 @@ export function preprocessPrompt(message: string): string {
 	return truncate(collapseWhitespace(cleaned));
 }
 
+/**
+ * The TypeSafe API key: TYPESAFE_API_KEY from the environment, else the same key in
+ * pi-jev-compaction's env file (`$XDG_CONFIG_HOME/pi-jev-compaction/env`, default
+ * `~/.config`). The fallback is available only for the official TypeSafe endpoint.
+ */
+export function typesafeApiKey(env: NodeJS.ProcessEnv = process.env): string | undefined {
+	if (env.TYPESAFE_API_KEY) return env.TYPESAFE_API_KEY;
+	if (typesafeBaseUrl(env) !== TYPESAFE_BASE_URL) {
+		throw new ClassificationError("A custom TYPESAFE_BASE_URL requires an explicit TYPESAFE_API_KEY");
+	}
+	let text: string;
+	try {
+		text = readFileSync(join(env.XDG_CONFIG_HOME || join(homedir(), ".config"), "pi-jev-compaction", "env"), "utf8");
+	} catch {
+		return undefined;
+	}
+	let key: string | undefined;
+	for (const raw of text.split(/\r?\n/)) {
+		const line = raw.trim().replace(/^export\s+/, "");
+		const eq = line.indexOf("=");
+		if (line.startsWith("#") || eq <= 0 || line.slice(0, eq).trim() !== "TYPESAFE_API_KEY") continue;
+		const value = line.slice(eq + 1).trim().replace(/^(["'])(.*)\1$/, "$2").trim();
+		if (value) key = value;
+	}
+	return key;
+}
+
 /** The turn to classify: the user's request, or a delegator's solution-space description. */
 export type DifficultyInput = { request: string } | { solutionSpace: string };
 
@@ -97,22 +139,36 @@ export function jevClassifier(): Classifier {
 			"solutionSpace" in input
 				? [{ solution_space: input.solutionSpace }, SOLUTION_SPACE_QUESTION]
 				: [{ request: input.request }, LEVEL_QUESTION];
-		const apiKey = process.env.TYPESAFE_API_KEY;
-		if (!apiKey) throw new Error("TYPESAFE_API_KEY is not set");
-		const baseUrl = (process.env.TYPESAFE_BASE_URL ?? "https://api.typesafe.ai").replace(/\/+$/, "");
-		const response = await fetch(`${baseUrl}/v1/systemone`, {
-			method: "POST",
-			headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json", Accept: "application/json" },
-			body: JSON.stringify({
-				state,
-				questions: { level: question },
-				model: process.env.TYPESAFE_DEFAULT_MODEL ?? "jev-latest",
-			}),
-			signal,
-		});
-		if (!response.ok) throw new Error(`TypeSafe ${response.status}: ${(await response.text()).slice(0, 200)}`);
-		const choice = ((await response.json()) as { answers?: { level?: { choice?: string } } }).answers?.level?.choice;
-		if (!choice || !(choice in LEVEL_QUESTION.criteria)) throw new Error(`unexpected TypeSafe answer: ${choice}`);
+		const apiKey = typesafeApiKey();
+		if (!apiKey) throw new ClassificationError("TYPESAFE_API_KEY is not set (environment or pi-jev-compaction env file)");
+		const baseUrl = typesafeBaseUrl(process.env);
+		let response: Response;
+		try {
+			response = await fetch(`${baseUrl}/v1/systemone`, {
+				method: "POST",
+				redirect: "error",
+				headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json", Accept: "application/json" },
+				body: JSON.stringify({
+					state,
+					questions: { level: question },
+					model: process.env.TYPESAFE_DEFAULT_MODEL ?? "jev-latest",
+				}),
+				signal,
+			});
+		} catch {
+			throw new ClassificationError(signal.aborted ? "TypeSafe request timed out" : "TypeSafe request failed");
+		}
+		if (!response.ok) throw new ClassificationError(`TypeSafe HTTP ${response.status}`);
+		let result: { answers?: { level?: { choice?: unknown } } } | null;
+		try {
+			result = await response.json();
+		} catch {
+			throw new ClassificationError(signal.aborted ? "TypeSafe request timed out" : "Invalid TypeSafe response");
+		}
+		const choice = result?.answers?.level?.choice;
+		if (typeof choice !== "string" || !Object.hasOwn(LEVEL_QUESTION.criteria, choice)) {
+			throw new ClassificationError("Unexpected TypeSafe answer");
+		}
 		return choice as Level;
 	};
 }
@@ -134,7 +190,7 @@ function registerChild(pi: ExtensionAPI, classify: Classifier, solutionSpace: st
 			pi.setThinkingLevel(level);
 			ctx.ui.setStatus(STATUS_KEY, `auto:${pi.getThinkingLevel()}`);
 		} catch (error) {
-			const reason = error instanceof Error ? error.message : String(error);
+			const reason = classificationWarning(error);
 			ctx.ui.notify(`auto-thinking: solution space classification failed, level unchanged: ${reason}`, "warning");
 		}
 	});
@@ -174,7 +230,7 @@ export function createAutoThinking(classify: Classifier, child: ChildContext) {
 			try {
 				apply(ctx, await classify({ request: preprocessPrompt(event.prompt) }, controller.signal), "");
 			} catch (error) {
-				const reason = error instanceof Error ? error.message : String(error);
+				const reason = classificationWarning(error);
 				if (lastResolved) apply(ctx, lastResolved, " (kept)");
 				ctx.ui.notify(`auto-thinking: classification failed, ${lastResolved ? `kept ${lastResolved}` : "level unchanged"}: ${reason}`, "warning");
 			} finally {
