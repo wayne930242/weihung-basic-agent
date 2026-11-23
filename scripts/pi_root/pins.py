@@ -65,7 +65,7 @@ PACKAGES = [
     "npm:pi-jev-compaction@1.0.0",
     # prose_watch: an AI-tone check (Jev) on the prose files a writing task arms.
     "npm:pi-prose-watch@0.1.2",
-    "npm:cc-safety-net@2.8.2",
+    "npm:cc-safety-net@2.8.3",
     "npm:pi-codex-image-gen@0.3.2",
     "npm:pi-robot-hand@0.8.1",
     "npm:pi-auto-tab-name@0.2.0",
@@ -88,7 +88,7 @@ PACKAGES = [
 # panes agents leave in worktree workspaces, removes their clean checkouts, and keeps pinned workspaces (prefix+P).
 HERDR_PLUGINS = (
     ("wayne930242.straw-boss", "wayne930242/pi-straw-boss/herdr-plugin", "v0.50.0", "straw_boss_plugin_preinstalled"),
-    ("wayne930242.straw-boss-reaper", "wayne930242/pi-straw-boss/herdr-reaper", "v0.80.13", "reaper_plugin_preinstalled"),
+    ("wayne930242.straw-boss-reaper", "wayne930242/pi-straw-boss/herdr-reaper", "v0.84.0", "reaper_plugin_preinstalled"),
 )
 # The Playwriter CLI drives the user's own Chrome through its extension; playwriter-relay.ts starts its relay.
 PLAYWRITER = "playwriter@0.12.0"
