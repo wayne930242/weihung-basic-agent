@@ -77,7 +77,7 @@ PACKAGES = [
     "npm:pi-loop-monitor@0.2.8",
     # /doctor: profiles main-thread stalls and asks long, strained mains to rotate through a handoff file.
     "npm:pi-session-doctor@0.1.0",
-    "npm:@narumitw/pi-goal@0.55.3",
+    "npm:@narumitw/pi-goal@0.55.4",
     # Antigravity (agy) Google login: /login antigravity, plus the google_search and generate_image tools.
     ANTIGRAVITY_SOURCE,
     CLAUDE_RULES_PACKAGE,
