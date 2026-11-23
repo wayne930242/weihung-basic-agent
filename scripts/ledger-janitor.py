@@ -7,7 +7,6 @@ from itertools import chain
 import json
 import os
 from pathlib import Path
-import re
 import stat
 import subprocess
 import tempfile
@@ -150,12 +149,13 @@ def worktrees(root, now, apply, actions, left):
 
 
 def references(agent, names, now):
-    aliases = {os.fsencode(name): name for name in names}
-    aliases.update({json.dumps(name)[1:-1].encode(): name for name in names})
+    aliases = {(alias, name) for name in names
+               for alias in (os.fsencode(name), json.dumps(name)[1:-1].encode())}
     if not aliases:
         return set()
-    # Prefilter lines, then test literals so overlapping names are not lost.
-    pattern = re.compile(b"|".join(map(re.escape, sorted(aliases))))
+    # Bound memory even for large session files, and carry enough bytes to
+    # find a name straddling two chunks. Literal searches also find overlaps.
+    overlap = max(len(alias) for alias, _ in aliases) - 1
     found = set()
     for root, cutoff in ((agent / "straw-boss/board", 0), (agent / "sessions", now - 7 * DAY)):
         if not root.exists():
@@ -166,11 +166,16 @@ def references(agent, names, now):
                 if not stat.S_ISREG(info.st_mode) or info.st_mtime < cutoff:
                     continue
                 with path.open("rb") as source:
-                    for line in source:
-                        if pattern.search(line):
-                            found.update(name for alias, name in aliases.items() if name not in found and alias in line)
-                        if len(found) == len(names):
-                            return found
+                    tail = b""
+                    while chunk := source.read(1024 * 1024):
+                        block = tail + chunk
+                        matches = {name for alias, name in aliases if alias in block}
+                        if matches:
+                            found.update(matches)
+                            aliases = {(alias, name) for alias, name in aliases if name not in matches}
+                            if not aliases:
+                                return found
+                        tail = block[-overlap:] if overlap else b""
             except FileNotFoundError:
                 continue  # Session or board file rotated during the scan.
     return found

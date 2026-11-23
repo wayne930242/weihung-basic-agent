@@ -54,7 +54,7 @@ class JanitorTests(unittest.TestCase):
                 path.touch()
             board = home / ".pi/agent/straw-boss/board"
             board.mkdir(parents=True)
-            (board / "todo.json").write_text("board.md")
+            (board / "todo.json").write_bytes(b" " * (1024 * 1024 - 4) + b"board.md")
             sessions = home / ".pi/agent/sessions"
             sessions.mkdir()
             (sessions / "session.jsonl").write_text("recent.md")
