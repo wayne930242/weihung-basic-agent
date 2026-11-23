@@ -131,7 +131,7 @@ def row(repo: str | None, path: Path, reason: str, owner_hint: str | None = None
     return dict(repo=repo, path=str(path), reason=reason, owner_hint=owner_hint, **extra)
 
 
-def archive_worktree_notes(path: Path, repo: str, projects: Path, apply: bool) -> None:
+def archive_worktree_notes(path: Path, repo: str, apply: bool) -> None:
     notes = git(path, "ls-files", "-z", "--others", "--ignored", "--exclude-standard", "--",
                 "scratch/", ".pi/memory/")
     if notes.returncode:
@@ -141,9 +141,13 @@ def archive_worktree_notes(path: Path, repo: str, projects: Path, apply: bool) -
     branch = git(path, "symbolic-ref", "--short", "HEAD")
     if branch.returncode:
         raise ValueError("cannot identify branch for archive")
-    project = projects / repo
-    if project.is_symlink() or not project.is_dir():
-        raise ValueError(f"project archive root unavailable: {project}")
+    common = git(path, "rev-parse", "--path-format=absolute", "--git-common-dir")
+    if common.returncode or not text(common):
+        raise ValueError("cannot locate common Git directory")
+    git_dir = Path(text(common))
+    project = git_dir.parent
+    if not git_dir.is_absolute() or git_dir.name != ".git" or not project.is_dir():
+        raise ValueError(f"cannot verify primary checkout from Git directory: {git_dir}")
     for entry in notes.stdout.rstrip(b"\0").split(b"\0"):
         relative = Path(os.fsdecode(entry))
         source = path / relative
@@ -166,7 +170,7 @@ def archive_worktree_notes(path: Path, repo: str, projects: Path, apply: bool) -
             os.link(source, destination, follow_symlinks=False)
 
 
-def worktrees(root: Path, projects: Path, now: float, apply: bool, actions: list[Row], left: list[Row],
+def worktrees(root: Path, now: float, apply: bool, actions: list[Row], left: list[Row],
               waiting: dict[str, int]) -> None:
     pane_rows = panes()
     seen = set()
@@ -199,7 +203,7 @@ def worktrees(root: Path, projects: Path, now: float, apply: bool, actions: list
                     left.append(row(repo.name, path, reason, owner))
                     continue
                 try:
-                    archive_worktree_notes(path, repo.name, projects, apply)
+                    archive_worktree_notes(path, repo.name, apply)
                 except (OSError, ValueError, subprocess.TimeoutExpired) as error:
                     left.append(row(repo.name, path, f"ignored notes archive blocked: {error}", owner))
                     continue
@@ -332,7 +336,7 @@ def main() -> None:
     now = time.time()
     actions, left = [], []
     waiting: dict[str, int] = {}
-    worktrees(home / ".herdr/worktrees", home / "projects", now, args.apply, actions, left, waiting)
+    worktrees(home / ".herdr/worktrees", now, args.apply, actions, left, waiting)
     scratch_files(home / "projects", agent, now, args.apply, actions, left, waiting)
     result = dict(mode="apply" if args.apply else "dry-run", actions=actions, left=left, waiting=waiting)
     summary = report(result)

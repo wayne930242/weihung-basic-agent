@@ -28,7 +28,8 @@ class JanitorTests(unittest.TestCase):
             herdr.write_text(f"#!{sys.executable}\nprint({json.dumps(panes)!r})\n")
             herdr.chmod(0o755)
             env["PATH"] = f"{fake_bin}:{env['PATH']}"
-            repo = home / "projects/example"
+            # Herdr's group name need not match the primary checkout directory.
+            repo = home / "projects/primary-checkout"
             repo.mkdir(parents=True)
 
             def git(*args: str, cwd: Path = repo) -> str:
@@ -101,7 +102,7 @@ class JanitorTests(unittest.TestCase):
             for result in (plan, applied):
                 actions = {Path(row["path"]).name for row in result["actions"]}
                 left = {Path(row["path"]).name: row for row in result["left"]}
-                with self.subTest(check="ignored files"):
+                with self.subTest(check="archive root follows Git, not the Herdr group"):
                     self.assertIn("ignored", actions)
                 with self.subTest(check="namespace directories and primary checkout"):
                     self.assertIn("nested", actions)
