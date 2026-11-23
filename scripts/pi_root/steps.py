@@ -36,12 +36,15 @@ STEPS = (
 )
 
 
-def install(home: Path, skip_external: bool, force: bool, herdr_root: str | None = None, profile: str | None = None) -> None:
+def install(home: Path, skip_external: bool, force: bool, herdr_root: str | None = None, profile: str | None = None,
+            *, models_file: Path | None = None, no_models_file: bool = False) -> None:
     marker = home / MARKER
     state = read_json(marker)
     # A run without --profile keeps the recorded one, so the scheduled bare install never reverts an unattended box.
     profile = profile or state.get("profile", unattended.DEFAULT)
-    ctx = Context(home, state, skip_external, force, herdr_root, first_install=not marker.exists(), profile=profile)
+    models_override = configs.load_models_override(state, models_file, no_models_file)
+    ctx = Context(home, state, skip_external, force, herdr_root, first_install=not marker.exists(), profile=profile,
+                  models_override=models_override)
     ctx.state["profile"] = profile
     # The overlay is recorded with the first step's marker save, so a later run without --overlay keeps it.
     if overlay := overlay_root():

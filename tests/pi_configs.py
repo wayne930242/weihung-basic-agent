@@ -4,6 +4,7 @@ import json
 import sys
 import tempfile
 import unittest
+from copy import deepcopy
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
@@ -117,6 +118,10 @@ class ConfigTests(unittest.TestCase):
 class HerdrModelsTests(unittest.TestCase):
     def setUp(self):
         self.repo_models = json.loads((ROOT / "pi/herdr-agents-models.json").read_text())
+        self.unattended_models = json.loads((ROOT / "pi/herdr-agents-models.unattended.json").read_text())
+        self.host_models = deepcopy(self.unattended_models)
+        self.host_models["agents"]["worker"] = "openai-codex/gpt-6.2-astra"
+        self.host_models["tasks"]["coding"] = ["openai-codex/gpt-6.2-astra"]
 
     def test_models_follow_the_repository_file_and_uninstall_restores_the_previous_value(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -164,8 +169,100 @@ class HerdrModelsTests(unittest.TestCase):
             run_script("install.sh", home, "--skip-external", "--force")
             self.assertEqual(json.loads(config.read_text())["models"], self.repo_models)
 
+    def test_models_file_is_remembered_and_does_not_allow_hand_edits(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            config = home / ".pi/agent/herdr-agents/config.json"
+            source = home / "host models.json"
+            source.write_text(json.dumps(self.host_models))
+            run_script("install.sh", home, "--skip-external", "--profile", "unattended", "--models-file", str(source))
+            self.assertEqual(json.loads(config.read_text())["models"], self.host_models)
+            run_script("install.sh", home, "--skip-external")
+            self.assertEqual(json.loads(config.read_text())["models"], self.host_models)
+
+            updated = deepcopy(self.host_models)
+            updated["agents"]["reviewer"] = "user/updated"
+            source.write_text(json.dumps(updated))
+            run_script("install.sh", home, "--skip-external")
+            self.assertEqual(json.loads(config.read_text())["models"], updated, "a bare install re-reads the file")
+
+            edited = json.loads(config.read_text())
+            edited["models"]["agents"]["reviewer"] = "user/edited"
+            config.write_text(json.dumps(edited))
+            failed = run_script("install.sh", home, "--skip-external", check=False)
+            self.assertNotEqual(failed.returncode, 0)
+            self.assertIn(str(source), failed.stderr)
+            self.assertIn("differs from", failed.stderr)
+            self.assertEqual(json.loads(config.read_text()), edited)
+            refused = run_script("install.sh", home, "--skip-external", "--no-models-file", check=False)
+            self.assertNotEqual(refused.returncode, 0, "clearing the override does not bypass edit detection")
+            run_script("install.sh", home, "--skip-external", "--force")
+            self.assertEqual(json.loads(config.read_text())["models"], updated, "a refused clear keeps the remembered path")
+
+    def test_models_file_switch_clear_and_restore(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            config = home / ".pi/agent/herdr-agents/config.json"
+            config.parent.mkdir(parents=True)
+            before = {"models": {"default": "user/model"}, "other": True}
+            config.write_text(json.dumps(before))
+            first = home / "first.json"
+            first.write_text(json.dumps(self.host_models))
+            second = home / "second.json"
+            second_models = deepcopy(self.host_models)
+            second_models["tasks"]["coding"].append("openrouter/vendor/model:free")
+            second.write_text(json.dumps(second_models))
+
+            run_script("install.sh", home, "--skip-external", "--profile", "unattended", "--force")
+            run_script("install.sh", home, "--skip-external", "--models-file", str(first))
+            self.assertEqual(json.loads(config.read_text())["models"], self.host_models)
+            run_script("install.sh", home, "--skip-external", "--models-file", str(second))
+            self.assertEqual(json.loads(config.read_text())["models"], second_models)
+            second.unlink()
+            failed = run_script("install.sh", home, "--skip-external", check=False)
+            self.assertNotEqual(failed.returncode, 0, "missing remembered files must not fall back silently")
+            self.assertIn(str(second), failed.stderr)
+            self.assertEqual(json.loads(config.read_text())["models"], second_models)
+            run_script("install.sh", home, "--skip-external", "--no-models-file")
+            run_script("install.sh", home, "--skip-external")
+            self.assertEqual(json.loads(config.read_text())["models"], self.unattended_models)
+
+            run_script("install.sh", home, "--skip-external", "--models-file", str(first))
+            first.unlink()
+            run_script("uninstall.sh", home, "--skip-external")
+            self.assertEqual(json.loads(config.read_text()), before)
+
+    def test_invalid_models_file_stops_before_install_writes(self) -> None:
+        cases = (
+            (None, "does not exist"),
+            ("{", "not valid JSON"),
+            ("[]", "default, agents, tasks"),
+            (json.dumps({"default": "user/model", "agents": {}}), "default, agents, tasks"),
+            (json.dumps({**self.host_models, "default": "task:coding"}), "default must be an exact provider/model ID"),
+            (json.dumps({**self.host_models, "agents": []}), "agents must be an object"),
+            (json.dumps({**self.host_models, "agents": {"workr": "user/model"}}), "agents.workr is not a supported role"),
+            (json.dumps({**self.host_models, "agents": {"worker": "user/one,user/two"}}), "agents.worker must be an exact provider/model ID"),
+            (json.dumps({**self.host_models, "tasks": {"coding": "user/model"}}), "tasks.coding must be a nonempty array"),
+            (json.dumps({**self.host_models, "tasks": {"coding": []}}), "tasks.coding must be a nonempty array"),
+            (json.dumps({**self.host_models, "tasks": {"coding": ["user/*"]}}), "tasks.coding[0] must be an exact provider/model ID"),
+            (json.dumps({**self.host_models, "tasks": {"codign": ["user/model"]}}), "tasks.codign is not a supported task category"),
+            (json.dumps({**self.host_models, "tasks": {"coding": ["user/model", "user/model"]}}), "tasks.coding contains duplicate model IDs"),
+        )
+        for text, message in cases:
+            with self.subTest(message=message), tempfile.TemporaryDirectory() as directory:
+                home = Path(directory)
+                source = home / "models.json"
+                if text is not None:
+                    source.write_text(text)
+                failed = run_script("install.sh", home, "--skip-external", "--models-file", str(source), check=False)
+                self.assertNotEqual(failed.returncode, 0)
+                self.assertIn(str(source), failed.stderr)
+                self.assertIn(message, failed.stderr)
+                self.assertFalse((home / ".agents").exists())
+                self.assertFalse((home / ".pi").exists())
+
     def test_the_unattended_profile_writes_its_own_models_without_fable(self):
-        unattended_models = json.loads((ROOT / "pi/herdr-agents-models.unattended.json").read_text())
+        unattended_models = self.unattended_models
         self.assertEqual(unattended_models.keys(), self.repo_models.keys())
         self.assertEqual(unattended_models["agents"].keys(), self.repo_models["agents"].keys())
         self.assertEqual(unattended_models["tasks"].keys(), self.repo_models["tasks"].keys())

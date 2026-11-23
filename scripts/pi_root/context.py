@@ -10,6 +10,12 @@ from .paths import MARKER
 State = dict[str, Any]
 
 
+@dataclass(frozen=True)
+class ModelsOverride:
+    path: Path
+    models: dict[str, Any]
+
+
 @dataclass
 class Context:
     home: Path
@@ -21,6 +27,7 @@ class Context:
     first_install: bool = False
     # The install profile (unattended.PROFILES); a run without --profile keeps the one the marker recorded.
     profile: str = "default"
+    models_override: ModelsOverride | None = None
     # Optional plugin checkouts an earlier install recorded and this machine no longer has.
     gone_plugins: list[str] = field(default_factory=list)
 

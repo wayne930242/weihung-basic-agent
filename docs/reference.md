@@ -22,6 +22,7 @@ Installer options:
 
 - `--home PATH` installs into another home directory, for example a throwaway smoke test.
 - `--skip-external` writes configuration only: no npm, pi package, Herdr, or network installs.
+- `--models-file PATH` sets and remembers a host model routing file; `--no-models-file` clears it and uses the install profile's shared models.
 - `--force` backs up conflicting targets to `~/.local/state/weihung-agent-root/backups/<timestamp>/` before replacing them. Without it, a conflict stops the install.
 
 The installer is idempotent; re-run it after pulling changes. `bash scripts/uninstall.sh` (same `--home` and `--skip-external` options) removes this repository's links, packages, generated instructions, and settings, and restores what the install backed up. The pi binary and its logins stay.
@@ -102,7 +103,7 @@ Registry packages are pinned to exact versions in [scripts/pi_root/pins.py](scri
 | File | Keys |
 |---|---|
 | `~/.pi/agent/settings.json` | `packages`, `theme`, `editorPaddingX`, `collapseChangelog`, `enableInstallTelemetry` (`false`), `terminal.showTerminalProgress` |
-| `~/.pi/agent/herdr-agents/config.json` | `models` (from [pi/herdr-agents-models.json](pi/herdr-agents-models.json), or [pi/herdr-agents-models.unattended.json](pi/herdr-agents-models.unattended.json) for the unattended profile), `panes.mode` (`split`), `panes.direction` (`right`) |
+| `~/.pi/agent/herdr-agents/config.json` | [`models`](#models), `panes.mode` (`split`), `panes.direction` (`right`) |
 | `~/.pi/agent/mcp-adapter.json` | `settings.hostConfigDiscovery`, `settings.namespaceProxyTools`, `mcpServers.codebase-memory-mcp` |
 
 Other keys in these files stay as the user wrote them.
@@ -115,7 +116,21 @@ The files in [rules/](rules/) (deployment, dependencies, clean architecture, UI 
 
 ## Models
 
-[pi/herdr-agents-models.json](pi/herdr-agents-models.json) is the `pi-herdr-agents` `models` object: `agents` sets each role's ordered model list, `default` a bare spawn's, and `tasks` the `task:<category>` candidates. The installer writes it into `~/.pi/agent/herdr-agents/config.json`; edit the repository file, run `bash scripts/install.sh`, and reload pi. An install stops when the home `models` changed since the last install, so a hand edit is never overwritten silently; move it into the repository file or rerun with `--force`. Thinking levels are set per dispatch, not in configuration.
+The installer writes the `models` object in `~/.pi/agent/herdr-agents/config.json` from [pi/herdr-agents-models.json](../pi/herdr-agents-models.json) by default, or from [pi/herdr-agents-models.unattended.json](../pi/herdr-agents-models.unattended.json) for the unattended profile.
+To set routing for one host, copy the profile's models file, edit the copy, and run `bash scripts/install.sh --models-file PATH`.
+The file replaces the whole `models` object: `default` is a single model ID, `agents` maps role names to single model IDs, and `tasks` maps task categories to nonempty arrays of model IDs in preference order.
+Use the role names and task categories from the shared file.
+List each candidate only once per category.
+Use exact `provider/model-id` strings, with one ID per string.
+
+The installer records the absolute path and re-reads the file on each install, including scheduled runs with no flags.
+If the remembered file is missing or invalid, fix it, pass a new `--models-file PATH`, or run `bash scripts/install.sh --no-models-file` to return to the selected profile's shared models.
+Uninstall restores the previous route settings without reading the override file.
+
+If the home `models` has a hand edit that differs from both the last installed value and the selected source, the install stops.
+Move the edit into the source file or rerun with `--force` to replace it.
+After installing changed routes, reload pi.
+Thinking levels are set per dispatch, not in configuration.
 
 pi's own default model and thinking level stay in `~/.pi/agent/settings.json` (`defaultProvider`, `defaultModel`, `defaultThinkingLevel`, `enabledModels`), managed by hand.
 

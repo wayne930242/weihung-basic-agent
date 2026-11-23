@@ -4,19 +4,25 @@ import argparse
 import os
 from pathlib import Path
 
-from . import packages, steps, unattended
-from .paths import OVERLAY_VARIABLE, saved_overlay, saved_profile
+from . import configs, packages, steps, unattended
+from .jsonfile import read_json
+from .paths import MARKER, OVERLAY_VARIABLE, saved_overlay, saved_profile
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("action", choices=("migrate", "install", "uninstall", "saved-overlay", "saved-profile", "dropped-skills"))
+    parser.add_argument("action", choices=("migrate", "install-preflight", "install", "uninstall", "saved-overlay", "saved-profile", "dropped-skills"))
     parser.add_argument("--home", type=Path, default=Path.home())
     parser.add_argument("--skip-external", action="store_true")
     parser.add_argument("--force", action="store_true")
     parser.add_argument("--no-overlay", action="store_true", help="install without the overlay the last install recorded")
     parser.add_argument("--profile", choices=unattended.PROFILES, help="install profile; a run without it keeps the recorded one")
+    models = parser.add_mutually_exclusive_group()
+    models.add_argument("--models-file", type=Path, metavar="PATH", help="host models file; a run without it keeps the recorded path")
+    models.add_argument("--no-models-file", action="store_true", help="clear the recorded models file and use the profile's shared models")
     args = parser.parse_args()
+    if (args.models_file or args.no_models_file) and args.action not in ("install", "install-preflight"):
+        parser.error("--models-file and --no-models-file are install options")
     home = args.home.expanduser().resolve()
     if args.action == "saved-overlay":
         # install.sh and uninstall.sh ask for the overlay the last install recorded when they are not given one.
@@ -36,9 +42,15 @@ def main() -> None:
         os.environ.pop(OVERLAY_VARIABLE, None)
     elif not os.environ.get(OVERLAY_VARIABLE) and (saved := saved_overlay(home)):
         os.environ[OVERLAY_VARIABLE] = saved
-    # install.sh runs `migrate` first, so a wrong override stops there, before any link changes a file.
-    herdr_root = packages.herdr_agents_root() if args.action in ("migrate", "install") else None
-    if args.action == "install":
-        steps.install(home, args.skip_external, args.force, herdr_root, args.profile)
-    elif args.action == "uninstall":
-        steps.uninstall(home, args.skip_external)
+    try:
+        # Shell preflight checks overrides before any links or external installs change the home.
+        herdr_root = packages.herdr_agents_root() if args.action in ("migrate", "install-preflight", "install") else None
+        if args.action == "install-preflight":
+            configs.load_models_override(read_json(home / MARKER), args.models_file, args.no_models_file)
+        elif args.action == "install":
+            steps.install(home, args.skip_external, args.force, herdr_root, args.profile,
+                          models_file=args.models_file, no_models_file=args.no_models_file)
+        elif args.action == "uninstall":
+            steps.uninstall(home, args.skip_external)
+    except ValueError as error:
+        parser.exit(1, f"Error: {error}\n")

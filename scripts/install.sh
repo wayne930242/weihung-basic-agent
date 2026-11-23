@@ -14,6 +14,7 @@ OVERLAY_ROOT=""
 SAVED_OVERLAY=""
 NO_OVERLAY=0
 PROFILE=""
+MODELS_ARGS=()
 TARGET_HOME="${HOME}"
 FORCE=0
 SKIP_EXTERNAL=0
@@ -22,6 +23,7 @@ BACKUP_ROOT=""
 usage() {
   cat <<'EOF'
 Usage: bash scripts/install.sh [--home PATH] [--force] [--skip-external] [--overlay PATH | --no-overlay] [--profile default|unattended]
+                               [--models-file PATH | --no-models-file]
 
 Installs this repository's pi setup:
   - ~/.agents/skills/*/        links to skills/ (and the overlay's skills/)
@@ -43,6 +45,10 @@ beside ours, its pi/AGENTS.append.md is appended to the generated AGENTS.md, and
 its overlay.json may declare optional plugins. The WEIHUNG_OVERLAY variable
 does the same. The install records the overlay, so a later install or uninstall
 without --overlay keeps it; --no-overlay installs without it.
+
+--models-file PATH replaces the profile's shared pi-herdr-agents routing
+with a host JSON file. Later installs re-read the recorded file;
+--no-models-file clears the override and restores the profile's shared routing.
 
 Defaults to failing on conflicts. Pass --force to back up conflicting targets
 before replacing them.
@@ -216,6 +222,15 @@ while [[ $# -gt 0 ]]; do
       PROFILE="$2"
       shift 2
       ;;
+    --models-file)
+      [[ $# -ge 2 && -n "$2" && "$2" != --* ]] || fail "--models-file requires a path"
+      MODELS_ARGS+=("--models-file=$2")
+      shift 2
+      ;;
+    --no-models-file)
+      MODELS_ARGS+=(--no-models-file)
+      shift
+      ;;
     -h|--help)
       usage
       exit 0
@@ -244,8 +259,8 @@ if [[ -n "$OVERLAY_ROOT" ]]; then
   export WEIHUNG_OVERLAY="$OVERLAY_ROOT"
 fi
 
-# State and links from the repository's former name move first; the steps below use the new name.
-"$PYTHON" "$REPO_ROOT/scripts/pi-target.py" migrate --home "$TARGET_HOME"
+# Check file and checkout overrides before changing any links or installing external tools.
+"$PYTHON" "$REPO_ROOT/scripts/pi-target.py" install-preflight --home "$TARGET_HOME" ${MODELS_ARGS[@]+"${MODELS_ARGS[@]}"}
 
 mkdir -p "$TARGET_HOME/.agents/skills"
 
@@ -293,6 +308,6 @@ if [[ "$NO_OVERLAY" -eq 1 ]]; then pi_args+=(--no-overlay); fi
 if [[ "$SKIP_EXTERNAL" -eq 1 ]]; then pi_args+=(--skip-external); fi
 if [[ "$FORCE" -eq 1 ]]; then pi_args+=(--force); fi
 if [[ -n "$PROFILE" ]]; then pi_args+=(--profile "$PROFILE"); fi
-"$PYTHON" "$REPO_ROOT/scripts/pi-target.py" "${pi_args[@]}"
+"$PYTHON" "$REPO_ROOT/scripts/pi-target.py" "${pi_args[@]}" ${MODELS_ARGS[@]+"${MODELS_ARGS[@]}"}
 
 log "Install complete."

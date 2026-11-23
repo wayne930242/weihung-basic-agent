@@ -1,11 +1,13 @@
 """The small managed settings: UI, terminal, panes, herdr-agents models, built-in MCP, mcp-adapter, open-tui, claude-bridge, computer use, compaction."""
 
 import hashlib
+import json
 import os
+import re
 from copy import deepcopy
 from pathlib import Path
 
-from .context import Context, State
+from .context import Context, ModelsOverride, State
 from .jsonfile import read_json, write_json
 from .managed import record_keys, remember_keys, restore_keys, restore_nested, restore_value
 from . import unattended
@@ -103,27 +105,79 @@ def retire_model_profile(ctx: Context) -> None:
         state.pop(key, None)
 
 
-def models_source(ctx: Context):
+def models_source(ctx: Context) -> Path:
     return HERDR_MODELS_UNATTENDED if unattended.is_unattended(ctx.profile) else HERDR_MODELS
 
 
+def load_models_override(state: State, path: Path | None, clear: bool) -> ModelsOverride | None:
+    """Read and validate the host's chosen file before any install step writes to the home."""
+    if clear:
+        return None
+    if path is None:
+        if not (saved := state.get("herdr_models_file")):
+            return None
+        path = Path(saved)
+    path = path.expanduser().absolute()
+    if not path.is_file():
+        raise ValueError(f"models file {path} does not exist or is not a regular file; "
+                         "pass --models-file PATH to replace it or --no-models-file to clear it")
+    try:
+        models = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError) as error:
+        raise ValueError(f"models file {path} is not valid JSON: {error}") from error
+    except OSError as error:
+        raise ValueError(f"cannot read models file {path}: {error}") from error
+
+    def require_model_id(value: object, key: str) -> None:
+        # A model ID can contain slashes (for example an OpenRouter model) or a colon suffix.
+        if not isinstance(value, str) or not re.fullmatch(r"[\w.-]+(?:/[^/,\s*?\[\]]+)+", value):
+            raise ValueError(f"models file {path}: {key} must be an exact provider/model ID (no comma lists)")
+
+    if not isinstance(models, dict) or models.keys() != {"default", "agents", "tasks"}:
+        raise ValueError(f"models file {path} must be a JSON object with exactly these keys: default, agents, tasks")
+    require_model_id(models["default"], "default")
+    for key in ("agents", "tasks"):
+        if not isinstance(models[key], dict):
+            raise ValueError(f"models file {path}: {key} must be an object")
+    # The shared models tests require the default and unattended files to list the same roles and tasks.
+    shared = read_json(HERDR_MODELS_UNATTENDED)
+    for role, model in models["agents"].items():
+        if role not in shared["agents"]:
+            raise ValueError(f"models file {path}: agents.{role} is not a supported role")
+        require_model_id(model, f"agents.{role}")
+    for task, candidates in models["tasks"].items():
+        if task not in shared["tasks"]:
+            raise ValueError(f"models file {path}: tasks.{task} is not a supported task category")
+        if not isinstance(candidates, list) or not candidates:
+            raise ValueError(f"models file {path}: tasks.{task} must be a nonempty array")
+        for index, model in enumerate(candidates):
+            require_model_id(model, f"tasks.{task}[{index}]")
+        if len(set(candidates)) != len(candidates):
+            raise ValueError(f"models file {path}: tasks.{task} contains duplicate model IDs")
+    return ModelsOverride(path, models)
+
+
 def apply_herdr_models(ctx: Context) -> None:
-    """Write pi/herdr-agents-models.json (pi/herdr-agents-models.unattended.json for the unattended install profile) as the
-    pi-herdr-agents `models`; a hand edit since the last install stops the run."""
+    """Write the host override or profile's shared models; a hand edit since the last install stops the run."""
     retire_model_profile(ctx)
     state = ctx.state
     config = read_json(ctx.herdr_config_path)
-    source = models_source(ctx)
-    desired = read_json(source)
+    override = ctx.models_override
+    source = override.path if override else models_source(ctx)
+    desired = override.models if override else read_json(source)
     current = config.get("models")
     edited = current not in (None, desired, state.get("installed_herdr_models"))
     if edited and not ctx.force:
         raise ValueError(f"{ctx.herdr_config_path} `models` differs from {source}; move the change into the "
-                         "repository file, or rerun with --force to replace it")
+                         "source file, or rerun with --force to replace it")
     state.setdefault("previous_herdr_models", deepcopy(current))
     config["models"] = desired
     write_json(ctx.herdr_config_path, config)
     state["installed_herdr_models"] = deepcopy(desired)
+    if override:
+        state["herdr_models_file"] = str(override.path)
+    else:
+        state.pop("herdr_models_file", None)
 
 
 def restore_herdr_models(ctx: Context) -> None:

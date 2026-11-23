@@ -16,6 +16,7 @@ Then start `pi` inside Herdr and run `/login` for the providers you use.
 
 - `--skip-external` writes configuration only: no npm, pi package, Herdr, or network installs.
 - `--home PATH` installs into another home directory, for a throwaway smoke test.
+- `--models-file PATH` sets this host's [model routing](docs/reference.md#models) and remembers the file for later installs; `--no-models-file` returns to the profile's shared routing.
 - `--force` backs up conflicting targets to `~/.local/state/weihung-agent-root/backups/<timestamp>/` before replacing them; without it a conflict stops the install.
 - `bash scripts/uninstall.sh` removes what the install added and restores what it backed up.
 
@@ -73,7 +74,11 @@ The installer does not pull this repository: run `git pull` here before re-insta
 
 ### What an overlay cannot change
 
-An overlay adds; it does not replace. A skill name that exists in both repositories stops the install. Rules (`rules/`), model routing (`pi/herdr-agents-models.json`), extensions (`pi/extensions/`), and the base text of `pi/AGENTS.md.in` come only from this repository. To change those, fork it and point your overlay's installer at the fork.
+An overlay adds; it does not replace.
+A skill name that exists in both repositories stops the install.
+Rules (`rules/`), extensions (`pi/extensions/`), and the base text of `pi/AGENTS.md.in` come only from this repository.
+To change those, fork it and point your overlay's installer at the fork.
+Model routing comes from the install profile unless you pass `--models-file PATH`.
 
 ## Tests
 
