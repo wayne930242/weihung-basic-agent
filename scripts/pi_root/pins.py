@@ -127,4 +127,4 @@ UNATTENDED_DROPS = (
 # agent-desktop needs a desktop session, which the box's agents never drive.
 UNATTENDED_DROPPED_SKILLS = ("agent-desktop", "going-to-sleep", "recording-with-obs", "statechart")
 # anchorloop, the workflow skills and extensions; PI_ANCHORLOOP_ROOT swaps in a checkout for testing.
-ANCHORLOOP_PACKAGE = "npm:pi-anchorloop@2.18.1"
+ANCHORLOOP_PACKAGE = "npm:pi-anchorloop@3.0.0"
