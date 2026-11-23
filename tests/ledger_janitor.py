@@ -43,8 +43,14 @@ class JanitorTests(unittest.TestCase):
             git("config", "user.email", "fixture@example.test")
             git("commit", "--allow-empty", "-m", "base")
             root = home / ".herdr/worktrees/example"
-            for name in ("merged", "dirty", "unmerged", "busy"):
+            for name in ("merged", "dirty", "unmerged", "busy", "ignored", "group/nested"):
                 git("worktree", "add", "-b", name, str(root / name))
+            (root / "main").mkdir()
+            git("init", "-b", "main", cwd=root / "main")
+            (root / "empty").mkdir()
+            (repo / ".git/info/exclude").write_text("node_modules/\n")
+            (root / "ignored/node_modules").mkdir()
+            (root / "ignored/node_modules/output").touch()
             (root / "dirty/notes").touch()
             git("commit", "--allow-empty", "-m", "not merged", cwd=root / "unmerged")
             scratch = repo / "scratch"
@@ -52,6 +58,7 @@ class JanitorTests(unittest.TestCase):
             paths = [scratch / name for name in ("old.md", "board.md", "recent.md")]
             for path in paths:
                 path.touch()
+            (scratch / "young.md").touch()
             board = home / ".pi/agent/straw-boss/board"
             board.mkdir(parents=True)
             (board / "todo.json").write_bytes(b" " * (1024 * 1024 - 4) + b"board.md")
@@ -77,10 +84,20 @@ class JanitorTests(unittest.TestCase):
                 finally:
                     busy.terminate()
             for result in (plan, applied):
-                self.assertEqual({Path(row["path"]).name for row in result["actions"]}, {"merged", "old.md"})
+                actions = {Path(row["path"]).name for row in result["actions"]}
                 left = {Path(row["path"]).name: row for row in result["left"]}
-                for name, reason in (("dirty", "dirty"), ("busy", "in use"), ("unmerged", "unmerged"),
-                                     ("board.md", "referenced"), ("recent.md", "referenced"), ("scratch", "tracked")):
+                with self.subTest(check="ignored files"):
+                    self.assertIn("ignored", actions)
+                with self.subTest(check="namespace directories and primary checkout"):
+                    self.assertIn("nested", actions)
+                    self.assertFalse({"main", "group", "empty"} & left.keys())
+                with self.subTest(check="waiting counts"):
+                    self.assertEqual(result.get("waiting"), {"not older than 30 days": 1,
+                                                            "referenced by board or recent session": 2,
+                                                            "in use by live process": 1})
+                self.assertEqual(actions, {"merged", "ignored", "nested", "old.md"})
+                self.assertEqual(set(left), {"dirty", "unmerged", "scratch", "dead"})
+                for name, reason in (("dirty", "dirty"), ("unmerged", "unmerged"), ("scratch", "tracked")):
                     self.assertIn(reason, left[name]["reason"])
                 self.assertEqual(left["unmerged"]["owner_hint"], "Fixture Owner")
                 self.assertEqual(left["dead"]["workspace_id"], "w123")

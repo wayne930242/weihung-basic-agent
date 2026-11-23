@@ -71,17 +71,30 @@ def inside(path: Path, root: Path) -> bool:
     return path == root or root in path.parents
 
 
+WORKTREE_WAIT = {"in use by Herdr pane", "touched within 2 days", "in use by live process"}
+
+
+def worktree_candidates(root: Path) -> Iterator[Path]:
+    for path in folders(root):
+        try:
+            marker = (path / ".git").lstat()
+        except FileNotFoundError:
+            # Herdr branch names can contain slashes and create namespace directories.
+            yield from worktree_candidates(path)
+        else:
+            if stat.S_ISREG(marker.st_mode):
+                yield path
+
+
 def worktree_reason(path: Path, pane_rows: list[Row], now: float) -> str | None:
-    if not stat.S_ISREG((path / ".git").lstat().st_mode):
-        return "not a linked worktree"
     top = git(path, "rev-parse", "--show-toplevel")
     if top.returncode or Path(text(top)).resolve() != path:
         return "cannot verify linked worktree root"
-    status = git(path, "status", "--porcelain", "--untracked-files=normal", "--ignored=matching", "--ignore-submodules=none")
+    status = git(path, "status", "--porcelain", "--untracked-files=normal", "--ignore-submodules=none")
     if status.returncode:
         return "git status failed"
     if status.stdout:
-        return "dirty or contains ignored files"
+        return "dirty worktree (tracked changes or untracked non-ignored files)"
     if git(path, "symbolic-ref", "-q", "HEAD").returncode:
         return "detached HEAD"
     branch = default_ref(path)
@@ -112,7 +125,8 @@ def row(repo: str | None, path: Path, reason: str, owner_hint: str | None = None
     return dict(repo=repo, path=str(path), reason=reason, owner_hint=owner_hint, **extra)
 
 
-def worktrees(root: Path, now: float, apply: bool, actions: list[Row], left: list[Row]) -> None:
+def worktrees(root: Path, now: float, apply: bool, actions: list[Row], left: list[Row],
+              waiting: dict[str, int]) -> None:
     pane_rows = panes()
     seen = set()
     for pane in pane_rows:
@@ -127,10 +141,13 @@ def worktrees(root: Path, now: float, apply: bool, actions: list[Row], left: lis
         repo = path.relative_to(root).parts[0] if inside(path, root) and path != root else None
         left.append(row(repo, path, "Saved directory is unavailable", pane.get("agent"), workspace_id=workspace))
     for repo in folders(root):
-        for path in folders(repo):
+        for path in worktree_candidates(repo):
             owner = None
             try:
                 reason = worktree_reason(path, pane_rows, now)
+                if reason in WORKTREE_WAIT:
+                    waiting[reason] = waiting.get(reason, 0) + 1
+                    continue
                 if (path / ".git").is_file() and not (path / ".git").is_symlink():
                     log = git(path, "log", "-1", "--format=%cn")
                     owner = text(log) or None if log.returncode == 0 else None
@@ -142,8 +159,10 @@ def worktrees(root: Path, now: float, apply: bool, actions: list[Row], left: lis
                     if common.returncode:
                         raise ValueError("cannot locate common Git directory")
                     git_dir = f"--git-dir={text(common)}"
-                    if run("git", git_dir, "worktree", "remove", str(path), cwd=root).returncode:
-                        raise ValueError("git worktree remove refused")
+                    removal = run("git", git_dir, "worktree", "remove", str(path), cwd=root)
+                    if removal.returncode:
+                        detail = os.fsdecode(removal.stderr).strip()
+                        raise ValueError(f"git worktree remove refused: {detail}")
                     actions.append(row(repo.name, path, "removed merged worktree", owner))
                     if run("git", git_dir, "worktree", "prune", cwd=root).returncode:
                         raise ValueError("worktree removed but git worktree prune failed")
@@ -187,7 +206,7 @@ def references(agent: Path, names: set[str], now: float) -> set[str]:
 
 
 def scratch_files(projects: Path, agent: Path, now: float, apply: bool,
-                  actions: list[Row], left: list[Row]) -> None:
+                  actions: list[Row], left: list[Row], waiting: dict[str, int]) -> None:
     candidates = []
     for repo in folders(projects):
         scratch = repo / "scratch"
@@ -205,7 +224,8 @@ def scratch_files(projects: Path, agent: Path, now: float, apply: bool,
                     if info.st_mtime < now - 30 * DAY:
                         candidates.append((repo, path, info))
                     else:
-                        left.append(row(repo.name, path, "not older than 30 days"))
+                        reason = "not older than 30 days"
+                        waiting[reason] = waiting.get(reason, 0) + 1
         except (OSError, subprocess.TimeoutExpired) as error:
             left.append(row(repo.name, scratch, f"scratch scan failed: {error}"))
     try:
@@ -220,7 +240,8 @@ def scratch_files(projects: Path, agent: Path, now: float, apply: bool,
         destination = archive / month / path.name
         try:
             if path.name in found:
-                left.append(row(repo.name, path, "referenced by board or recent session"))
+                reason = "referenced by board or recent session"
+                waiting[reason] = waiting.get(reason, 0) + 1
                 continue
             if archive.is_symlink() or destination.parent.is_symlink() or os.path.lexists(destination):
                 raise ValueError("archive destination exists or uses a symlink")
@@ -245,7 +266,9 @@ def report(result: Row) -> str:
             details = " · ".join(str(item[field]) for field in ("destination", "owner_hint", "workspace_id") if item.get(field))
             lines.append(f"- {item['path']!r}: {item['reason']}" + (f" ({details})" if details else ""))
         lines.append("")
-    return "\n".join(lines)
+    lines.extend([f"## Waiting ({sum(result['waiting'].values())})", ""])
+    lines.extend(f"- {reason}: {count}" for reason, count in sorted(result["waiting"].items()))
+    return "\n".join([*lines, ""])
 
 
 def main() -> None:
@@ -259,9 +282,10 @@ def main() -> None:
     agent = home / ".pi/agent"
     now = time.time()
     actions, left = [], []
-    worktrees(home / ".herdr/worktrees", now, args.apply, actions, left)
-    scratch_files(home / "projects", agent, now, args.apply, actions, left)
-    result = dict(mode="apply" if args.apply else "dry-run", actions=actions, left=left)
+    waiting: dict[str, int] = {}
+    worktrees(home / ".herdr/worktrees", now, args.apply, actions, left, waiting)
+    scratch_files(home / "projects", agent, now, args.apply, actions, left, waiting)
+    result = dict(mode="apply" if args.apply else "dry-run", actions=actions, left=left, waiting=waiting)
     summary = report(result)
     if args.apply:
         directory = agent / "ledger-janitor"
