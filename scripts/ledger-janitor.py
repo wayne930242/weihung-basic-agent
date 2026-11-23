@@ -15,6 +15,7 @@ import subprocess
 import tempfile
 import time
 from typing import Any
+from urllib.parse import quote
 
 DAY = 86400
 Row = dict[str, Any]
@@ -59,12 +60,17 @@ def default_ref(path: Path) -> str | None:
     return refs[0] if len(refs) == 1 else None
 
 
-def panes() -> list[Row]:
+def panes() -> list[Row] | None:
     try:
         result = run("herdr", "pane", "list")
-        return json.loads(result.stdout)["result"]["panes"] if result.returncode == 0 else []
-    except (OSError, ValueError, KeyError, subprocess.TimeoutExpired):
-        return []
+        if result.returncode:
+            return None
+        rows = json.loads(result.stdout)["result"]["panes"]
+        if isinstance(rows, list) and all(isinstance(row, dict) for row in rows):
+            return rows
+    except (OSError, ValueError, KeyError, TypeError, subprocess.TimeoutExpired):
+        pass
+    return None
 
 
 def inside(path: Path, root: Path) -> bool:
@@ -125,11 +131,46 @@ def row(repo: str | None, path: Path, reason: str, owner_hint: str | None = None
     return dict(repo=repo, path=str(path), reason=reason, owner_hint=owner_hint, **extra)
 
 
-def worktrees(root: Path, now: float, apply: bool, actions: list[Row], left: list[Row],
+def archive_worktree_notes(path: Path, repo: str, projects: Path, apply: bool) -> None:
+    notes = git(path, "ls-files", "-z", "--others", "--ignored", "--exclude-standard", "--",
+                "scratch/", ".pi/memory/")
+    if notes.returncode:
+        raise ValueError("cannot list ignored notes")
+    if not notes.stdout:
+        return
+    branch = git(path, "symbolic-ref", "--short", "HEAD")
+    if branch.returncode:
+        raise ValueError("cannot identify branch for archive")
+    project = projects / repo
+    if project.is_symlink() or not project.is_dir():
+        raise ValueError(f"project archive root unavailable: {project}")
+    for entry in notes.stdout.rstrip(b"\0").split(b"\0"):
+        relative = Path(os.fsdecode(entry))
+        source = path / relative
+        info = source.lstat()
+        if not stat.S_ISREG(info.st_mode):
+            raise ValueError(f"not a regular note: {source}")
+        month = datetime.fromtimestamp(info.st_mtime).strftime("%Y-%m")
+        parent = project
+        for part in ("scratch", "archive", month, repo, quote(text(branch), safe=""), *relative.parts[:-1]):
+            parent = parent / part
+            if parent.is_symlink() or (parent.exists() and not parent.is_dir()):
+                raise ValueError(f"invalid archive directory: {parent}")
+            if apply:
+                parent.mkdir(exist_ok=True)
+        destination = parent / relative.name
+        if os.path.lexists(destination):
+            if destination.is_symlink() or not destination.samefile(source):
+                raise ValueError(f"archive destination exists: {destination}")
+        elif apply:
+            os.link(source, destination, follow_symlinks=False)
+
+
+def worktrees(root: Path, projects: Path, now: float, apply: bool, actions: list[Row], left: list[Row],
               waiting: dict[str, int]) -> None:
     pane_rows = panes()
     seen = set()
-    for pane in pane_rows:
+    for pane in pane_rows or []:
         if not (pane.get("restore_error") or "").startswith("Saved directory is unavailable"):
             continue
         path = Path(pane.get("cwd") or "/")
@@ -144,6 +185,9 @@ def worktrees(root: Path, now: float, apply: bool, actions: list[Row], left: lis
         for path in worktree_candidates(repo):
             owner = None
             try:
+                if pane_rows is None:
+                    left.append(row(repo.name, path, "cannot read Herdr panes"))
+                    continue
                 reason = worktree_reason(path, pane_rows, now)
                 if reason in WORKTREE_WAIT:
                     waiting[reason] = waiting.get(reason, 0) + 1
@@ -153,6 +197,11 @@ def worktrees(root: Path, now: float, apply: bool, actions: list[Row], left: lis
                     owner = text(log) or None if log.returncode == 0 else None
                 if reason:
                     left.append(row(repo.name, path, reason, owner))
+                    continue
+                try:
+                    archive_worktree_notes(path, repo.name, projects, apply)
+                except (OSError, ValueError, subprocess.TimeoutExpired) as error:
+                    left.append(row(repo.name, path, f"ignored notes archive blocked: {error}", owner))
                     continue
                 if apply:
                     common = git(path, "rev-parse", "--path-format=absolute", "--git-common-dir")
@@ -283,7 +332,7 @@ def main() -> None:
     now = time.time()
     actions, left = [], []
     waiting: dict[str, int] = {}
-    worktrees(home / ".herdr/worktrees", now, args.apply, actions, left, waiting)
+    worktrees(home / ".herdr/worktrees", home / "projects", now, args.apply, actions, left, waiting)
     scratch_files(home / "projects", agent, now, args.apply, actions, left, waiting)
     result = dict(mode="apply" if args.apply else "dry-run", actions=actions, left=left, waiting=waiting)
     summary = report(result)
