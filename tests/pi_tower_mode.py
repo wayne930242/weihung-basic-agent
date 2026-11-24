@@ -86,7 +86,7 @@ class CapacityRuleTests(unittest.TestCase):
         self.assertIn("60 minutes after its oldest ticket joined", text)
         self.assertIn("a gate is never skipped", text)
         self.assertIn("must list exactly the tickets merged into the frozen train", text)
-        self.assertIn("ttt order carry <ticket> --to auto --project <p> --from <order>`, which keeps its MR, review and test evidence", text)
+        self.assertIn("Drop every ticket of the order that did not ride it", text)
 
 
 if __name__ == "__main__":
