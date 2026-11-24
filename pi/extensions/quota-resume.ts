@@ -3,18 +3,23 @@ import { mkdirSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
-export const MAX_WAIT_MS = 6 * 60 * 60 * 1000;
+export const MAX_WAIT_MS = 8 * 24 * 60 * 60 * 1000;
+const UNKNOWN_RESET_RETRY_MS = 30 * 60 * 1000;
+// A bare rate limit with no reset is usually short-lived; retry it sooner than a usage limit.
+const RATE_LIMIT_RETRY_MS = 5 * 60 * 1000;
+const USAGE_LIMIT = /quota exceeded|hit your .*limit|out of extra usage|weekly limit/i;
 export const RESUME_MARGIN_MS = 2 * 60 * 1000;
 export const POLL_MS = 15_000;
 // pi-herdr-agents asks this channel before a child exits on a settled run.
 export const EXIT_HOLD_CHANNEL = "pi-herdr-agents:exit-hold";
 export const RESUME_SIGNAL = join(homedir(), ".local/state/weihung-agent-root/quota-resume");
 export const RESUME_PROMPT =
-  "The Claude usage limit that stopped the previous turn has reset. Continue the task from where it stopped.";
+  "The previous turn stopped on a Claude usage limit. Continue the task from where it stopped.";
 
 const STATUS_KEY = "quota-resume";
-const QUOTA_ERROR = /quota exceeded|rate limit|hit your .*limit|out of extra usage/i;
-// The text fallback carries a clock time without a date, which only identifies the five-hour window.
+const QUOTA_ERROR = /quota exceeded|rate limit|hit your .*limit|out of extra usage|weekly limit/i;
+const DATED_RESET = /resets\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2}),\s*(\d{1,2})(?::(\d{2}))?\s*([ap]m)\b(?:\s*\(([^)]+)\))?/i;
+const MONTHS = 'jan feb mar apr may jun jul aug sep oct nov dec'.split(' ');
 const FIVE_HOUR = /five_hour|session limit/i;
 const RESET_CLOCK = /resets\s+(\d{1,2})(?::(\d{2}))?(?::\d{2})?\s*([ap]m)?/i;
 
@@ -66,17 +71,62 @@ function parseResetClock(text: string, after: number): number | undefined {
   return nextClock(after, hour, minute);
 }
 
+// Read the wall clock as a UTC number so the difference from an instant gives its zone offset.
+function wallClock(format: Intl.DateTimeFormat, instant: number): number {
+  const parts = Object.fromEntries(format.formatToParts(instant).map(({ type, value }) => [type, Number(value)]));
+  return Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute);
+}
+
+function parseDatedReset(text: string, after: number): number | undefined {
+  const match = DATED_RESET.exec(text);
+  if (!match) return undefined;
+  const [, mon, d, h, m, period, zone] = match;
+  const month = MONTHS.indexOf(mon.toLowerCase());
+  const day = Number(d), minute = Number(m ?? 0);
+  if (day < 1 || day > 31 || Number(h) < 1 || Number(h) > 12 || minute > 59) return undefined;
+  const hour = Number(h) % 12 + (period.toLowerCase() === 'pm' ? 12 : 0);
+  const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', hourCycle: 'h23' };
+  let format: Intl.DateTimeFormat;
+  try {
+    format = new Intl.DateTimeFormat('en-US', { ...options, timeZone: zone });
+  } catch (err) {
+    if (!(err instanceof RangeError)) throw err;
+    format = new Intl.DateTimeFormat('en-US', options);
+  }
+  const start = new Date(wallClock(format, after));
+  const year = start.getUTCFullYear() + Number(month < start.getUTCMonth());
+  const target = Date.UTC(year, month, day, hour, minute);
+  if (new Date(target).getUTCDate() !== day) return undefined;
+  // Recheck the offset at the candidate itself, since a DST transition may intervene.
+  let candidate = target;
+  for (let i = 0; i < 3; i++) {
+    const delta = target - wallClock(format, candidate);
+    if (!delta) return candidate;
+    candidate += delta;
+  }
+  return undefined;
+}
+
+interface WaitPlan { until?: number; detail: string; retryMs?: number }
+
 /**
- * When the settled run ended on a Claude quota error that resets within MAX_WAIT_MS, the time to resume it.
+ * A plan without an `until` retries periodically; no plan leaves the settled run alone.
  * `rejectedResetMs` is the exact reset the provider reported for this run, when it reported one.
  */
-export function quotaResumeAt(message: AssistantError | undefined, rejectedResetMs: number | undefined, now: number): number | undefined {
+function waitPlan(message: AssistantError | undefined, rejectedResetMs: number | undefined, now: number): WaitPlan | undefined {
   if (message?.role !== "assistant" || message.stopReason !== "error") return undefined;
   const text = message.errorMessage ?? "";
   if (!QUOTA_ERROR.test(text)) return undefined;
-  const resetMs = rejectedResetMs ?? parseResetClock(text, message.timestamp ?? now);
-  if (resetMs === undefined || resetMs - now > MAX_WAIT_MS) return undefined;
-  return Math.max(resetMs, now) + RESUME_MARGIN_MS;
+  const after = message.timestamp ?? now;
+  const detail = /weekly|seven_day/i.test(text) ? 'Claude weekly limit' : 'Claude quota limit';
+  const resetMs = rejectedResetMs ?? parseDatedReset(text, after) ?? parseResetClock(text, after);
+  if (resetMs === undefined) return { detail, retryMs: USAGE_LIMIT.test(text) ? UNKNOWN_RESET_RETRY_MS : RATE_LIMIT_RETRY_MS };
+  if (resetMs - now > MAX_WAIT_MS) return undefined;
+  return { detail, until: Math.max(resetMs, now) + RESUME_MARGIN_MS };
+}
+
+export function quotaResumeAt(message: AssistantError | undefined, rejectedResetMs: number | undefined, now: number): number | undefined {
+  return waitPlan(message, rejectedResetMs, now)?.until;
 }
 
 function lastAssistant(messages: readonly unknown[] | undefined): AssistantError | undefined {
@@ -104,6 +154,7 @@ export default function quotaResume(pi: ExtensionAPI, deps: QuotaWaitDeps = defa
     deps.clearInterval(wait.poll);
     wait.ctx.ui.setStatus(STATUS_KEY, undefined);
     wait = undefined;
+    pi.events.emit('straw-boss:pause', { v: 1, state: 'resumed', reason: 'quota' });
   };
 
   const resume = (): void => {
@@ -119,10 +170,14 @@ export default function quotaResume(pi: ExtensionAPI, deps: QuotaWaitDeps = defa
     if (deps.now() >= wait.resumeAt || (signalled !== undefined && signalled > wait.since)) resume();
   };
 
-  const startWait = (ctx: ExtensionContext, resumeAt: number): void => {
+  const startWait = (ctx: ExtensionContext, plan: WaitPlan): void => {
     stopWait();
+    const retryMs = plan.retryMs ?? UNKNOWN_RESET_RETRY_MS;
+    const resumeAt = plan.until ?? deps.now() + retryMs;
     wait = { ctx, resumeAt, since: deps.now(), poll: deps.setInterval(check, POLL_MS) };
-    const text = `Claude quota exhausted; resuming at ${clock(resumeAt)} (/quota-resume resumes now)`;
+    pi.events.emit('straw-boss:pause', { v: 1, state: 'paused', reason: 'quota', ...(plan.until !== undefined ? { until: plan.until } : {}), detail: plan.detail });
+    const action = plan.until === undefined ? `retrying in ${retryMs / 60_000} minutes` : `resuming at ${new Date(resumeAt).toLocaleDateString()} ${clock(resumeAt)}`;
+    const text = `Claude quota exhausted; ${action} (/quota-resume resumes now)`;
     ctx.ui.setStatus(STATUS_KEY, text);
     ctx.ui.notify(text, "warning");
   };
@@ -131,7 +186,7 @@ export default function quotaResume(pi: ExtensionAPI, deps: QuotaWaitDeps = defa
   pi.events.on(EXIT_HOLD_CHANNEL, (data) => {
     const probe = data as { messages?: unknown[]; hold?: boolean } | undefined;
     if (!probe || !Array.isArray(probe.messages)) return;
-    if (quotaResumeAt(lastAssistant(probe.messages), rejectedResetMs, deps.now()) !== undefined) probe.hold = true;
+    if (waitPlan(lastAssistant(probe.messages), rejectedResetMs, deps.now()) !== undefined) probe.hold = true;
   });
 
   pi.on("after_provider_response", (event) => {
@@ -148,8 +203,8 @@ export default function quotaResume(pi: ExtensionAPI, deps: QuotaWaitDeps = defa
 
   pi.on("agent_settled", (event, ctx) => {
     if (event.aborted) return;
-    const resumeAt = quotaResumeAt(lastAssistant(branchMessages(ctx)), rejectedResetMs, deps.now());
-    if (resumeAt !== undefined) startWait(ctx, resumeAt);
+    const plan = waitPlan(lastAssistant(branchMessages(ctx)), rejectedResetMs, deps.now());
+    if (plan) startWait(ctx, plan);
   });
 
   pi.on("session_shutdown", () => stopWait());
