@@ -77,5 +77,14 @@ class TowerModeRuleTests(unittest.TestCase):
         self.assertNotIn("tower-mode", (ROOT / "pi/AGENTS.md.in").read_text())
 
 
+class CapacityRuleTests(unittest.TestCase):
+    def test_the_unattended_rule_weighs_tickets_and_batches_trains(self):
+        text = (ROOT / "pi/AGENTS.unattended.md.in").read_text()
+        self.assertIn("`metadata.points`", text)
+        self.assertIn("Idle capacity is work", text)
+        self.assertIn("2 or 3 tickets that share no files", text)
+        self.assertIn("it never skips a gate", text)
+
+
 if __name__ == "__main__":
     unittest.main()
