@@ -76,7 +76,9 @@ if '--prefix' in args:
     assert json.loads((agent / ".weihung-agent-root.json").read_text())["ported_resources"]
     run("install.sh", home, env)
     instructions = (agent / "AGENTS.md").read_text()
-    assert 500 <= len(instructions.split()) <= 1000
+    # 2026-11-24: 1002 words with the docs and Fable routing rules; leave 48 words for edits.
+    word_count = len(instructions.split())
+    assert 500 <= word_count <= 1050, word_count
     assert instructions.count("## Code discovery") == 1
     assert instructions.count("Commit messages contain no AI tool attribution.") == 1
     assert "@shared/" not in instructions

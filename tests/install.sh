@@ -91,7 +91,7 @@ from pathlib import Path
 
 install = sys.argv[1]
 sys.path.insert(0, str(Path(install).resolve().parent))
-from pi_root.pins import BRIDGE_SOURCE, HERDR_AGENTS_SOURCE, PACKAGES
+from pi_root.pins import BRIDGE_SOURCE, CLAUDE_RULES_SOURCE, HERDR_AGENTS_SOURCE, PACKAGES
 
 
 def run(home, *args):
@@ -125,12 +125,13 @@ with tempfile.TemporaryDirectory() as directory:
     assert {"source": "npm:@sherif-fanous/pi-catppuccin@0.3.0", "themes": ["themes/catppuccin-mocha.json"]} in settings["packages"], settings
     assert "npm:@juicesharp/rpiv-todo@2.15.0" in sources and "npm:cc-safety-net@2.8.3" in sources, sources
     assert "npm:pi-codex-image-gen@0.3.2" in sources and not any("pi-web-access" in source for source in sources), sources
-    assert "npm:pi-robot-hand@0.8.0" in sources and not any("pi-secret-drop" in source for source in sources), sources
+    robot_hand, = [pin for pin in PACKAGES if isinstance(pin, str) and pin.startswith("npm:pi-robot-hand@")]
+    assert robot_hand in sources and not any("pi-secret-drop" in source for source in sources), sources
     assert not any("pi-phoenix-otel" in source for source in sources), sources
     assert "npm:@pify/memory@0.14.1" in sources, sources
     assert "npm:pi-loop-monitor@0.2.8" in sources, sources
     assert "npm:@narumitw/pi-goal@0.55.4" in sources, sources
-    assert {"source": "npm:pi-code@1.10.1", "extensions": ["extensions/claude-rules.ts"]} in settings["packages"], settings
+    assert {"source": CLAUDE_RULES_SOURCE, "extensions": ["extensions/claude-rules.ts"]} in settings["packages"], settings
     assert not any("pi-todo" in source or "pi-curated-themes" in source for source in sources), sources
     assert not {"defaultProvider", "defaultModel", "defaultThinkingLevel", "enabledModels"} & set(settings), settings
     assert settings["theme"] == "catppuccin-mocha", settings
@@ -155,7 +156,8 @@ with tempfile.TemporaryDirectory() as directory:
     repo_models = json.loads((Path(install).resolve().parents[1] / "pi/herdr-agents-models.json").read_text())
     assert config == {"status": {"enabled": True}, "panes": {"mode": "split", "direction": "right"}, "models": repo_models}, config
     assert not (home / ".pi/agent/herdr-agents/roles").exists()
-    assert "claude-bridge/" not in (home / ".pi/agent/AGENTS.md").read_text()
+    # Role models stay in config; the explicit Fable dispatch is the one exception.
+    assert "claude-bridge/" not in text.replace('model: "claude-bridge/claude-fable-5-2"', "", 1)
 PY
 }
 
