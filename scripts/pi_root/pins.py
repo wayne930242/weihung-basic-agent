@@ -11,7 +11,7 @@ CLAUDE_RULES_SOURCE = "npm:pi-code@1.10.2"
 # maestro fork, rebuilt dist/ committed (`npm run check:dist`), then the herdr fork's package.json pin, then this pin.
 # Once upstream releases what this setup needs, return to the npm release: set this to npm:pi-herdr-agents@<version>, drop the PINNED_GIT
 # entry and both FORKS entries (pi-herdr-agents, maestro) in scripts/pi-pins.py, and move "npm:pi-herdr-agents" out of RETIRED_SOURCES.
-HERDR_AGENTS_SOURCE = "git:github.com/wayne930242/pi-herdr-agents@8e11e85377a8fc2e70a0c63895e578fb4ca80ce0"
+HERDR_AGENTS_SOURCE = "git:github.com/wayne930242/pi-herdr-agents@189b0911933012f254c7cade8e367144ff82da5e"
 # The npm release again since 0.15.0, which ships the fork's only change (PR #153, consolidated into #162): pi's system
 # prompt goes in the first user turn, since on consumer endpoints a prompt in systemInstruction draws a false 429.
 ANTIGRAVITY_SOURCE = "npm:pi-antigravity@0.15.0"
