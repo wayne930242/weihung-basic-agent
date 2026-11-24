@@ -75,7 +75,7 @@ PACKAGES = [
     # show_doc: documents in the browser, answers back as messages; it replaced pi-herdr-doc-review (same tool name).
     "npm:pi-better-show@0.7.2",
     # Straw Boss coordination in Herdr: opt-in main agents per tab, an on-demand tower per workspace, scoped broadcast.
-    "npm:pi-straw-boss@0.87.0",
+    "npm:pi-straw-boss@0.87.1",
     "npm:@pify/memory@0.14.1",
     "npm:pi-loop-monitor@0.2.8",
     # /doctor: profiles main-thread stalls and asks long, strained mains to rotate through a handoff file.
@@ -91,7 +91,7 @@ PACKAGES = [
 # panes agents leave in worktree workspaces, removes their clean checkouts, and keeps pinned workspaces (prefix+P).
 HERDR_PLUGINS = (
     ("wayne930242.straw-boss", "wayne930242/pi-straw-boss/herdr-plugin", "v0.50.0", "straw_boss_plugin_preinstalled"),
-    ("wayne930242.straw-boss-reaper", "wayne930242/pi-straw-boss/herdr-reaper", "v0.87.0", "reaper_plugin_preinstalled"),
+    ("wayne930242.straw-boss-reaper", "wayne930242/pi-straw-boss/herdr-reaper", "v0.87.1", "reaper_plugin_preinstalled"),
 )
 # The Playwriter CLI drives the user's own Chrome through its extension; playwriter-relay.ts starts its relay.
 PLAYWRITER = "playwriter@0.12.0"
