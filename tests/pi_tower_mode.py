@@ -87,6 +87,7 @@ class CapacityRuleTests(unittest.TestCase):
         self.assertIn("a gate is never skipped", text)
         self.assertIn("must list exactly the tickets merged into the frozen train", text)
         self.assertIn("Drop every ticket of the order that did not ride it", text)
+        self.assertIn("run `ttt order review <order> <ticket>` again when it joins its next train", text)
 
 
 if __name__ == "__main__":
