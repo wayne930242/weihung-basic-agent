@@ -82,8 +82,9 @@ class CapacityRuleTests(unittest.TestCase):
         text = (ROOT / "pi/AGENTS.unattended.md.in").read_text()
         self.assertIn("`metadata.points`", text)
         self.assertIn("Idle capacity is work", text)
-        self.assertIn("2 or 3 tickets that share no files", text)
-        self.assertIn("it never skips a gate", text)
+        self.assertIn("a ticket that shares files with it waits, queued, for the next train", text)
+        self.assertIn("60 minutes after its oldest ticket joined", text)
+        self.assertIn("a gate is never skipped", text)
 
 
 if __name__ == "__main__":
