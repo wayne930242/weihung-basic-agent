@@ -272,6 +272,83 @@ def restore_overlay_trust(ctx: Context) -> None:
     write_or_remove(path, trust)
 
 
+def overlay_claude_settings() -> dict[str, object]:
+    """The overlay's claude/settings.json as managed entries: a top-level key, or `key.sub` for each entry of an object
+    such as `env`, so the user's own entries beside them stay theirs."""
+    root = overlay_root()
+    entries: dict[str, object] = {}
+    for key, value in (read_json(root / "claude/settings.json") if root else {}).items():
+        if isinstance(value, dict):
+            entries.update({f"{key}.{sub}": item for sub, item in value.items()})
+        else:
+            entries[key] = value
+    return entries
+
+
+def _claude_slot(settings: dict, entry: str, create: bool) -> tuple[dict | None, str]:
+    """The object holding a managed entry and its key there; None when its parent object is missing."""
+    if "." not in entry:
+        return settings, entry
+    parent, key = entry.split(".", 1)
+    if create:
+        settings.setdefault(parent, {})
+    container = settings.get(parent)
+    return (container if isinstance(container, dict) else None), key
+
+
+def _drop_empty_parent(settings: dict, entry: str) -> None:
+    parent = entry.split(".", 1)[0]
+    if "." in entry and settings.get(parent) == {}:
+        settings.pop(parent)
+
+
+def apply_overlay_claude_settings(ctx: Context) -> None:
+    """Merge the overlay's Claude Code settings into ~/.claude/settings.json; an entry edited by hand stops the run."""
+    state = ctx.state
+    path = ctx.home / ".claude/settings.json"
+    desired = overlay_claude_settings()
+    installed = state.get("installed_claude_settings", {})
+    if not desired and not installed:
+        return
+    settings = read_json(path)
+    previous = state.setdefault("previous_claude_settings", {})
+    for entry, value in desired.items():
+        container, key = _claude_slot(settings, entry, create=True)
+        if container is None:
+            raise ValueError(f"{path} `{entry.split('.', 1)[0]}` is not an object")
+        current = container.get(key)
+        if current not in (None, value, installed.get(entry)) and not ctx.force:
+            raise ValueError(f"{path} `{entry}` differs from the overlay's claude/settings.json; move the change into "
+                             "the overlay, or rerun with --force to replace it")
+        if entry not in installed:
+            previous.setdefault(entry, deepcopy(current))
+        container[key] = deepcopy(value)
+    # An entry the overlay dropped goes back to what it replaced, while it still holds what install wrote.
+    for entry in set(installed) - set(desired):
+        container, key = _claude_slot(settings, entry, create=False)
+        if container is not None:
+            restore_value(container, key, installed[entry], previous.pop(entry, None))
+            _drop_empty_parent(settings, entry)
+    write_or_remove(path, settings)
+    state["installed_claude_settings"] = deepcopy(desired)
+
+
+def restore_overlay_claude_settings(ctx: Context) -> None:
+    state = ctx.state
+    installed = state.get("installed_claude_settings", {})
+    if not installed:
+        return
+    path = ctx.home / ".claude/settings.json"
+    settings = read_json(path)
+    previous = state.get("previous_claude_settings", {})
+    for entry, value in installed.items():
+        container, key = _claude_slot(settings, entry, create=False)
+        if container is not None:
+            restore_value(container, key, value, previous.get(entry))
+            _drop_empty_parent(settings, entry)
+    write_or_remove(path, settings)
+
+
 def disable_builtin_mcp(settings: dict, state: State) -> None:
     extensions = settings.get("extensions")
     state.setdefault("previous_extensions_present", extensions is not None)

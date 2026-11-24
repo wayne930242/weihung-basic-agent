@@ -75,6 +75,32 @@ class OverlayTests(unittest.TestCase):
             run_script("uninstall.sh", home, "--skip-external", "--overlay", str(overlay), env=env)
             self.assertEqual(json.loads(models.read_text())["providers"], {"ollama": user})
 
+    def test_overlay_claude_settings_merge_into_claude_settings_json_and_restore(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            home = base / "home"
+            overlay = make_overlay(base)
+            (overlay / "claude").mkdir()
+            source = overlay / "claude/settings.json"
+            source.write_text(json.dumps({"language": "繁體中文", "env": {"REMIND": "中文提醒"}}))
+            settings = home / ".claude/settings.json"
+            settings.parent.mkdir(parents=True)
+            settings.write_text(json.dumps({"language": "English", "env": {"MINE": "1"}, "model": "opus"}))
+            env = {"WEIHUNG_OVERLAY": ""}
+            # A value the user set by hand stops the install until it moves into the overlay or --force is given.
+            with self.assertRaises(Exception):
+                run_script("install.sh", home, "--skip-external", "--overlay", str(overlay), env=env)
+            run_script("install.sh", home, "--skip-external", "--force", "--overlay", str(overlay), env=env)
+            merged = {"language": "繁體中文", "env": {"MINE": "1", "REMIND": "中文提醒"}, "model": "opus"}
+            self.assertEqual(json.loads(settings.read_text()), merged)
+            run_script("install.sh", home, "--skip-external", "--overlay", str(overlay), env=env)
+            # Dropping an entry from the overlay puts back what it replaced.
+            source.write_text(json.dumps({"env": {"REMIND": "中文提醒"}}))
+            run_script("install.sh", home, "--skip-external", "--overlay", str(overlay), env=env)
+            self.assertEqual(json.loads(settings.read_text())["language"], "English")
+            run_script("uninstall.sh", home, "--skip-external", "--overlay", str(overlay), env=env)
+            self.assertEqual(json.loads(settings.read_text()), {"language": "English", "env": {"MINE": "1"}, "model": "opus"})
+
     def test_overlay_trusted_dirs_merge_into_trust_json_and_restore(self):
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory).resolve()

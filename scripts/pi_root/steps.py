@@ -29,6 +29,7 @@ STEPS = (
     Step("herdr-models", configs.apply_herdr_models, configs.restore_herdr_models),
     Step("overlay-models", configs.apply_overlay_models, configs.restore_overlay_models),
     Step("overlay-trust", configs.apply_overlay_trust, configs.restore_overlay_trust),
+    Step("overlay-claude-settings", configs.apply_overlay_claude_settings, configs.restore_overlay_claude_settings),
     Step("compaction", configs.apply_compaction, configs.restore_compaction),
     Step("tower-mode", tower_mode.apply, tower_mode.restore),
     # Last to apply and first to restore: pi packages, the tools they need, and the resources ported beside them.
