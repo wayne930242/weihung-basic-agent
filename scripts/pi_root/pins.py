@@ -58,7 +58,7 @@ PACKAGES = [
     BRIDGE_SOURCE,
     HERDR_AGENTS_SOURCE,
     "npm:pi-mcp-adapter@7.0.1",
-    "npm:pi-intercom@0.18.1",
+    "npm:pi-intercom@0.19.0",
     "npm:@juicesharp/rpiv-ask-user-question@2.15.0",
     # todo and /todos with a public ledger contract (todo/v1 entries, todo:changed, todo:guard) that Straw Boss and anchorloop read.
     "npm:pi-todo-ledger@0.1.0",
@@ -73,7 +73,7 @@ PACKAGES = [
     "npm:pi-robot-hand@0.8.1",
     "npm:pi-auto-tab-name@0.2.0",
     # show_doc: documents in the browser, answers back as messages; it replaced pi-herdr-doc-review (same tool name).
-    "npm:pi-better-show@0.7.2",
+    "npm:pi-better-show@0.8.0",
     # Straw Boss coordination in Herdr: opt-in main agents per tab, an on-demand tower per workspace, scoped broadcast.
     "npm:pi-straw-boss@0.88.0",
     "npm:@pify/memory@0.14.1",
