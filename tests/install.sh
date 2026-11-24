@@ -154,7 +154,7 @@ with tempfile.TemporaryDirectory() as directory:
     assert bridge == {"provider": {"systemPromptPreset": False}}, bridge
     config = json.loads((home / ".pi/agent/herdr-agents/config.json").read_text())
     repo_models = json.loads((Path(install).resolve().parents[1] / "pi/herdr-agents-models.json").read_text())
-    assert config == {"status": {"enabled": True}, "panes": {"mode": "split", "direction": "right"}, "models": repo_models}, config
+    assert config == {"status": {"enabled": True}, "panes": {"mode": "grouped", "direction": "right"}, "models": repo_models}, config
     assert not (home / ".pi/agent/herdr-agents/roles").exists()
     # Role models stay in config; the explicit Fable dispatch is the one exception.
     assert "claude-bridge/" not in text.replace('model: "claude-bridge/claude-fable-5-2"', "", 1)

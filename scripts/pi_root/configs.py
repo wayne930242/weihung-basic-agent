@@ -62,8 +62,10 @@ def apply_ui(ctx: Context) -> None:
     if "status" not in config:
         config["status"] = deepcopy(HERDR_STATUS)
         state["added_herdr_status"] = True
-    # Split placement opens each worker beside its caller's pane, in the caller's own tab.
-    config["panes"] = {**config.get("panes", {}), "mode": "split", "direction": "right"}
+    # Grouped placement opens workers in an Agents tab beside the caller's. Split placement (beside the caller's pane, in its
+    # own tab) returns once pi-herdr-agents keeps a split from squeezing the caller's pane: on 2026-11-24 ten splits left a
+    # main ~3 columns wide, where pi-tui's editor recursed forever on a wide character and pi crashed.
+    config["panes"] = {**config.get("panes", {}), "mode": "grouped", "direction": "right"}
     write_json(ctx.settings_path, settings)
     write_json(ctx.herdr_config_path, config)
     record_keys(state, "ui_settings", settings, UI_SETTINGS)
