@@ -5,6 +5,9 @@ import { dirname, join } from "node:path";
 
 export const MAX_WAIT_MS = 8 * 24 * 60 * 60 * 1000;
 const UNKNOWN_RESET_RETRY_MS = 30 * 60 * 1000;
+// A bare rate limit with no reset is usually short-lived; retry it sooner than a usage limit.
+const RATE_LIMIT_RETRY_MS = 5 * 60 * 1000;
+const USAGE_LIMIT = /quota exceeded|hit your .*limit|out of extra usage|weekly limit/i;
 export const RESUME_MARGIN_MS = 2 * 60 * 1000;
 export const POLL_MS = 15_000;
 // pi-herdr-agents asks this channel before a child exits on a settled run.
@@ -104,7 +107,7 @@ function parseDatedReset(text: string, after: number): number | undefined {
   return undefined;
 }
 
-interface WaitPlan { until?: number; detail: string }
+interface WaitPlan { until?: number; detail: string; retryMs?: number }
 
 /**
  * A plan without an `until` retries periodically; no plan leaves the settled run alone.
@@ -117,7 +120,7 @@ function waitPlan(message: AssistantError | undefined, rejectedResetMs: number |
   const after = message.timestamp ?? now;
   const detail = /weekly|seven_day/i.test(text) ? 'Claude weekly limit' : 'Claude quota limit';
   const resetMs = rejectedResetMs ?? parseDatedReset(text, after) ?? parseResetClock(text, after);
-  if (resetMs === undefined) return { detail };
+  if (resetMs === undefined) return { detail, retryMs: USAGE_LIMIT.test(text) ? UNKNOWN_RESET_RETRY_MS : RATE_LIMIT_RETRY_MS };
   if (resetMs - now > MAX_WAIT_MS) return undefined;
   return { detail, until: Math.max(resetMs, now) + RESUME_MARGIN_MS };
 }
@@ -169,10 +172,11 @@ export default function quotaResume(pi: ExtensionAPI, deps: QuotaWaitDeps = defa
 
   const startWait = (ctx: ExtensionContext, plan: WaitPlan): void => {
     stopWait();
-    const resumeAt = plan.until ?? deps.now() + UNKNOWN_RESET_RETRY_MS;
+    const retryMs = plan.retryMs ?? UNKNOWN_RESET_RETRY_MS;
+    const resumeAt = plan.until ?? deps.now() + retryMs;
     wait = { ctx, resumeAt, since: deps.now(), poll: deps.setInterval(check, POLL_MS) };
-    pi.events.emit('straw-boss:pause', { v: 1, state: 'paused', reason: 'quota', ...plan });
-    const action = plan.until === undefined ? 'retrying in 30 minutes' : `resuming at ${new Date(resumeAt).toLocaleDateString()} ${clock(resumeAt)}`;
+    pi.events.emit('straw-boss:pause', { v: 1, state: 'paused', reason: 'quota', ...(plan.until !== undefined ? { until: plan.until } : {}), detail: plan.detail });
+    const action = plan.until === undefined ? `retrying in ${retryMs / 60_000} minutes` : `resuming at ${new Date(resumeAt).toLocaleDateString()} ${clock(resumeAt)}`;
     const text = `Claude quota exhausted; ${action} (/quota-resume resumes now)`;
     ctx.ui.setStatus(STATUS_KEY, text);
     ctx.ui.notify(text, "warning");

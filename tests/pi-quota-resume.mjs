@@ -166,4 +166,15 @@ const resumed = { v: 1, state: 'resumed', reason: 'quota' };
     assert.deepEqual(h.events.at(-1), resumed);
   }
 }
+{
+  const h = harness();
+  h.state.branch = [error('429 rate limit')];
+  h.handlers.get('agent_settled')({aborted: false}, h.ctx);
+  h.state.now += 5 * 60 * 1000 - 1;
+  h.tick();
+  assert.equal(h.sent.length, 0, 'bare rate limit waits 5 minutes');
+  h.state.now++;
+  h.tick();
+  assert.equal(h.sent.length, 1, 'bare rate limit retries after 5 minutes');
+}
 console.log("pi quota resume: pass");
