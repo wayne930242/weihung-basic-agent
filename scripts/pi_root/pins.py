@@ -47,6 +47,8 @@ RETIRED_SOURCES = ("git:github.com/wayne930242/pi-antigravity", "npm:pi-herdr-do
                    "npm:pi-lens",
                    # pi-straw-boss ships the roles (its roles/ pack, from 0.79.0); /plan and the plan skill left with it.
                    "npm:pi-herdr-roles",
+                   # pi-todo-ledger forks it with the same todo tool and a public ledger contract; pi must never load both.
+                   "npm:@juicesharp/rpiv-todo",
                    # The agent-desktop CLI (AGENT_DESKTOP) took over desktop app control; its tools no longer sit in every prompt.
                    "npm:@injaneity/pi-computer-use")
 # pi-code loads only claude-rules.ts, which reads each project's .claude/rules as Claude Code does;
@@ -58,7 +60,8 @@ PACKAGES = [
     "npm:pi-mcp-adapter@7.0.1",
     "npm:pi-intercom@0.18.1",
     "npm:@juicesharp/rpiv-ask-user-question@2.15.0",
-    "npm:@juicesharp/rpiv-todo@2.15.0",
+    # todo and /todos with a public ledger contract (todo/v1 entries, todo:changed, todo:guard) that Straw Boss and anchorloop read.
+    "npm:pi-todo-ledger@0.1.0",
     THEME_PACKAGE,
     "npm:pi-open-tui@0.4.7",
     QUOTAS_SOURCE,
