@@ -91,7 +91,11 @@ Registry packages are pinned to exact versions in [scripts/pi_root/pins.py](scri
 - [idle-compaction.ts](pi/extensions/idle-compaction.ts): compacts the session once it is idle with more than 300k tokens of context, so compaction never interrupts a running turn. The installer also sets pi's native threshold for the 1M `claude-bridge/claude-opus-5-5` to 500k (`compaction.modelOverrides` with `reserveTokens: 500000`), which only a long running turn reaches.
 - [last-reply.ts](pi/extensions/last-reply.ts): shows `last reply MM/DD HH:MM` (local time) in the footer when a run settles, so an idle session tells how long ago the agent last answered; a resumed session takes it from the last assistant message.
 - [playwriter-relay.ts](pi/extensions/playwriter-relay.ts): at session start, starts the Playwriter relay on `127.0.0.1:19988` when it is down and warns when the Chrome extension is not connected, without delaying the session.
-- [quota-resume.ts](pi/extensions/quota-resume.ts): when a run ends on a Claude quota error whose reset is at most 6 hours away, the session stays open, shows the reset time in the status line, and sends a continue message 2 minutes after the reset. In a `pi-herdr-agents` child it holds the auto-exit, so the pane stays open. `/quota-resume` resumes every waiting session at once, for example after switching Claude accounts. The exact reset comes from the provider's rate-limit headers; without them only a five-hour reset parsed from the error text counts, because its clock time carries no date. A longer reset, such as the seven-day window, ends the run as before.
+- [quota-resume.ts](pi/extensions/quota-resume.ts): a session that hits a Claude quota limit stays open for resets up to eight days away and continues two minutes after the reset.
+  The provider’s reset timestamp takes precedence; otherwise the extension reads the five-hour reset clock or the weekly reset date and time from the error message, using the weekly reset’s time zone when valid and local time otherwise.
+  Without a parseable reset it retries every 30 minutes.
+  The status line shows the wait, child sessions hold auto-exit, and Straw Boss receives a pause notice when the wait starts and a resume notice when it ends.
+  `/quota-resume` wakes all waiting sessions immediately, for example after switching Claude accounts.
 
 ### Ported resources
 

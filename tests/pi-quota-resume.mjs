@@ -14,10 +14,20 @@ const error = (errorMessage, extra = {}) => ({ role: "assistant", stopReason: "e
 const fiveHour = (clock) => error(`Claude quota exceeded — rate limit (five_hour) — resets ${clock}: You've hit your session limit · resets 8pm (Asia/Taipei)`);
 
 // Decision
+const incident = Date.parse('2026-11-22T06:00:00Z');
+const weekly = error('Opus and Sonnet: weekly limit · resets Nov 24, 4pm (Asia/Taipei)', { timestamp: incident });
+const weeklyAt = Date.parse('2026-11-24T08:00:00Z') + RESUME_MARGIN_MS;
+assert.equal(quotaResumeAt(weekly, undefined, incident), weeklyAt, 'box 1 weekly reset uses Taipei time');
+assert.equal(MAX_WAIT_MS, 8 * 24 * HOUR);
+const newYear = Date.parse('2026-12-31T00:00:00Z');
+assert.equal(quotaResumeAt(error('weekly limit · resets Jan 2, 12:45am (America/New_York)', {timestamp: newYear}), undefined, newYear), Date.parse('2027-01-02T05:45:00Z') + RESUME_MARGIN_MS);
+for (const zone of ['', ' (Invalid/Zone)']) {
+  assert.equal(quotaResumeAt(error(`weekly limit · resets Nov 24, 4pm${zone}`, {timestamp: incident}), undefined, incident), new Date(2026, 10, 24, 16).getTime() + RESUME_MARGIN_MS);
+}
 assert.equal(quotaResumeAt(fiveHour("8:00:00 PM"), undefined, now), now + 5 * HOUR + RESUME_MARGIN_MS, "parses the bridge's clock time");
-assert.equal(quotaResumeAt(error("You've hit your session limit · resets 3:30am"), undefined, now), undefined, "12.5h away is beyond the wait limit");
+assert.equal(quotaResumeAt(error("You've hit your session limit · resets 3:30am"), undefined, now), now + 12.5 * HOUR + RESUME_MARGIN_MS, "overnight reset");
 assert.equal(quotaResumeAt(fiveHour("3:30:00 PM"), undefined, now), now + 30 * 60 * 1000 + RESUME_MARGIN_MS, "same-day reset");
-assert.equal(quotaResumeAt(fiveHour("2:00:00 PM"), undefined, now), undefined, "a passed clock time means tomorrow, beyond the limit");
+assert.equal(quotaResumeAt(fiveHour("2:00:00 PM"), undefined, now), now + 23 * HOUR + RESUME_MARGIN_MS, "a passed clock time means tomorrow");
 assert.equal(quotaResumeAt(error("Claude quota exceeded — rate limit (seven_day) — resets 4:00:00 PM: weekly"), undefined, now), undefined, "a clock time without a date never identifies a seven-day reset");
 assert.equal(quotaResumeAt(error("Claude quota exceeded — rate limit (seven_day)"), now + 2 * HOUR, now), now + 2 * HOUR + RESUME_MARGIN_MS, "an exact provider reset is trusted for any window");
 assert.equal(quotaResumeAt(error("Claude quota exceeded — rate limit (seven_day)"), now + MAX_WAIT_MS + 1, now), undefined, "exact reset beyond the limit");
@@ -56,14 +66,16 @@ function harness() {
   quotaResume(pi, deps);
   const tick = () => polls.forEach((poll) => poll.callback());
   const hold = (messages) => { const probe = { messages, hold: false }; pi.events.emit(EXIT_HOLD_CHANNEL, probe); return probe.hold; };
-  return { handlers, commands, sent, status, notices, state, ctx, tick, hold, polls: () => polls };
+  const events = [];
+  bus.on('straw-boss:pause', payload => events.push(payload));
+  return { events, handlers, commands, sent, status, notices, state, ctx, tick, hold, polls: () => polls };
 }
 
 {
   const h = harness();
   const quota = fiveHour("4:00:00 PM");
   assert.equal(h.hold([quota]), true, "holds a child's exit on a quota error that resets soon");
-  assert.equal(h.hold([fiveHour("2:00:00 PM")]), false, "does not hold beyond the wait limit");
+  assert.equal(h.hold([fiveHour("2:00:00 PM")]), true, "holds overnight");
   assert.equal(h.hold([error("provider failed")]), false, "does not hold other errors");
 
   h.state.branch = [quota];
@@ -128,4 +140,30 @@ function harness() {
   assert.match(h.notices.at(-1), /Signalled every session/);
 }
 
+const resumed = { v: 1, state: 'resumed', reason: 'quota' };
+{
+  const h = harness();
+  h.state.now = incident;
+  h.state.branch = [weekly];
+  h.handlers.get('agent_settled')({aborted: false}, h.ctx);
+  assert.deepEqual(h.events, [{ v: 1, state: 'paused', reason: 'quota', until: weeklyAt, detail: 'Claude weekly limit' }]);
+  h.handlers.get('session_shutdown')();
+  assert.deepEqual(h.events[1], resumed);
+}
+{
+  const h = harness();
+  h.state.branch = [error('Claude quota exceeded')];
+  for (let attempt = 0; attempt < 2; attempt++) {
+    assert.equal(h.hold(h.state.branch), true);
+    h.handlers.get('agent_settled')({aborted: false}, h.ctx);
+    assert.deepEqual(h.events.at(-1), { v: 1, state: 'paused', reason: 'quota', detail: 'Claude quota limit' });
+    h.state.now += HOUR / 2 - 1;
+    h.tick();
+    assert.equal(h.sent.length, attempt);
+    h.state.now++;
+    h.tick();
+    assert.equal(h.sent.length, attempt + 1);
+    assert.deepEqual(h.events.at(-1), resumed);
+  }
+}
 console.log("pi quota resume: pass");
