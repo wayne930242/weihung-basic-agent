@@ -25,11 +25,11 @@ THEME_PACKAGE = {"source": "npm:@sherif-fanous/pi-catppuccin@0.3.0", "themes": [
 # the npm pi-herdr-agents release is replaced by the fork pin above, and pi must never load both; the pi-antigravity fork pin
 # gave way to the npm release once upstream shipped its change, and the npm release is retired too: Google suspended the
 # account for using Antigravity through a third-party tool (its FAQ calls that a Terms of Service violation).
-# Straw Boss on pi moved from the straw-boss git repository to the pi-straw-boss npm package; pi-web-access is no longer used;
+# Straw Boss on pi moved from the straw-boss git repository to the pi-straw-boss npm package; pi-web-access left then and is pinned again below;
 # pi-herdr-doc-review gave way to pi-better-show, which registers the same show_doc and so must never load beside it;
 # pi-ask-user gave way to rpiv-ask-user-question, whose answer channel lets pi-straw-boss answer from the browser.
 RETIRED_SOURCES = ("git:github.com/wayne930242/pi-antigravity", "npm:pi-antigravity", "npm:pi-herdr-doc-review", "npm:@victor-software-house/pi-curated-themes", "npm:pi-secret-drop", "npm:pi-herdr-agents",
-                   "git:github.com/wayne930242/straw-boss", "npm:pi-web-access", "npm:pi-ask-user",
+                   "git:github.com/wayne930242/straw-boss", "npm:pi-ask-user",
                    "git:github.com/wayne930242/pi-quotas",
                    # It kept a full gzip copy of the session on every checkpoint with no retention: 192 GB in a month.
                    "npm:@moyai/pi-session-hoarder",
@@ -79,6 +79,8 @@ PACKAGES = [
     # /doctor: profiles main-thread stalls and asks long, strained mains to rotate through a handoff file.
     "npm:pi-session-doctor@0.1.0",
     "npm:@narumitw/pi-goal@0.55.4",
+    # web_search and fetch_content: Exa first, then Brave, Tavily and others whose keys the environment holds; it took over from pi-antigravity's search.
+    "npm:pi-web-access@0.48.0",
     CLAUDE_RULES_PACKAGE,
 ]
 # The Herdr plugins in pi-straw-boss, each installed with `herdr plugin install` at its tag: plugin id, repository path, tag,
