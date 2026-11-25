@@ -12,9 +12,6 @@ CLAUDE_RULES_SOURCE = "npm:pi-code@1.10.2"
 # Once upstream releases what this setup needs, return to the npm release: set this to npm:pi-herdr-agents@<version>, drop the PINNED_GIT
 # entry and both FORKS entries (pi-herdr-agents, maestro) in scripts/pi-pins.py, and move "npm:pi-herdr-agents" out of RETIRED_SOURCES.
 HERDR_AGENTS_SOURCE = "git:github.com/wayne930242/pi-herdr-agents@189b0911933012f254c7cade8e367144ff82da5e"
-# The npm release again since 0.15.0, which ships the fork's only change (PR #153, consolidated into #162): pi's system
-# prompt goes in the first user turn, since on consumer endpoints a prompt in systemInstruction draws a false 429.
-ANTIGRAVITY_SOURCE = "npm:pi-antigravity@0.15.0"
 # Every other revision of a pinned git package, including an unpinned spec, is retired for the current pin.
 PINNED_GIT = {
     BRIDGE_SOURCE: ("git:github.com/wayne930242/pi-claude-bridge@",),
@@ -26,11 +23,12 @@ THEME_PACKAGE = {"source": "npm:@sherif-fanous/pi-catppuccin@0.3.0", "themes": [
 # Registry packages this setup installed before and now drops; install removes them from settings.
 # pi-curated-themes shipped a catppuccin-mocha with off-palette accents; pi-secret-drop is now part of pi-robot-hand;
 # the npm pi-herdr-agents release is replaced by the fork pin above, and pi must never load both; the pi-antigravity fork pin
-# gave way to the npm release once upstream shipped its change.
+# gave way to the npm release once upstream shipped its change, and the npm release is retired too: Google suspended the
+# account for using Antigravity through a third-party tool (its FAQ calls that a Terms of Service violation).
 # Straw Boss on pi moved from the straw-boss git repository to the pi-straw-boss npm package; pi-web-access is no longer used;
 # pi-herdr-doc-review gave way to pi-better-show, which registers the same show_doc and so must never load beside it;
 # pi-ask-user gave way to rpiv-ask-user-question, whose answer channel lets pi-straw-boss answer from the browser.
-RETIRED_SOURCES = ("git:github.com/wayne930242/pi-antigravity", "npm:pi-herdr-doc-review", "npm:@victor-software-house/pi-curated-themes", "npm:pi-secret-drop", "npm:pi-herdr-agents",
+RETIRED_SOURCES = ("git:github.com/wayne930242/pi-antigravity", "npm:pi-antigravity", "npm:pi-herdr-doc-review", "npm:@victor-software-house/pi-curated-themes", "npm:pi-secret-drop", "npm:pi-herdr-agents",
                    "git:github.com/wayne930242/straw-boss", "npm:pi-web-access", "npm:pi-ask-user",
                    "git:github.com/wayne930242/pi-quotas",
                    # It kept a full gzip copy of the session on every checkpoint with no retention: 192 GB in a month.
@@ -81,8 +79,6 @@ PACKAGES = [
     # /doctor: profiles main-thread stalls and asks long, strained mains to rotate through a handoff file.
     "npm:pi-session-doctor@0.1.0",
     "npm:@narumitw/pi-goal@0.55.4",
-    # Antigravity (agy) Google login: /login antigravity, plus the google_search and generate_image tools.
-    ANTIGRAVITY_SOURCE,
     CLAUDE_RULES_PACKAGE,
 ]
 # The Herdr plugins in pi-straw-boss, each installed with `herdr plugin install` at its tag: plugin id, repository path, tag,
@@ -118,7 +114,6 @@ UNATTENDED_DROPS = (
     "npm:cc-safety-net",
     "npm:pi-codex-image-gen",
     "npm:pi-robot-hand",
-    "npm:pi-antigravity",
     "npm:pi-open-tui",
     "npm:pi-better-show",
     "npm:pi-auto-tab-name",

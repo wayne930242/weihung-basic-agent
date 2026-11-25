@@ -1,7 +1,7 @@
 {
   "default": "claude-bridge/claude-opus-5-5",
   "agents": {
-    "scout": "antigravity/gemini-4-hydrogen",
+    "scout": "claude-bridge/claude-sonnet-5-5",
     "worker": "openai-codex/gpt-6.2-astra",
     "reviewer": "claude-bridge/claude-opus-5-5",
     "adversarial-reviewer": "claude-bridge/claude-opus-5-5",
@@ -20,7 +20,6 @@
       "claude-bridge/claude-opus-5-5"
     ],
     "recon": [
-      "antigravity/gemini-4-hydrogen",
       "claude-bridge/claude-sonnet-5-5"
     ],
     "docs": [
