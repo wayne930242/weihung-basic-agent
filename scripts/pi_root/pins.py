@@ -78,7 +78,7 @@ PACKAGES = [
     "npm:pi-loop-monitor@0.2.8",
     # /doctor: profiles main-thread stalls and asks long, strained mains to rotate through a handoff file.
     "npm:pi-session-doctor@0.1.0",
-    "npm:@narumitw/pi-goal@0.55.4",
+    "npm:@narumitw/pi-goal@0.55.5",
     # web_search and fetch_content: Exa first, then Brave, Tavily and others whose keys the environment holds; it took over from pi-antigravity's search.
     "npm:pi-web-access@0.48.0",
     CLAUDE_RULES_PACKAGE,
