@@ -11,7 +11,7 @@ CLAUDE_RULES_SOURCE = "npm:pi-code@1.10.2"
 # maestro fork, rebuilt dist/ committed (`npm run check:dist`), then the herdr fork's package.json pin, then this pin.
 # Once upstream releases what this setup needs, return to the npm release: set this to npm:pi-herdr-agents@<version>, drop the PINNED_GIT
 # entry and both FORKS entries (pi-herdr-agents, maestro) in scripts/pi-pins.py, and move "npm:pi-herdr-agents" out of RETIRED_SOURCES.
-HERDR_AGENTS_SOURCE = "git:github.com/wayne930242/pi-herdr-agents@189b0911933012f254c7cade8e367144ff82da5e"
+HERDR_AGENTS_SOURCE = "git:github.com/wayne930242/pi-herdr-agents@944046dea86a06cf25bd81d5aec12ef4b8b8b25b"
 # Every other revision of a pinned git package, including an unpinned spec, is retired for the current pin.
 PINNED_GIT = {
     BRIDGE_SOURCE: ("git:github.com/wayne930242/pi-claude-bridge@",),
@@ -78,7 +78,7 @@ PACKAGES = [
     "npm:pi-loop-monitor@0.2.8",
     # /evals and evals_query: records how skills, tools and packages are used (derived features only, never transcript text),
     # checks anchorloop process adherence, and reports the impact of pin, routing and rule changes.
-    "npm:pi-evals@0.4.0",
+    "npm:pi-evals@0.4.1",
     "npm:@narumitw/pi-goal@0.55.5",
     # web_search and fetch_content: Exa first, then Brave, Tavily and others whose keys the environment holds; it took over from pi-antigravity's search.
     "npm:pi-web-access@0.48.0",
