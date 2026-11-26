@@ -68,12 +68,12 @@ PACKAGES = [
     "npm:pi-prose-watch@0.1.2",
     "npm:cc-safety-net@2.8.3",
     "npm:pi-codex-image-gen@0.3.2",
-    "npm:pi-robot-hand@0.8.1",
+    "npm:pi-robot-hand@0.8.2",
     "npm:pi-auto-tab-name@0.2.0",
     # show_doc: documents in the browser, answers back as messages; it replaced pi-herdr-doc-review (same tool name).
     "npm:pi-better-show@0.10.1",
     # Straw Boss coordination in Herdr: opt-in main agents per tab, an on-demand tower per workspace, scoped broadcast.
-    "npm:pi-straw-boss@0.93.0",
+    "npm:pi-straw-boss@0.94.0",
     "npm:@pify/memory@0.14.1",
     "npm:pi-loop-monitor@0.2.8",
     # /evals and evals_query: records how skills, tools and packages are used (derived features only, never transcript text),
