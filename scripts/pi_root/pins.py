@@ -61,7 +61,7 @@ PACKAGES = [
     "npm:pi-intercom@0.18.1",
     "npm:@juicesharp/rpiv-ask-user-question@2.15.0",
     # todo and /todos with a public ledger contract (todo/v1 entries, todo:changed, todo:guard) that Straw Boss and anchorloop read.
-    "npm:pi-todo-ledger@0.1.0",
+    "npm:pi-todo-ledger@0.3.0",
     THEME_PACKAGE,
     "npm:pi-open-tui@0.4.7",
     QUOTAS_SOURCE,
@@ -70,12 +70,12 @@ PACKAGES = [
     "npm:pi-prose-watch@0.1.2",
     "npm:cc-safety-net@2.8.3",
     "npm:pi-codex-image-gen@0.3.2",
-    "npm:pi-robot-hand@0.8.1",
+    "npm:pi-robot-hand@0.8.2",
     "npm:pi-auto-tab-name@0.2.0",
     # show_doc: documents in the browser, answers back as messages; it replaced pi-herdr-doc-review (same tool name).
     "npm:pi-better-show@0.7.2",
     # Straw Boss coordination in Herdr: opt-in main agents per tab, an on-demand tower per workspace, scoped broadcast.
-    "npm:pi-straw-boss@0.88.0",
+    "npm:pi-straw-boss@0.97.0",
     "npm:@pify/memory@0.14.1",
     "npm:pi-loop-monitor@0.2.8",
     # /doctor: profiles main-thread stalls and asks long, strained mains to rotate through a handoff file.
