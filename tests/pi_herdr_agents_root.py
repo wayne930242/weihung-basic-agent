@@ -10,7 +10,7 @@ from pathlib import Path
 from support.statechart import make_pin
 
 ROOT = Path(__file__).resolve().parent.parent
-PINNED_SPEC = "git:github.com/wayne930242/pi-herdr-agents@189b0911933012f254c7cade8e367144ff82da5e"
+PINNED_SPEC = "git:github.com/wayne930242/pi-herdr-agents@944046dea86a06cf25bd81d5aec12ef4b8b8b25b"
 RETIRED_NPM = "npm:pi-herdr-agents@2.0.4"
 VARIABLE = "PI_HERDR_AGENTS_ROOT"
 
