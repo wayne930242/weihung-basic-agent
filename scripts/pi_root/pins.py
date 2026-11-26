@@ -78,7 +78,7 @@ PACKAGES = [
     "npm:pi-loop-monitor@0.2.8",
     # /evals and evals_query: records how skills, tools and packages are used (derived features only, never transcript text),
     # checks anchorloop process adherence, and reports the impact of pin, routing and rule changes.
-    "npm:pi-evals@0.7.0",
+    "npm:pi-evals@0.8.0",
     "npm:@narumitw/pi-goal@0.55.5",
     # web_search and fetch_content: Exa first, then Brave, Tavily and others whose keys the environment holds; it took over from pi-antigravity's search.
     "npm:pi-web-access@0.48.0",
