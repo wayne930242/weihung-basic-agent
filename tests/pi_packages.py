@@ -15,7 +15,7 @@ from support.pi import ROOT, fake_npm_install, run_script
 from support.statechart import make_pin
 
 
-ANCHORLOOP_SOURCE = "npm:pi-anchorloop@3.4.0"
+ANCHORLOOP_SOURCE = "npm:pi-anchorloop@3.5.0"
 ANCHORLOOP_ENTRY = {"source": ANCHORLOOP_SOURCE, "extensions": ["-pi/ttsr.ts"]}
 
 

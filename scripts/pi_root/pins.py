@@ -11,7 +11,7 @@ CLAUDE_RULES_SOURCE = "npm:pi-code@1.10.2"
 # maestro fork, rebuilt dist/ committed (`npm run check:dist`), then the herdr fork's package.json pin, then this pin.
 # Once upstream releases what this setup needs, return to the npm release: set this to npm:pi-herdr-agents@<version>, drop the PINNED_GIT
 # entry and both FORKS entries (pi-herdr-agents, maestro) in scripts/pi-pins.py, and move "npm:pi-herdr-agents" out of RETIRED_SOURCES.
-HERDR_AGENTS_SOURCE = "git:github.com/wayne930242/pi-herdr-agents@944046dea86a06cf25bd81d5aec12ef4b8b8b25b"
+HERDR_AGENTS_SOURCE = "git:github.com/wayne930242/pi-herdr-agents@67a0d75b18c86b5ad97cba38ab52c02039ed5359"
 # Every other revision of a pinned git package, including an unpinned spec, is retired for the current pin.
 PINNED_GIT = {
     BRIDGE_SOURCE: ("git:github.com/wayne930242/pi-claude-bridge@",),
@@ -73,12 +73,12 @@ PACKAGES = [
     # show_doc: documents in the browser, answers back as messages; it replaced pi-herdr-doc-review (same tool name).
     "npm:pi-better-show@0.10.2",
     # Straw Boss coordination in Herdr: opt-in main agents per tab, an on-demand tower per workspace, scoped broadcast.
-    "npm:pi-straw-boss@0.103.0",
+    "npm:pi-straw-boss@0.104.0",
     "npm:@pify/memory@0.14.1",
     "npm:pi-loop-monitor@0.2.8",
     # /evals and evals_query: records how skills, tools and packages are used (derived features only, never transcript text),
     # checks anchorloop process adherence, and reports the impact of pin, routing and rule changes.
-    "npm:pi-evals@0.6.0",
+    "npm:pi-evals@0.7.0",
     "npm:@narumitw/pi-goal@0.55.5",
     # web_search and fetch_content: Exa first, then Brave, Tavily and others whose keys the environment holds; it took over from pi-antigravity's search.
     "npm:pi-web-access@0.48.0",
@@ -128,4 +128,4 @@ UNATTENDED_DROPS = (
 # agent-desktop needs a desktop session, which the box's agents never drive.
 UNATTENDED_DROPPED_SKILLS = ("agent-desktop", "going-to-sleep", "recording-with-obs", "statechart")
 # anchorloop, the workflow skills and extensions; PI_ANCHORLOOP_ROOT swaps in a checkout for testing.
-ANCHORLOOP_PACKAGE = "npm:pi-anchorloop@3.4.0"
+ANCHORLOOP_PACKAGE = "npm:pi-anchorloop@3.5.0"
