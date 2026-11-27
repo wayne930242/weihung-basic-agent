@@ -60,6 +60,9 @@ def obsolete_pin(value: Package) -> bool:
             or source.startswith(RETIRED_SOURCES))
 
 
+KEEP_CHECKOUT = ("git:github.com/wayne930242/pi-herdr-agents",)
+
+
 def remove_retired_installs(agent_dir: Path, home: Path) -> None:
     """Take retired packages out of pi's npm and git roots: retiring one drops it from settings, after which `pi remove` no longer finds it."""
     npm_root = agent_dir / "npm"
@@ -71,6 +74,10 @@ def remove_retired_installs(agent_dir: Path, home: Path) -> None:
             if name in installed:
                 # pi uninstalls with --legacy-peer-deps too; without it a stale peer range elsewhere fails the uninstall.
                 external.run(["npm", "uninstall", name, "--prefix", str(npm_root), "--legacy-peer-deps"], home)
+        elif source in KEEP_CHECKOUT:
+            # Running sessions that loaded it before the switch launch their children from this checkout; it leaves settings now
+            # and the disk once every session has reloaded onto pi-straw-boss's host.
+            continue
         elif (checkout := agent_dir / "git" / source.removeprefix("git:").split("@")[0]).is_dir():
             shutil.rmtree(checkout)
 

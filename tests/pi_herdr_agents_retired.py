@@ -91,7 +91,7 @@ class Retired(unittest.TestCase):
         run_script("uninstall.sh", self.home, "--skip-external")
         self.assertEqual(herdr_entries(self.home), [])
 
-    def test_an_external_install_takes_the_fork_checkout_off_disk(self):
+    def test_an_external_install_keeps_the_fork_checkout_on_disk_for_running_sessions(self):
         checkout = self.agent / "git/github.com/wayne930242/pi-herdr-agents"
         checkout.mkdir(parents=True)
         settings = self.agent / "settings.json"
@@ -111,7 +111,7 @@ class Retired(unittest.TestCase):
         with mock.patch.object(external, "run", fake_run), mock.patch.object(external, "require"), \
                 mock.patch.object(resources, "install_statechart"):
             steps.install(self.home, skip_external=False, force=False)
-        self.assertFalse(checkout.exists())
+        self.assertTrue(checkout.exists())
         self.assertEqual(herdr_entries(self.home), [])
         self.assertIn(SB_PIN, packages(self.home))
 
