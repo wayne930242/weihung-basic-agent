@@ -11,7 +11,6 @@ from .context import Context, State
 from .jsonfile import read_json, write_json
 from .paths import (
     ANCHORLOOP_ROOT_VARIABLE,
-    HERDR_AGENTS_ROOT_VARIABLE,
     LOCAL_PACKAGE,
     optional_plugins,
     overlay_root,
@@ -19,7 +18,6 @@ from .paths import (
 from .pins import (
     AGENT_DESKTOP,
     ANCHORLOOP_PACKAGE,
-    HERDR_AGENTS_SOURCE,
     HERDR_PLUGINS,
     PACKAGES,
     PINNED_GIT,
@@ -97,27 +95,10 @@ def plugin_source(name: str, variable: str, default: Path) -> str | None:
     return None
 
 
-def herdr_agents_root() -> str | None:
-    """The checkout named by PI_HERDR_AGENTS_ROOT, or None when the variable is unset; a wrong value fails the install."""
-    value = os.environ.get(HERDR_AGENTS_ROOT_VARIABLE)
-    if not value:
-        return None
-    root = Path(value).expanduser().resolve()
-    manifest = root / "package.json"
-    if not manifest.is_file():
-        raise ValueError(f"{HERDR_AGENTS_ROOT_VARIABLE}={value} has no package.json at {manifest}; "
-                         f"point it at a pi-herdr-agents checkout or unset it to use {HERDR_AGENTS_SOURCE}")
-    name = read_json(manifest).get("name")
-    if name != "pi-herdr-agents":
-        raise ValueError(f"{HERDR_AGENTS_ROOT_VARIABLE}={value} is the package {name!r}, not pi-herdr-agents")
-    return str(root)
-
-
 def owned_packages(state: State) -> list[Package]:
-    """PACKAGES minus the recorded profile's drops, with the pinned pi-herdr-agents release swapped for the override checkout the install recorded."""
+    """PACKAGES minus the recorded profile's drops."""
     dropped = unattended.dropped_ids(state.get("profile"))
-    return [state["herdr_agents"] if package == HERDR_AGENTS_SOURCE and state.get("herdr_agents") else package
-            for package in PACKAGES if package_id(package, Path()) not in dropped]
+    return [package for package in PACKAGES if package_id(package, Path()) not in dropped]
 
 
 def profile_dropped(state: State) -> list[Package]:
@@ -147,23 +128,15 @@ def without_upstream_ttsr(package: Package) -> Package:
 def plan(ctx: Context) -> None:
     """Record which package sources this run uses and what settings held before the first install."""
     state = ctx.state
-    herdr_root = ctx.herdr_root
-    # A source that changed form (checkout to npm or back, or the git install aaaav had before 1.0, or pi-aaaav before its rename) leaves settings like a displaced pi-herdr-agents root;
-    # so does a straw-boss checkout from before Straw Boss moved to the pi-straw-boss npm package.
+    # A source that changed form (checkout to npm or back, or the git install aaaav had before 1.0, or pi-aaaav before its rename) leaves settings;
+    # so does a straw-boss checkout from before Straw Boss moved to the pi-straw-boss npm package, and a local pi-herdr-agents
+    # checkout an earlier install took from PI_HERDR_AGENTS_ROOT before pi-straw-boss became the subagent host.
+    # Old checkouts stay recorded until a run completes, so a run that fails midway still removes them on the next one.
     sources = {"anchorloop": anchorloop_source()}
     state["latest_displaced"] = [old for old in dict.fromkeys([*state.get("latest_displaced", []), state.pop("straw_boss", None), state.pop("aaaav", None),
+                                 *state.pop("herdr_agents_displaced", []), state.pop("herdr_agents", None),
                                  *(state.get(key) for key in sources)]) if old and old not in sources.values()]
     state.update(sources)
-    # pi identifies an npm package by name but a local one by path, so whichever form the other mode used must leave settings.
-    # Old checkouts stay recorded until a run completes, so a run that fails midway still removes them on the next one.
-    state["herdr_agents_displaced"] = [root for root in dict.fromkeys([*state.get("herdr_agents_displaced", []), state.get("herdr_agents")])
-                                       if root and root != herdr_root]
-    if herdr_root:
-        state["herdr_agents"] = herdr_root
-        print(f"{HERDR_AGENTS_ROOT_VARIABLE}: using {herdr_root} instead of {HERDR_AGENTS_SOURCE}. "
-              "Roles still come from pi-straw-boss's role pack.", file=sys.stderr)
-    else:
-        state.pop("herdr_agents", None)
     declared = optional_plugins()
     for key in plugin_keys(state):
         if key in declared and (source := plugin_source(*declared[key])):
@@ -225,9 +198,7 @@ def install_herdr_plugins(ctx: Context) -> None:
 def apply(ctx: Context) -> None:
     """Install pi, its tools, and every owned package, then write the package list in the order pi expects."""
     home, state, agent_dir, settings_path = ctx.home, ctx.state, ctx.agent_dir, ctx.settings_path
-    old_roots = state["herdr_agents_displaced"] + state["latest_displaced"]
-    # The other form of pi-herdr-agents leaves settings even when the user had declared it first.
-    retired_ids = {package_id(value, agent_dir) for value in old_roots + ([HERDR_AGENTS_SOURCE] if ctx.herdr_root else [])}
+    retired_ids = {package_id(value, agent_dir) for value in state["latest_displaced"]}
     # An overlay checkout is not a pi package; a machine whose settings still list it from before the overlay split sheds it.
     if overlay := overlay_root():
         retired_ids.add(package_id(str(overlay), agent_dir))
@@ -301,7 +272,6 @@ def apply(ctx: Context) -> None:
     settings["packages"] = [value for value in unique_packages(unmanaged + declared, agent_dir)
                             if package_id(value, agent_dir) not in gone_ids]
     write_json(settings_path, settings)
-    state.pop("herdr_agents_displaced")
     state.pop("latest_displaced")
 
 
@@ -311,7 +281,8 @@ def restore(ctx: Context) -> None:
     resources.uninstall_ported_resources(home, state)
     previous_packages = state.get("previous_packages", [])
     previous_ids = {package_id(value, agent_dir) for value in previous_packages}
-    managed_packages = owned_packages(state) + local_packages(state)
+    # A pi-herdr-agents checkout an install recorded before it was retired goes too, when no install has run since to remove it.
+    managed_packages = owned_packages(state) + local_packages(state) + ([state["herdr_agents"]] if state.get("herdr_agents") else [])
     optional = [state[key] for key in plugin_keys(state) if state.get(key)]
     owned = {package_id(value, agent_dir) for value in managed_packages} - previous_ids
     if not ctx.skip_external:
@@ -339,12 +310,9 @@ def restore(ctx: Context) -> None:
     prior = {package_id(value, agent_dir): value for value in previous_packages}
     settings["packages"] = [prior.get(package_id(package, agent_dir), package) for package in settings.get("packages", [])
                             if package_id(package, agent_dir) not in owned]
-    # The override replaced a release the user had declared before install; put that spec back like a retired package.
-    displaced = [package for package in previous_packages if state.get("herdr_agents")
-                 and package_id(package, agent_dir) == package_id(HERDR_AGENTS_SOURCE, agent_dir)]
     # A package the user had before install and the profile shed comes back with the rest.
     dropped_ids = {package_id(package, agent_dir) for package in profile_dropped(state)}
-    displaced += [package for package in previous_packages if package_id(package, agent_dir) in dropped_ids]
+    displaced = [package for package in previous_packages if package_id(package, agent_dir) in dropped_ids]
     for package in [*state.get("retired_packages", []), *displaced]:
         if package not in settings["packages"]:
             if not ctx.skip_external:

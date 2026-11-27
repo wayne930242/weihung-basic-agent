@@ -1,4 +1,4 @@
-"""The small managed settings: UI, terminal, panes, herdr-agents models, built-in MCP, mcp-adapter, open-tui, claude-bridge, computer use, compaction."""
+"""The small managed settings: UI, terminal, panes, subagent models (herdr-agents/config.json), built-in MCP, mcp-adapter, open-tui, claude-bridge, computer use, compaction."""
 
 import hashlib
 import json
@@ -29,7 +29,7 @@ MCP_SETTINGS = {"namespaceProxyTools": False}
 RESEARCH_HUB = "research-hub"
 # pi-mcp-adapter owns /mcp; pi's built-in MCP support would otherwise warn on every start that it stepped aside.
 BUILTIN_MCP_OFF = "-builtin:mcp"
-# pi-herdr-agents falls back to its config.json.example only while config.json is missing; once this install creates the
+# pi-straw-boss's subagent host falls back to its config.json.example only while config.json is missing; once this install creates the
 # file, `status` is required, so a fresh machine gets the example's value (the other example sections have defaults).
 HERDR_STATUS = {"enabled": True}
 # pi-open-tui footer segments kept off to keep the footer to what gets read; `/open-tui` still owns every other setting.
@@ -62,7 +62,7 @@ def apply_ui(ctx: Context) -> None:
     if "status" not in config:
         config["status"] = deepcopy(HERDR_STATUS)
         state["added_herdr_status"] = True
-    # Split placement opens each worker beside its caller's pane, in the caller's own tab. The fork's split guard opens it in
+    # Split placement opens each worker beside its caller's pane, in the caller's own tab. The host's split guard opens it in
     # an Agents tab instead once a right split would leave the caller under `panes.minSplitCols` (default 80): on 2026-11-24
     # ten splits left a main ~3 columns wide, where pi-tui's editor recursed forever on a wide character and pi crashed.
     config["panes"] = {**config.get("panes", {}), "mode": "split", "direction": "right"}

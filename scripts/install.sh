@@ -46,7 +46,7 @@ its overlay.json may declare optional plugins. The WEIHUNG_OVERLAY variable
 does the same. The install records the overlay, so a later install or uninstall
 without --overlay keeps it; --no-overlay installs without it.
 
---models-file PATH replaces the profile's shared pi-herdr-agents routing
+--models-file PATH replaces the profile's shared subagent model routing
 with a host JSON file. Later installs re-read the recorded file;
 --no-models-file clears the override and restores the profile's shared routing.
 

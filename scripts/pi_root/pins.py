@@ -3,32 +3,24 @@
 BRIDGE_SOURCE = "git:github.com/wayne930242/pi-claude-bridge@96bab40077a04e7a589f91dc945af2698cdd5498"
 QUOTAS_SOURCE = "npm:@latentminds/pi-quotas@0.5.0"
 CLAUDE_RULES_SOURCE = "npm:pi-code@1.10.2"
-# Fork pin of giuseppecrj/pi-herdr-agents: upstream main (v3.12.1, engine moved into @nubl/maestro) with its maestro
-# dependency pinned to the wayne930242/maestro fork (branch weihung-integration on v0.1.2), which carries the
-# solutionSpace change of closed PR #87, grouped-workspace placement (in the herdr fork itself), the macOS process-identity and cancel-settle
-# fixes, the complex-coding task category, managed worktrees seeding the source's installed project .pi/npm and .pi/git, and the fork-only exit hold that pi/extensions/quota-resume.ts and monitor-hold.ts use, and a routing guideline that names
-# solutionSpace as a reason to omit thinking on a task: launch (branch weihung/v3-integration). An engine change goes to the
-# maestro fork, rebuilt dist/ committed (`npm run check:dist`), then the herdr fork's package.json pin, then this pin.
-# Once upstream releases what this setup needs, return to the npm release: set this to npm:pi-herdr-agents@<version>, drop the PINNED_GIT
-# entry and both FORKS entries (pi-herdr-agents, maestro) in scripts/pi-pins.py, and move "npm:pi-herdr-agents" out of RETIRED_SOURCES.
-HERDR_AGENTS_SOURCE = "git:github.com/wayne930242/pi-herdr-agents@2045e55da0c7ac52ab41e053992ad12015a9a3c2"
 # Every other revision of a pinned git package, including an unpinned spec, is retired for the current pin.
 PINNED_GIT = {
     BRIDGE_SOURCE: ("git:github.com/wayne930242/pi-claude-bridge@",),
-    HERDR_AGENTS_SOURCE: ("git:github.com/wayne930242/pi-herdr-agents",),
 }
 # Versioned specs keep every machine on the same release; `pi update` skips them, so bump them here.
 # Catppuccin Mocha with only official palette colors, matching Herdr, Ghostty, and SketchyBar; the filter loads Mocha alone.
 THEME_PACKAGE = {"source": "npm:@sherif-fanous/pi-catppuccin@0.3.0", "themes": ["themes/catppuccin-mocha.json"]}
 # Registry packages this setup installed before and now drops; install removes them from settings.
 # pi-curated-themes shipped a catppuccin-mocha with off-palette accents; pi-secret-drop is now part of pi-robot-hand;
-# the npm pi-herdr-agents release is replaced by the fork pin above, and pi must never load both; the pi-antigravity fork pin
+# pi-straw-boss hosts subagents since 0.110.0 (the `subagent` tools on its Maestro engine) and stands down beside
+# pi-herdr-agents, so both its npm release and the wayne930242 fork pin are retired; the pi-antigravity fork pin
 # gave way to the npm release once upstream shipped its change, and the npm release is retired too: Google suspended the
 # account for using Antigravity through a third-party tool (its FAQ calls that a Terms of Service violation).
 # Straw Boss on pi moved from the straw-boss git repository to the pi-straw-boss npm package; pi-web-access left then and is pinned again below;
 # pi-herdr-doc-review gave way to pi-better-show, which registers the same show_doc and so must never load beside it;
 # pi-ask-user gave way to rpiv-ask-user-question, whose answer channel lets pi-straw-boss answer from the browser.
 RETIRED_SOURCES = ("git:github.com/wayne930242/pi-antigravity", "npm:pi-antigravity", "npm:pi-herdr-doc-review", "npm:@victor-software-house/pi-curated-themes", "npm:pi-secret-drop", "npm:pi-herdr-agents",
+                   "git:github.com/wayne930242/pi-herdr-agents",
                    "git:github.com/wayne930242/straw-boss", "npm:pi-ask-user",
                    "git:github.com/wayne930242/pi-quotas",
                    # It kept a full gzip copy of the session on every checkpoint with no retention: 192 GB in a month.
@@ -54,7 +46,6 @@ RETIRED_SOURCES = ("git:github.com/wayne930242/pi-antigravity", "npm:pi-antigrav
 CLAUDE_RULES_PACKAGE = {"source": CLAUDE_RULES_SOURCE, "extensions": ["extensions/claude-rules.ts"]}
 PACKAGES = [
     BRIDGE_SOURCE,
-    HERDR_AGENTS_SOURCE,
     "npm:pi-mcp-adapter@7.0.1",
     "npm:pi-intercom@0.19.0",
     "npm:@juicesharp/rpiv-ask-user-question@2.16.0",
@@ -72,8 +63,10 @@ PACKAGES = [
     "npm:pi-auto-tab-name@0.2.0",
     # show_doc: documents in the browser, answers back as messages; it replaced pi-herdr-doc-review (same tool name).
     "npm:pi-better-show@0.10.2",
-    # Straw Boss coordination in Herdr: opt-in main agents per tab, an on-demand tower per workspace, scoped broadcast.
-    "npm:pi-straw-boss@0.109.3",
+    # Straw Boss coordination in Herdr: opt-in main agents per tab, an on-demand tower per workspace, scoped broadcast,
+    # and the subagent host (`subagent`, `subagent_cancel`, `subagent_resume`, `subagents_list`), which reads its model
+    # routing from ~/.pi/agent/herdr-agents/config.json.
+    "npm:pi-straw-boss@0.110.0",
     "npm:@pify/memory@0.14.1",
     "npm:pi-loop-monitor@0.2.8",
     # /evals and evals_query: records how skills, tools and packages are used (derived features only, never transcript text),

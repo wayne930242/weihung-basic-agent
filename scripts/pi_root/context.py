@@ -22,8 +22,6 @@ class Context:
     state: State
     skip_external: bool = False
     force: bool = False
-    # The PI_HERDR_AGENTS_ROOT checkout replacing the pinned pi-herdr-agents release, if any.
-    herdr_root: str | None = None
     first_install: bool = False
     # The install profile (unattended.PROFILES); a run without --profile keeps the one the marker recorded.
     profile: str = "default"
@@ -41,6 +39,7 @@ class Context:
 
     @property
     def herdr_config_path(self) -> Path:
+        # pi-straw-boss's subagent host reads its models, status, and panes here, the file pi-herdr-agents read before it.
         return self.agent_dir / "herdr-agents/config.json"
 
     def save(self) -> None:

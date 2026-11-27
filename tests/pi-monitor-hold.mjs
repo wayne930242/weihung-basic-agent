@@ -21,7 +21,7 @@ function harness() {
   monitorHold(pi, { setTimeout: (callback) => timers.push(callback) });
   handlers.get("session_start")({}, { isIdle: () => state.idle });
   const flush = () => { const due = timers; timers = []; due.forEach((callback) => callback()); };
-  // The probe pi-herdr-agents' isExitHeld sends before a child auto-exits.
+  // The probe Maestro's isExitHeld sends before a child auto-exits.
   const exitHeld = () => { const probe = { messages: [], hold: false }; bus.emit(EXIT_HOLD_CHANNEL, probe); return probe.hold; };
   const started = (monitorId, description) => bus.emit("monitor:started", { monitorId, command: "bash run.sh", description, timestamp: 1 });
   const finished = (monitorId, extra) => bus.emit("monitor:finished", { monitorId, outputLines: 3, ...extra });
@@ -94,10 +94,10 @@ test("session shutdown forgets the monitors pi-loop-monitor stops with it", () =
 });
 
 const agent = process.env.PI_CODING_AGENT_DIR ?? join(homedir(), ".pi/agent");
-const herdrManifest = join(agent, "git/github.com/wayne930242/pi-herdr-agents/package.json");
+const hostManifest = join(agent, "npm/node_modules/pi-straw-boss/package.json");
 
-test("the channel matches the one installed pi-herdr-agents asks", { skip: !existsSync(herdrManifest) && "pi-herdr-agents not installed" }, () => {
-  const protocol = createRequire(herdrManifest).resolve("@nubl/maestro/adapters/pi/child/protocol");
+test("the channel matches the one the installed pi-straw-boss host asks", { skip: !existsSync(hostManifest) && "pi-straw-boss not installed" }, () => {
+  const protocol = createRequire(hostManifest).resolve("@nubl/maestro/adapters/pi/child/protocol");
   const source = readFileSync(protocol, "utf-8");
   assert.match(source, new RegExp(`EXIT_HOLD_CHANNEL = "${EXIT_HOLD_CHANNEL}"`));
 });

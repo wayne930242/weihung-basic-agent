@@ -4,7 +4,7 @@ import argparse
 import os
 from pathlib import Path
 
-from . import configs, packages, steps, unattended
+from . import configs, steps, unattended
 from .jsonfile import read_json
 from .paths import MARKER, OVERLAY_VARIABLE, saved_overlay, saved_profile
 
@@ -43,12 +43,10 @@ def main() -> None:
     elif not os.environ.get(OVERLAY_VARIABLE) and (saved := saved_overlay(home)):
         os.environ[OVERLAY_VARIABLE] = saved
     try:
-        # Shell preflight checks overrides before any links or external installs change the home.
-        herdr_root = packages.herdr_agents_root() if args.action in ("migrate", "install-preflight", "install") else None
         if args.action == "install-preflight":
             configs.load_models_override(read_json(home / MARKER), args.models_file, args.no_models_file)
         elif args.action == "install":
-            steps.install(home, args.skip_external, args.force, herdr_root, args.profile,
+            steps.install(home, args.skip_external, args.force, args.profile,
                           models_file=args.models_file, no_models_file=args.no_models_file)
         elif args.action == "uninstall":
             steps.uninstall(home, args.skip_external)

@@ -1,6 +1,6 @@
 # weihung-basic-agent
 
-A user-root setup for [pi](https://www.npmjs.com/package/@earendil-works/pi-coding-agent) that installs standalone. One command links its skills, rules, and role overrides into your home directory, installs pi and a pinned set of pi packages, generates `~/.pi/agent/AGENTS.md`, and sets model routing for [pi-herdr-agents](https://github.com/giuseppecrj/pi-herdr-agents) in Herdr.
+A user-root setup for [pi](https://www.npmjs.com/package/@earendil-works/pi-coding-agent) that installs standalone. One command links its skills and rules into your home directory, installs pi and a pinned set of pi packages, generates `~/.pi/agent/AGENTS.md`, and sets model routing for the subagents [pi-straw-boss](https://www.npmjs.com/package/pi-straw-boss) hosts in Herdr.
 
 ## Install
 
@@ -26,7 +26,7 @@ The installer never overwrites a file you own silently, and it is idempotent: re
 
 - **Skills** in `skills/`: `orchestrate`, `agent-desktop`, `reflecting-to-root`, `maintaining-pi-setup`, `publishing-pi-extensions`, `recording-with-obs`, `going-to-sleep`, `briefing-gpt-agents`; plus the pinned [`statechart`](https://github.com/cursor/plugins/tree/main/harness/pstack/claude-code/skills/statechart) skill (TLA+ model checking with TLC; needs Java 11 or later), fetched at a fixed revision.
 - **Rules** in `rules/`: conventions for Git, deployment, dependencies, architecture, UI, Go, Python, shell, TypeScript, and Markdown, plus stream rules that basic's TTSR extension uses to block known command mistakes.
-- **Model routing** for the `pi-herdr-agents` roles (pi-straw-boss ships the roles themselves) in `pi/herdr-agents-models.json` (and `pi/herdr-agents-models.unattended.json` for the unattended profile).
+- **Model routing** for the subagent roles pi-straw-boss ships and hosts in `pi/herdr-agents-models.json` (and `pi/herdr-agents-models.unattended.json` for the unattended profile).
 - **Extensions** in `pi/extensions/`: auto thinking level, idle compaction, quota resume, batch guard, monitor hold, the Playwriter relay, and TTSR.
 - **Instructions**: `pi/AGENTS.md.in` becomes `~/.pi/agent/AGENTS.md`.
 

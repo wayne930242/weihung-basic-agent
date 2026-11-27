@@ -91,7 +91,7 @@ from pathlib import Path
 
 install = sys.argv[1]
 sys.path.insert(0, str(Path(install).resolve().parent))
-from pi_root.pins import BRIDGE_SOURCE, CLAUDE_RULES_SOURCE, HERDR_AGENTS_SOURCE, PACKAGES
+from pi_root.pins import BRIDGE_SOURCE, CLAUDE_RULES_SOURCE, PACKAGES
 
 
 def run(home, *args):
@@ -117,7 +117,7 @@ with tempfile.TemporaryDirectory() as directory:
     settings = json.loads((home / ".pi/agent/settings.json").read_text())
     assert len(settings["packages"]) == len(PACKAGES) + 2, settings  # the pinned packages, anchorloop, and this package
     assert settings["packages"][0] == BRIDGE_SOURCE, settings
-    assert settings["packages"][1] == HERDR_AGENTS_SOURCE, settings
+    assert not any("pi-herdr-agents" in (p["source"] if isinstance(p, dict) else p) for p in settings["packages"]), settings
     assert not any("pi-herdr-roles" in (p["source"] if isinstance(p, dict) else p) for p in settings["packages"]), settings
     sources = [package["source"] if isinstance(package, dict) else package for package in settings["packages"]]
     registry = [source.removeprefix("npm:") for source in sources if source.startswith("npm:")]

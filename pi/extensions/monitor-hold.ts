@@ -1,6 +1,7 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 
-// pi-herdr-agents asks this channel before a child exits on a settled run.
+// The Maestro engine of pi-straw-boss's subagent host asks this channel before a child exits on a settled run;
+// the name is the one pi-herdr-agents gave it.
 export const EXIT_HOLD_CHANNEL = "pi-herdr-agents:exit-hold";
 // Let the turn settle before prompting, so the message starts a new run instead of queueing.
 export const PROMPT_DELAY_MS = 2_000;

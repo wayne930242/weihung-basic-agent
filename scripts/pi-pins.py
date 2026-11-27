@@ -31,10 +31,9 @@ PLAIN_NPM_PIN = re.compile(r"^([^/@:]+)@(.+)$")
 GITHUB = "https://github.com"
 RELEASE_TAG = re.compile(r"^v\d+\.\d+\.\d+$")
 MAIN_BRANCH = "main"
-# npm pins `auto` leaves alone: a pi-herdr-agents bump means checking the role discovery pi-straw-boss's role pack registers on.
-# pi-straw-boss stays auto although it ships the roles (its role pack, since 0.79.0): its release flow runs `/boss roles-check`
-# (the boss's decision, 2026-11-13).
-MANUAL_PINS = {"pi-herdr-agents"}
+# npm pins `auto` leaves alone. pi-straw-boss stays auto although it ships the roles (its role pack, since 0.79.0) and the
+# subagent host (since 0.110.0): its release flow runs `/boss roles-check` (the boss's decision, 2026-11-13).
+MANUAL_PINS: set[str] = set()
 # Installing a new pi-straw-boss restarts the sb server (every session auto-upgrades), which drops a live train's in-memory
 # records (2026-11-21 07:42Z): `auto` holds it, without rejecting it, while `train status` shows a live train or cannot be read,
 # checked before the run and again right before the install (the boss's decision, 2026-11-21).
@@ -42,13 +41,14 @@ SB_PIN = "pi-straw-boss"
 SB_CLI = Path.home() / ".pi/agent/npm/node_modules/pi-straw-boss/dist/server/cli.mjs"
 # Fork pins follow an integration or PR branch instead of the remote HEAD, so `outdated` and a named `bump` never move
 # them to the default branch. `forks` checks each against its upstream; once upstream releases what a fork carries, the pin
-# returns to the npm release (pi-herdr-agents then stays out of `auto` through MANUAL_PINS).
+# returns to the npm release.
 class Fork(NamedTuple):
     branch: str  # the fork branch the pin follows
     upstream: str  # <owner>/<repo> the fork tracks
     prs: tuple[int, ...]  # upstream PRs the fork carries until upstream releases them (docs/reference.md names each)
     kept: tuple[int, ...] = ()  # PRs upstream closed unmerged that the fork keeps carrying on purpose
-    pinned_by: str | None = None  # a fork pin whose package.json pins this fork as a git dependency, instead of pins.py
+    pinned_by: str | None = None  # the repository whose package.json pins this fork as a git dependency, instead of pins.py:
+    # a fork in FORKS at its pin, or the repository of an npm pin of the same name at its release tag v<version>
     track_tag: bool = False  # compare with upstream's newest release tag (a dependency consumed by release), not its default branch
 
 
@@ -57,10 +57,9 @@ FORKS = {
     # gets a fresh tool-less query and no error (rerun 2026-11-20). The fork still carries its tested route, re-keyed on
     # pi's system messages, until the next fork rebase drops it; nothing breaks without it.
     "github.com/wayne930242/pi-claude-bridge": Fork("weihung-integration", "elidickinson/pi-claude-bridge", (123, 131, 133, 225, 226), kept=(123,)),
-    "github.com/wayne930242/pi-herdr-agents": Fork("weihung/v3-integration", "giuseppecrj/pi-herdr-agents", (87,), kept=(87,)),
-    # The pi-herdr-agents engine since upstream moved it into @nubl/maestro; the herdr fork's package.json pins this fork.
+    # The subagent engine pi-straw-boss hosts (@nubl/maestro); pi-straw-boss's package.json pins this fork.
     "github.com/wayne930242/maestro": Fork("weihung-integration", "nublai/maestro", (14, 15, 16, 17, 18),
-                                          pinned_by="github.com/wayne930242/pi-herdr-agents", track_tag=True),
+                                          pinned_by="github.com/wayne930242/pi-straw-boss", track_tag=True),
 }
 FORK_BRANCHES = {name: fork.branch for name, fork in FORKS.items() if not fork.pinned_by}
 STATE_DIR = Path.home() / ".local/state/weihung-agent-root"
@@ -207,8 +206,7 @@ def fork_pin(name: str, fork: Fork) -> str:
     """The commit the fork is pinned to: in pins.py, or in the package.json of the fork pin that depends on it."""
     if fork.pinned_by:
         parent = fork.pinned_by.removeprefix("github.com/")
-        manifest = gh_api(f"repos/{parent}/contents/package.json?ref={fork_pin(fork.pinned_by, FORKS[fork.pinned_by])}",
-                          ".content | @base64d")
+        manifest = gh_api(f"repos/{parent}/contents/package.json?ref={pinner_ref(fork.pinned_by)}", ".content | @base64d")
         match = re.search(rf"{re.escape(name.removeprefix('github.com/'))}(?:\.git)?#([0-9a-f]{{7,40}})", manifest)
         if not match:
             raise ValueError(f"{fork.pinned_by}'s package.json does not pin {name}")
@@ -217,6 +215,17 @@ def fork_pin(name: str, fork: Fork) -> str:
     if not match:
         raise ValueError(f"{name} has no git pin in {TARGET}")
     return match[1]
+
+
+def pinner_ref(pinner: str) -> str:
+    """The ref of the repository that pins a fork: its own fork pin, or the release tag of the npm pin it publishes."""
+    if pinner in FORKS:
+        return fork_pin(pinner, FORKS[pinner])
+    name = pinner.rsplit("/", 1)[1]
+    match = re.search(rf'"npm:{re.escape(name)}@([^"]+)"', TARGET.read_text())
+    if not match:
+        raise ValueError(f"{pinner} is neither a fork nor an npm pin in {TARGET}")
+    return f"v{match[1]}"
 
 
 def newest_tag(repository: str) -> str | None:
@@ -315,9 +324,6 @@ def bump(names: list[str]) -> None:
     if not bumped:
         print("Nothing to bump.")
         return
-    if any(name.endswith("pi-herdr-agents") for name in bumped):
-        print("pi-herdr-agents changed: check that pi-straw-boss's role pack still registers (subagents_list, /boss roles-check) "
-              "and update the pins quoted in docs/reference.md.")
     if not names:
         print("Git pins were left alone; name them explicitly to bump them.")
     print("Review `git diff`, run the tests, then `bash scripts/install.sh` and reload pi.")

@@ -8,11 +8,10 @@ from .jsonfile import read_json
 ROOT = Path(__file__).resolve().parents[2]
 MARKER = Path(".pi/agent/.weihung-agent-root.json")
 LOCAL_PACKAGE = str(ROOT)
-# Testing an unreleased pi-herdr-agents fix: this variable names a checkout that replaces the pinned release.
-HERDR_AGENTS_ROOT_VARIABLE = "PI_HERDR_AGENTS_ROOT"
 # Testing an unpushed anchorloop change: this variable names a checkout that replaces the latest commit.
 ANCHORLOOP_ROOT_VARIABLE = "PI_ANCHORLOOP_ROOT"
-# The pi-herdr-agents `models` object (role, default, and task models) this repository writes into its config.
+# The `models` object (role, default, and task models) this repository writes into herdr-agents/config.json, which
+# pi-straw-boss's subagent host reads.
 HERDR_MODELS = ROOT / "pi/herdr-agents-models.json"
 # The unattended install profile's role models (Opus where the default routes to Fable: the box's plan has no Fable quota).
 HERDR_MODELS_UNATTENDED = ROOT / "pi/herdr-agents-models.unattended.json"

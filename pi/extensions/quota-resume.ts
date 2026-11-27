@@ -10,7 +10,8 @@ const RATE_LIMIT_RETRY_MS = 5 * 60 * 1000;
 const USAGE_LIMIT = /quota exceeded|hit your .*limit|out of extra usage|weekly limit/i;
 export const RESUME_MARGIN_MS = 2 * 60 * 1000;
 export const POLL_MS = 15_000;
-// pi-herdr-agents asks this channel before a child exits on a settled run.
+// The Maestro engine of pi-straw-boss's subagent host asks this channel before a child exits on a settled run;
+// the name is the one pi-herdr-agents gave it.
 export const EXIT_HOLD_CHANNEL = "pi-herdr-agents:exit-hold";
 export const RESUME_SIGNAL = join(homedir(), ".local/state/weihung-agent-root/quota-resume");
 export const RESUME_PROMPT =

@@ -136,8 +136,8 @@ class HerdrModelsTests(unittest.TestCase):
             run_script("uninstall.sh", home, "--skip-external")
             self.assertEqual(json.loads(config.read_text()), {"models": {"default": "user/model"}, "other": True})
 
-    def test_a_fresh_config_gets_the_status_section_pi_herdr_agents_requires(self):
-        # weihung-agent-root#1: a config.json without `status` stops pi-herdr-agents from loading.
+    def test_a_fresh_config_gets_the_status_section_the_subagent_host_requires(self):
+        # weihung-agent-root#1: a config.json without `status` stopped pi-herdr-agents from loading; pi-straw-boss's host reads the same file.
         user_status = {"enabled": False}
         for before in (None, {"other": True}, {"status": user_status}):
             with self.subTest(before=before), tempfile.TemporaryDirectory() as directory:
