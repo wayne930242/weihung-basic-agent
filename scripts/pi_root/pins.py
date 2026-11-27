@@ -11,7 +11,7 @@ CLAUDE_RULES_SOURCE = "npm:pi-code@1.10.2"
 # maestro fork, rebuilt dist/ committed (`npm run check:dist`), then the herdr fork's package.json pin, then this pin.
 # Once upstream releases what this setup needs, return to the npm release: set this to npm:pi-herdr-agents@<version>, drop the PINNED_GIT
 # entry and both FORKS entries (pi-herdr-agents, maestro) in scripts/pi-pins.py, and move "npm:pi-herdr-agents" out of RETIRED_SOURCES.
-HERDR_AGENTS_SOURCE = "git:github.com/wayne930242/pi-herdr-agents@f1590cb9ab154e6ad84290eba1156ab428d62fac"
+HERDR_AGENTS_SOURCE = "git:github.com/wayne930242/pi-herdr-agents@2045e55da0c7ac52ab41e053992ad12015a9a3c2"
 # Every other revision of a pinned git package, including an unpinned spec, is retired for the current pin.
 PINNED_GIT = {
     BRIDGE_SOURCE: ("git:github.com/wayne930242/pi-claude-bridge@",),
@@ -59,7 +59,7 @@ PACKAGES = [
     "npm:pi-intercom@0.19.0",
     "npm:@juicesharp/rpiv-ask-user-question@2.16.0",
     # todo and /todos with a public ledger contract (todo/v1 entries, todo:changed, todo:guard) that Straw Boss and anchorloop read.
-    "npm:pi-todo-ledger@0.6.0",
+    "npm:pi-todo-ledger@0.7.0",
     THEME_PACKAGE,
     "npm:pi-open-tui@0.4.7",
     QUOTAS_SOURCE,
