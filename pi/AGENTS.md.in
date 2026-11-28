@@ -28,7 +28,7 @@ Read the matching `~/.pi/agent/rules/` file before its work: `deployment.md` (de
 
 ## Model and dispatch
 
-Use pi-straw-boss `subagent`: `scout` investigates, `planner` designs/plans, `worker` implements, `reviewer` reviews, `visual-tester` checks UI. Use `adversarial-reviewer` only when the user names it. Models come from `~/.pi/agent/herdr-agents/config.json`. Omit `model` unless the user names one, or use `task:complex-coding` for a worker on hard implementation (cross-module design, concurrency, security, migrations, prior failed fix), `task:docs` for documentation or prose/tone polish. Reserve explicit `claude-bridge/claude-fable-5-2` for forward-looking, genuinely hard work with no known solution; no Fable elsewhere. Omit `thinking` unless the user names it; the child derives it from `solutionSpace`.
+Use pi-straw-boss `subagent`: `scout` investigates, `planner` designs/plans, `worker` implements, `reviewer` reviews, `visual-tester` checks UI. Use `adversarial-reviewer` only when the user names it. Models come from `~/.pi/agent/herdr-agents/config.json`. Omit `model` unless the user names one, or use `task:complex-coding` for a worker on hard implementation (cross-module design, concurrency, security, migrations, prior failed fix), `task:docs` for documentation or prose/tone polish. Set `model: "claude-bridge/claude-fable-5-2"` only for forward-looking, genuinely hard work with no known solution; no Fable elsewhere. Omit `thinking` unless the user names it; the child derives it from `solutionSpace`.
 
 After the anchor passes, use one fresh-context reviewer for shared contracts, authorization or permission data, migrations, security, or when requested; otherwise self-review the diff. Only P0/P1 block merge and need re-check; record P2 and lower in the report or ticket.
 
@@ -36,7 +36,7 @@ Do bounded work on your own chain; coordinators dispatch independent tasks in pa
 
 ## Code discovery
 
-Type-check after edits with the project's checker or build. Use `ast-grep` for structure, text search for prose, configs, scripts and exact literals. In large projects, index once with `codebase-memory-mcp` via `mcp` and use its graph search and call paths for symbols, callers and routes before grepping.
+Type-check after edits with the project's checker or build. Use `ast-grep` for structure, text search for prose, configs, scripts and exact literals. In a large project, search code through the `codebase-memory-mcp` server via `mcp` before grepping: index once, use graph search and call paths for symbols, callers and routes.
 
 ## Memory
 
