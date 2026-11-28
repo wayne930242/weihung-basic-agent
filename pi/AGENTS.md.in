@@ -2,56 +2,48 @@
 
 ## Language and communication
 
-Communicate with the user in the user's language. Write prompts and agent instructions in English. Explain non-obvious decisions, report material problems promptly, and state expected behavior directly.
+Use the user's language; write prompts and agent instructions in English. Explain non-obvious decisions, report material problems promptly, and state expected behavior directly.
 
 ## Work
 
-Before significant work, pick one owning skill: the project or specialized skill for the task, else the anchorloop entry skill whose description matches. Run the work in the anchorloop loop: anchor before the first change, progress tracked in `todo`.
+Before significant work, choose one owning skill: project or specialized first, else the matching anchorloop entry skill. Run anchorloop: anchor before the first change; track progress in `todo`.
 
-Linear tickets that ride an `agent-train/*` or other batch train close as one batch in a ttt work order, never by `ttt done` before the train merged: read `ttt skill managing-linear-tasks orders-coordinator` (claiming, recording, sealing, handing off) or `orders-integrator` (import, return, rework, close after the merge) before you touch one.
+For Linear tickets on `agent-train/*` or another batch train, first read `ttt skill managing-linear-tasks orders-coordinator` (claim, record, seal, handoff) or `orders-integrator` (import, return, rework, close). Close the batch in its ttt work order after merge, never by early `ttt done`.
 
-Follow the user's chosen architecture and explain tradeoffs when they affect the result. Keep changes within scope, use the smallest useful approach, and fail fast instead of degrading silently. Clean up only changes made by this work. Resolve execution choices within the assigned scope; bring user-owned decisions to the user with context and a recommendation. Ask the user every question through `ask_user_question`, never as plain chat text, and gather related pending questions into one round.
+Follow the user's architecture; explain consequential tradeoffs. Stay in scope, make the smallest useful change, fail fast, and clean up only your work. Decide execution within scope. Bring user-owned decisions with context and a recommendation. Group all user questions in `ask_user_question`, not chat; give needed explanations visibly before asking, not in thinking. After repeated failures or corrections, reassess the task and evidence.
 
-Thinking is a summary the user may not read; write any explanation the user needs in visible text before calling `ask_user_question`.
+Before app work outside the session directory, read its `AGENTS.md` (else `CLAUDE.md`), check `.claude/skills/`, and follow applicable language, Git, deployment and UI rules in its `rules/`.
 
-After repeated failures or corrections, reassess the task and evidence before continuing.
-
-Before app-specific work outside the session's directory, read that app's `AGENTS.md`, or its `CLAUDE.md` when none exists. Check `.claude/skills/` for relevant project workflows and follow applicable language, Git, deployment, and UI rules in the repository's `rules/` directory.
-
-Start any process that must outlive its command (dev server, watcher) with `MonitorCreate`, never `&` or `nohup` in `bash`: pi stops a monitor's process group with the session, while a backgrounded `bash` child outlives it. Record its PID and port; when the work ends, `MonitorStop` it and confirm by PID and port that nothing of yours remains. An `agent-browser` session lives in a daemon pi does not manage, so close your own with `agent-browser --session <name> close`.
-
-A polling loop or watch that calls a CLI waits at least 60 seconds between calls: faster polling of CLIs such as vercel leaked launchservicesd ports.
+Start processes that outlive the command (servers, watchers) with `MonitorCreate`, never bash `&` or `nohup`. Record PID and port; finish with `MonitorStop` and check both for leftovers. Close your own browser daemon sessions with `agent-browser --session <name> close`. CLI polls or watches wait at least 60 seconds between calls (faster vercel polling leaked launchservicesd ports).
 
 ## Git safety
 
-- Force push to a remote branch needs explicit user confirmation: state the exact command and target and wait. The exception is your own unmerged MR source branch (one this work created and no one else pushes to), which takes `git push --force-with-lease` without asking, for example after rebasing it on its target.
-- Stage specific files by name, and keep machine-local state (plans, memory, analysis snapshots) out of commits.
+- Before force-pushing a remote branch, state the exact command and target and wait for explicit confirmation. Exception: `git push --force-with-lease` on your own unmerged MR source branch, created by this work and used by nobody else.
+- Stage named files only; exclude local plans, memory and analysis snapshots.
 - Before committing a new `.gitignore` pattern, run `git check-ignore -v <tracked-file>` on tracked files it could match.
 
 ## User rules
 
-Read the matching rule in `~/.pi/agent/rules/` before its work: `deployment.md` (deploys), `dependencies.md` (packages and libraries), `clean-architecture.md` (design and refactoring), `ui-design.md` (UI), `browser.md` (browser automation), `presenting.md` (explanations, reports, and anything the user must confirm), `system-dialogs.md` (on the Mac, any command that can open a password, keychain, certificate, or Touch ID dialog, such as `docker pull` from a private registry, `security`, `codesign`, or `sudo` without `-n`), `session-rotation.md` (rotating a long-lived main's session), and the language files `go.md`, `python.md`, `shell.md`, `typescript.md`, and `markdown.md`.
+Read the matching `~/.pi/agent/rules/` file before its work: `deployment.md` (deploy), `dependencies.md` (packages), `clean-architecture.md` (design/refactor), `ui-design.md` (UI), `browser.md` (automation), `presenting.md` (explanations, reports, confirmations), `system-dialogs.md` (Mac password, keychain, certificate or Touch ID prompts; e.g. private `docker pull`, `security`, `codesign`, interactive `sudo`), `session-rotation.md` (long-lived mains), and `go.md`, `python.md`, `shell.md`, `typescript.md`, `markdown.md`.
 
 ## Model and dispatch
 
-Dispatch with pi-straw-boss's `subagent` tool and the role that matches the work: `scout` for investigation, `planner` for planning and design, `worker` for implementation, `reviewer` for code review, and `visual-tester` for UI checks. Use `adversarial-reviewer` only when the user names it. Role models come from `~/.pi/agent/herdr-agents/config.json`, so omit `model` unless the user names one; the exception is a `worker` on hard implementation (cross-module design, concurrency, security, migrations, or a fix that already failed), which gets `model: "task:complex-coding"`. Documentation writing and prose or tone polishing go to `model: "task:docs"`. Fable is reserved for forward-looking, genuinely hard work with no known solution: pass `model: "claude-bridge/claude-fable-5-2"` explicitly there and use no Fable model elsewhere. Omit `thinking` unless the user names one: the child derives it from `solutionSpace`.
+Use pi-straw-boss `subagent`: `scout` investigates, `planner` designs/plans, `worker` implements, `reviewer` reviews, `visual-tester` checks UI. Use `adversarial-reviewer` only when the user names it. Models come from `~/.pi/agent/herdr-agents/config.json`. Omit `model` unless the user names one, or use `task:complex-coding` for a worker on hard implementation (cross-module design, concurrency, security, migrations, prior failed fix), `task:docs` for documentation or prose/tone polish. Reserve explicit `claude-bridge/claude-fable-5-2` for forward-looking, genuinely hard work with no known solution; no Fable elsewhere. Omit `thinking` unless the user names it; the child derives it from `solutionSpace`.
 
-A change-set gets one fresh-context `reviewer` after its anchor passes when it touches a shared contract, authorization or permission data, a migration, or security, or when the user asks for one. Other change-sets rely on their anchor and the author's own read of the diff. In a review, only P0 and P1 findings block merge and need a re-check; record P2 and lower in the report or ticket.
+After the anchor passes, use one fresh-context reviewer for shared contracts, authorization or permission data, migrations, security, or when requested; otherwise self-review the diff. Only P0/P1 block merge and need re-check; record P2 and lower in the report or ticket.
 
-Carry bounded work on the session's own chain yourself; a coordinating session dispatches tasks independent of its chain in parallel. Every `subagent` gets its objective, cwd, ownership, Reality anchor, role, and `solutionSpace`. A parallel writer gets its own worktree: create it with `git worktree add ~/.herdr/worktrees/<repo>/<branch>` and pass that path as `cwd`.
+Do bounded work on your own chain; coordinators dispatch independent tasks in parallel. Brief every child with objective, cwd, ownership, Reality anchor, role and `solutionSpace`. Give each parallel writer a separate `git worktree add ~/.herdr/worktrees/<repo>/<branch>` checkout as `cwd`.
 
 ## Code discovery
 
-After edits, type-check with the project's own checker or build. Use `ast-grep` for structural search and rewrites, text search for prose, configuration, scripts, and exact literals.
-
-In a large project, search code through the `codebase-memory-mcp` server behind `mcp` before grepping: index the repository once, then use its graph search and call-path tools to find symbols, callers, and routes.
+Type-check after edits with the project's checker or build. Use `ast-grep` for structure, text search for prose, configs, scripts and exact literals. In large projects, index once with `codebase-memory-mcp` via `mcp` and use its graph search and call paths for symbols, callers and routes before grepping.
 
 ## Memory
 
-Save cross-project facts to `global` memory and only conventions the repository ships to `project`. Rules for every project go through `reflecting-to-root`, not memory.
+Save cross-project facts to `global`; only conventions the repo ships to `project`. Rules for every project go through `reflecting-to-root`, not memory.
 
 ## Verification and delivery
 
-Test minimally; this rule takes priority over any skill or project rule that asks for more runs (the user's standing rule). Passed runs are required context: before any test or gate, collect the green runs already on record for this tree or an ancestor (yours, a worker's, CI's, another gate's: command, filter, SHA, result), then run only what covers `git diff <last green sha>..HEAD`. A run whose inputs have not changed is reused, not repeated; whole suites run only where a gate requires them, once per tree. Record every run (command with filter, SHA, result) where the next round reads it: the MR description, the todo, or the report.
+Test minimally, even if another skill asks for more. Before any gate, collect existing green runs for this tree or ancestors (command, filter, SHA, result). Cover only `git diff <last green sha>..HEAD`; reuse runs with unchanged inputs. Run whole suites only if required by a gate, once per tree. Record each run where the next round reads it: MR, todo or report.
 
-Deliver complete code without TODOs, stubs, or mocks. Commit messages contain no AI tool attribution. Before the user must understand or confirm a plan, report, comparison, or decision, open it with `show_doc`: a Markdown page as `presenting.md` describes, or the document the user edits. Describe changes instead of opening diffs.
+Deliver complete code without TODOs, stubs or mocks. Commit messages contain no AI tool attribution. Before the user must understand or confirm a plan, report, comparison or decision, open it with `show_doc` (Markdown page per `presenting.md`, or the document they edit). Describe changes rather than opening diffs.
