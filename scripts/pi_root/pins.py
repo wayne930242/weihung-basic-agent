@@ -50,7 +50,7 @@ PACKAGES = [
     "npm:pi-intercom@0.19.0",
     "npm:@juicesharp/rpiv-ask-user-question@2.16.0",
     # todo and /todos with a public ledger contract (todo/v1 entries, todo:changed, todo:guard) that Straw Boss and anchorloop read.
-    "npm:pi-todo-ledger@0.8.2",
+    "npm:pi-todo-ledger@0.9.0",
     THEME_PACKAGE,
     "npm:pi-open-tui@0.4.7",
     QUOTAS_SOURCE,
