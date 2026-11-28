@@ -128,7 +128,7 @@ In a large project, search code through the `codebase-memory-mcp` server behind 
 
 ## Memory
 
-Save cross-project facts to `global` memory and only conventions the repository ships to `project`. Rules for every project go through `reflecting-to-root`, not memory.
+Save cross-project facts to `global` memory and only conventions the repository ships to `project`. Rules for every project go into weihung-basic-agent's `pi/AGENTS.md.in` or `rules/`, not memory.
 
 ## Verification and delivery
 

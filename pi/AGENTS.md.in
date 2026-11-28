@@ -40,7 +40,7 @@ Type-check after edits with the project's checker or build. Use `ast-grep` for s
 
 ## Memory
 
-Save cross-project facts to `global`; only conventions the repo ships to `project`. Rules for every project go through `reflecting-to-root`, not memory.
+Save cross-project facts to `global`; only conventions the repo ships to `project`. Rules for every project go into weihung-basic-agent's `pi/AGENTS.md.in` or `rules/`, not memory.
 
 ## Verification and delivery
 
