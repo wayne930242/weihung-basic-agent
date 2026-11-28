@@ -66,7 +66,7 @@ PACKAGES = [
     # Straw Boss coordination in Herdr: opt-in main agents per tab, an on-demand tower per workspace, scoped broadcast,
     # and the subagent host (`subagent`, `subagent_cancel`, `subagent_resume`, `subagents_list`), which reads its model
     # routing from ~/.pi/agent/herdr-agents/config.json.
-    "npm:pi-straw-boss@0.115.3",
+    "npm:pi-straw-boss@0.116.0",
     "npm:@pify/memory@0.14.1",
     "npm:pi-loop-monitor@0.2.8",
     # /evals and evals_query: records how skills, tools and packages are used (derived features only, never transcript text),
