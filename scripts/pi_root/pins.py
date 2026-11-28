@@ -50,7 +50,7 @@ PACKAGES = [
     "npm:pi-intercom@0.19.0",
     "npm:@juicesharp/rpiv-ask-user-question@2.16.0",
     # todo and /todos with a public ledger contract (todo/v1 entries, todo:changed, todo:guard) that Straw Boss and anchorloop read.
-    "npm:pi-todo-ledger@0.9.0",
+    "npm:pi-todo-ledger@0.10.0",
     THEME_PACKAGE,
     "npm:pi-open-tui@0.4.7",
     QUOTAS_SOURCE,
@@ -66,7 +66,7 @@ PACKAGES = [
     # Straw Boss coordination in Herdr: opt-in main agents per tab, an on-demand tower per workspace, scoped broadcast,
     # and the subagent host (`subagent`, `subagent_cancel`, `subagent_resume`, `subagents_list`), which reads its model
     # routing from ~/.pi/agent/herdr-agents/config.json.
-    "npm:pi-straw-boss@0.116.3",
+    "npm:pi-straw-boss@0.117.0",
     "npm:@pify/memory@0.14.1",
     "npm:pi-loop-monitor@0.2.8",
     # /evals and evals_query: records how skills, tools and packages are used (derived features only, never transcript text),
