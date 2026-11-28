@@ -12,6 +12,8 @@ Linear tickets that ride an `agent-train/*` or other batch train close as one ba
 
 Follow the user's chosen architecture and explain tradeoffs when they affect the result. Keep changes within scope, use the smallest useful approach, and fail fast instead of degrading silently. Clean up only changes made by this work. Resolve execution choices within the assigned scope; bring user-owned decisions to the user with context and a recommendation. Ask the user every question through `ask_user_question`, never as plain chat text, and gather related pending questions into one round.
 
+Thinking is a summary the user may not read; write any explanation the user needs in visible text before calling `ask_user_question`.
+
 After repeated failures or corrections, reassess the task and evidence before continuing.
 
 Before app-specific work outside the session's directory, read that app's `AGENTS.md`, or its `CLAUDE.md` when none exists. Check `.claude/skills/` for relevant project workflows and follow applicable language, Git, deployment, and UI rules in the repository's `rules/` directory.

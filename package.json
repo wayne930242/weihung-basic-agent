@@ -5,6 +5,7 @@
   "type": "module",
   "pi": {
     "extensions": [
+      "./pi/extensions/ask-text-guard.ts",
       "./pi/extensions/auto-thinking.ts",
       "./pi/extensions/batch-guard.ts",
       "./pi/extensions/idle-compaction.ts",
